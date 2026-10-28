@@ -49,7 +49,9 @@ Every request is checked in layers.
    - values must be in range.
 6. **Photos.**
    - The browser never gets the Blob read-write token.
-   - `requestPhotoUploadAction` gives a client token for a single `tmp/<uuid>.<ext>` key, one content type, the maximum size and 10 minutes.
+   - `requestPhotoUploadAction` gives permission for a single `tmp/<uuid>.<ext>` key, one content type, the maximum size and 10 minutes:
+     - with a Blob read-write token: a Blob client token, and the browser uploads straight to Blob;
+     - with a store connected through OIDC (Vercel's default for new stores, no long-lived token): an HMAC-signed address of the app (`/api/uploads/photo`, at most 4 MB), and the server writes the file to Blob.
    - The server re-reads the file, verifies it is an image, stores a clean JPEG copy under `reports/YYYY-MM/` and deletes the temporary file.
    - Photos are private and only served through `/api/public/photos/[id]` (only public photos of verified reports) and `/api/admin/photos/[id]` (staff with access to the report).
 7. **Headers.**
@@ -126,11 +128,11 @@ The tests cover:
 1. Import the repository in Vercel. The framework is detected as Next.js, and `vercel.json` sets the build command and the daily cron.
 2. **Storage** (Project → Storage):
    - **Postgres.** Use Neon from the Vercel Marketplace, in an EU region near `fra1`, or Supabase. The integration sets `DATABASE_URL` (pooled) and `DATABASE_URL_UNPOOLED` (direct, used for migrations automatically). With another provider, set `DIRECT_URL` to the direct URL.
-   - **Blob.** Connect a store; `BLOB_READ_WRITE_TOKEN` is added automatically.
+   - **Blob.** Create a **Private** store and connect it. Vercel adds `BLOB_STORE_ID` (OIDC) or `BLOB_READ_WRITE_TOKEN`; both work.
    - **Upstash Redis.** `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; the `KV_REST_API_*` names also work.
 3. **QStash** (Upstash console): `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`.
 4. **Other variables** (see `.env.example`):
-   - `APP_URL` (https)
+   - `APP_URL` (https; optional on Vercel, where the production domain is used)
    - `AUTH_SECRET` (`npx auth secret`)
    - `ADMIN_EMAIL`
    - `CRON_SECRET`

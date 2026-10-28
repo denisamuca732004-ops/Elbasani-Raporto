@@ -1,20 +1,22 @@
 /**
  * Photo storage.
  *
- * Production: Vercel Blob. The browser never gets the store's write token:
- *   1. actions/upload.ts asks createUploadGrant() for a short-lived client
- *      token that can write ONE file (tmp/<uuid>.jpg), of ONE image type,
- *      up to UPLOAD_MAX_MB, for 10 minutes;
- *   2. the browser uploads the photo straight to Blob with that token;
- *   3. the report action passes only the key. takeTemporaryUpload() reads the
+ * Production: Vercel Blob. The browser never gets a credential for the store:
+ *   1. actions/upload.ts asks createUploadGrant() for permission to write ONE
+ *      file (tmp/<uuid>.jpg), of ONE image type, up to the size limit, for 10 minutes:
+ *        - with a read-write token ("token" driver): a Blob client token, and
+ *          the browser uploads straight to Blob;
+ *        - with an OIDC-connected store ("oidc" driver, Vercel's default for new
+ *          stores, no long-lived token): an HMAC-signed address of this app
+ *          (/api/uploads/photo); the server writes the file to Blob itself;
+ *   2. the report action passes only the key. takeTemporaryUpload() reads the
  *      file on the server, storeImage() re-encodes it with sharp (rotated
  *      upright, max 1600 px, JPEG WITHOUT metadata, so the GPS position hidden
  *      in phone photos is never kept) and the temporary file is deleted.
- * Files are private: people only see them through /api/files/[id], which
- * checks who may look. Storage URLs never reach a browser.
+ * Files are private: people only see them through /api/public/photos/[id] and
+ * /api/admin/photos/[id], which check who may look. Storage URLs never reach a browser.
  *
- * Development and tests (no BLOB_READ_WRITE_TOKEN): the same flow with a
- * local folder and an HMAC-signed upload address (/api/uploads/local).
+ * Development and tests ("local" driver): the same signed address, with a folder on disk.
  */
 import 'server-only';
 import crypto from 'node:crypto';
@@ -36,7 +38,7 @@ const access = (): 'private' | 'public' => (process.env.BLOB_ACCESS === 'public'
 
 export type UploadGrant =
   | { driver: 'blob'; key: string; clientToken: string; access: 'private' | 'public'; contentType: ImageType; maxBytes: number }
-  | { driver: 'local'; key: string; uploadUrl: string; contentType: ImageType; maxBytes: number };
+  | { driver: 'server'; key: string; uploadUrl: string; contentType: ImageType; maxBytes: number };
 
 export interface StoredImage { key: string; url: string; mime: 'image/jpeg'; size: number; width: number; height: number }
 
@@ -44,6 +46,17 @@ const photoError = (message: string, code = 'invalid') =>
   new AppError(400, 'PHOTO_INVALID', message, [{ field: 'photo', code, message, step: 'photo' }]);
 
 const blobToken = () => config().storage.blobToken;
+/** Vercel Blob in use (with a token or with OIDC)? Otherwise the local folder. */
+const usesBlob = () => config().storage.driver !== 'local';
+/**
+ * Credentials for the Blob SDK: the read-write token when there is one. With
+ * OIDC nothing is passed: on Vercel the SDK takes the short-lived OIDC token of
+ * the request and BLOB_STORE_ID by itself.
+ */
+const blobAuth = (): { token?: string } => {
+  const token = blobToken();
+  return token ? { token } : {};
+};
 // Local disk is only used in development and tests (Vercel Blob in production): keep it out of the build's file tracing.
 const localRoot = () => path.resolve(/*turbopackIgnore: true*/ process.cwd(), config().storage.localDir);
 
@@ -79,12 +92,15 @@ export async function createUploadGrant(contentType: ImageType, declaredSize: nu
   }
   const payload = `${key}|${validUntil}|${contentType}`;
   const query = new URLSearchParams({ key, exp: String(validUntil), type: contentType, sig: sign(payload) });
-  return { driver: 'local', key, uploadUrl: `/api/uploads/local?${query}`, contentType, maxBytes };
+  return { driver: 'server', key, uploadUrl: `/api/uploads/photo?${query}`, contentType, maxBytes };
 }
 
-/** Local driver: receives the file sent to the signed /api/uploads/local address. */
-export async function receiveLocalUpload(params: URLSearchParams, contentType: string | null, body: ArrayBuffer): Promise<{ key: string }> {
-  if (blobToken()) throw notFound();
+/**
+ * "oidc" and "local" drivers: receives the photo sent to the signed /api/uploads/photo
+ * address. The signature fixes the file name, the image type and the deadline.
+ */
+export async function receiveSignedUpload(params: URLSearchParams, contentType: string | null, body: ArrayBuffer): Promise<{ key: string }> {
+  if (config().storage.driver === 'token') throw notFound();
   const key = params.get('key') ?? '';
   const exp = Number(params.get('exp'));
   const type = params.get('type') ?? '';
@@ -96,6 +112,15 @@ export async function receiveLocalUpload(params: URLSearchParams, contentType: s
   if ((contentType ?? '').split(';')[0] !== type) throw photoError('Lloji i fotos nuk përputhet.');
   if (body.byteLength === 0) throw photoError('Fotoja është bosh.');
   if (body.byteLength > config().storage.maxBytes) throw photoError('Fotoja është shumë e madhe.', 'too_large');
+  if (usesBlob()) {
+    try {
+      await put(key, Buffer.from(body), { ...blobAuth(), access: access(), contentType: type, addRandomSuffix: false, allowOverwrite: false });
+    } catch (err) {
+      if (err instanceof Error && /already exists|overwrite/i.test(err.message)) throw new AppError(409, 'CONFLICT', 'Kjo foto është ngarkuar tashmë.');
+      throw err;
+    }
+    return { key };
+  }
   const file = localPath(key);
   await fs.mkdir(path.dirname(file), { recursive: true });
   try {
@@ -129,17 +154,16 @@ async function readStream(stream: ReadableStream<Uint8Array>, maxBytes: number):
 export async function takeTemporaryUpload(key: string): Promise<Buffer> {
   if (!TMP_KEY.test(key)) throw photoError('Fotoja nuk u gjet. Ngarkojeni përsëri.', 'required');
   const maxBytes = config().storage.maxBytes;
-  const token = blobToken();
-  if (token) {
+  if (usesBlob()) {
     let meta;
     try {
-      meta = await head(key, { token });
+      meta = await head(key, blobAuth());
     } catch {
       throw photoError('Fotoja nuk u gjet. Ngarkojeni përsëri.', 'required');
     }
     if (meta.size > maxBytes) throw photoError('Fotoja është shumë e madhe.', 'too_large');
     if (!meta.contentType.startsWith('image/')) throw photoError('Pranohen vetëm foto JPEG, PNG ose WebP.');
-    const file = await get(key, { access: access(), token, useCache: false });
+    const file = await get(key, { ...blobAuth(), access: access(), useCache: false });
     if (!file || file.statusCode !== 200 || !file.stream) throw photoError('Fotoja nuk u gjet. Ngarkojeni përsëri.', 'required');
     return readStream(file.stream, maxBytes);
   }
@@ -155,9 +179,8 @@ export async function takeTemporaryUpload(key: string): Promise<Buffer> {
 
 export async function discardTemporaryUpload(key: string): Promise<void> {
   if (!TMP_KEY.test(key)) return;
-  const token = blobToken();
   try {
-    if (token) await del(key, { token });
+    if (usesBlob()) await del(key, blobAuth());
     else await fs.unlink(localPath(key));
   } catch {
     /* already gone; the daily clean-up removes leftovers */
@@ -179,10 +202,9 @@ export async function storeImage(buffer: Buffer): Promise<StoredImage> {
     throw photoError('Fotoja nuk u lexua. Provoni një foto tjetër.');
   }
   const key = `reports/${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}.jpg`;
-  const token = blobToken();
   let url: string;
-  if (token) {
-    const saved = await put(key, data, { access: access(), token, contentType: 'image/jpeg', addRandomSuffix: false, cacheControlMaxAge: 31_536_000 });
+  if (usesBlob()) {
+    const saved = await put(key, data, { ...blobAuth(), access: access(), contentType: 'image/jpeg', addRandomSuffix: false, cacheControlMaxAge: 31_536_000 });
     url = saved.url;
   } else {
     const file = localPath(key);
@@ -204,9 +226,8 @@ export async function storeUploadedPhoto(tmpKey: string): Promise<StoredImage> {
 
 export async function openStoredImage(file: { storageKey: string }): Promise<{ body: ReadableStream<Uint8Array> | Buffer; size: number | null }> {
   if (!STORED_KEY.test(file.storageKey)) throw notFound('Fotoja nuk u gjet.');
-  const token = blobToken();
-  if (token) {
-    const result = await get(file.storageKey, { access: access(), token });
+  if (usesBlob()) {
+    const result = await get(file.storageKey, { ...blobAuth(), access: access() });
     if (!result || result.statusCode !== 200 || !result.stream) throw notFound('Fotoja nuk u gjet.');
     return { body: result.stream, size: result.blob.size };
   }
@@ -220,9 +241,8 @@ export async function openStoredImage(file: { storageKey: string }): Promise<{ b
 
 export async function deleteStoredImage(storageKey: string): Promise<void> {
   if (!STORED_KEY.test(storageKey)) return;
-  const token = blobToken();
   try {
-    if (token) await del(storageKey, { token });
+    if (usesBlob()) await del(storageKey, blobAuth());
     else await fs.unlink(localPath(storageKey));
   } catch {
     /* already gone */
@@ -241,14 +261,13 @@ export async function imageDataUrl(file: { storageKey: string }, maxSize = 1024)
 export async function cleanupTemporaryUploads(olderThanMs = 24 * 3600_000): Promise<number> {
   const cutoff = Date.now() - olderThanMs;
   let removed = 0;
-  const token = blobToken();
-  if (token) {
+  if (usesBlob()) {
     let cursor: string | undefined;
     do {
-      const page = await list({ prefix: 'tmp/', cursor, limit: 500, token });
+      const page = await list({ ...blobAuth(), prefix: 'tmp/', cursor, limit: 500 });
       const old = page.blobs.filter((b) => new Date(b.uploadedAt).getTime() < cutoff).map((b) => b.pathname);
       if (old.length) {
-        await del(old, { token });
+        await del(old, blobAuth());
         removed += old.length;
       }
       cursor = page.hasMore ? page.cursor : undefined;

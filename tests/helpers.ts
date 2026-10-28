@@ -17,7 +17,7 @@ import { seedReferenceData } from '@/lib/server/referenceData';
 import { loadPrincipal, setupFirstAdmin, changePassword, verifyCredentials } from '@/lib/server/services/auth';
 import { createCitizenReport } from '@/lib/server/services/publicReport';
 import { createUser } from '@/lib/server/services/users';
-import { createUploadGrant, receiveLocalUpload } from '@/lib/server/storage';
+import { createUploadGrant, receiveSignedUpload } from '@/lib/server/storage';
 import type { Principal } from '@/lib/shared/types';
 
 export { db, drainJobs };
@@ -55,9 +55,9 @@ export async function jpeg(color = '#7a7a7a', width = 320, height = 240): Promis
 export async function uploadPhoto(photo?: Buffer): Promise<string> {
   const buffer = photo ?? (await jpeg());
   const grant = await createUploadGrant('image/jpeg', buffer.length);
-  if (grant.driver !== 'local') throw new Error('Tests use the local storage driver');
+  if (grant.driver !== 'server') throw new Error('Tests use the local storage driver');
   const url = new URL(grant.uploadUrl, 'http://localhost');
-  const { key } = await receiveLocalUpload(url.searchParams, 'image/jpeg', buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer);
+  const { key } = await receiveSignedUpload(url.searchParams, 'image/jpeg', buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer);
   return key;
 }
 

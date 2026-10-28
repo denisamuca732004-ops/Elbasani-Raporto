@@ -11,7 +11,7 @@ import { pendingJobCount } from '@/lib/server/queue';
 import { enforceRateLimit, resetRateLimitsForTests } from '@/lib/server/ratelimit';
 import * as adminService from '@/lib/server/services/admin';
 import { getCatalog } from '@/lib/server/services/catalog';
-import { createUploadGrant, receiveLocalUpload } from '@/lib/server/storage';
+import { createUploadGrant, receiveSignedUpload } from '@/lib/server/storage';
 import type { Principal } from '@/lib/shared/types';
 import { statusChangeSchema, reportListSchema, prioritySchema, transferDecisionSchema } from '@/lib/validation/report';
 import { departmentPatchSchema, requestTypePatchSchema } from '@/lib/validation/admin';
@@ -83,25 +83,46 @@ describe('photo uploads', () => {
   test('a signed upload address cannot be changed, reused or used late', async () => {
     const photo = await jpeg();
     const grant = await createUploadGrant('image/jpeg', photo.length);
-    assert.equal(grant.driver, 'local');
-    if (grant.driver !== 'local') return;
+    assert.equal(grant.driver, 'server');
+    if (grant.driver !== 'server') return;
     const params = new URL(grant.uploadUrl, 'http://localhost').searchParams;
     const body = new Uint8Array(photo).buffer;
 
     const otherKey = new URLSearchParams(params);
     otherKey.set('key', 'tmp/11111111-1111-4111-8111-111111111111.jpg');
-    assert.equal((await rejects(() => receiveLocalUpload(otherKey, 'image/jpeg', body))).status, 403, 'another file name');
+    assert.equal((await rejects(() => receiveSignedUpload(otherKey, 'image/jpeg', body))).status, 403, 'another file name');
     const later = new URLSearchParams(params);
     later.set('exp', String(Date.now() + 365 * 86400_000));
-    assert.equal((await rejects(() => receiveLocalUpload(later, 'image/jpeg', body))).status, 403, 'a longer validity');
-    assert.equal((await rejects(() => receiveLocalUpload(params, 'image/png', body))).status, 400, 'another file type');
+    assert.equal((await rejects(() => receiveSignedUpload(later, 'image/jpeg', body))).status, 403, 'a longer validity');
+    assert.equal((await rejects(() => receiveSignedUpload(params, 'image/png', body))).status, 400, 'another file type');
 
-    await receiveLocalUpload(params, 'image/jpeg', body);
-    assert.equal((await rejects(() => receiveLocalUpload(params, 'image/jpeg', body))).status, 409, 'used only once');
+    await receiveSignedUpload(params, 'image/jpeg', body);
+    assert.equal((await rejects(() => receiveSignedUpload(params, 'image/jpeg', body))).status, 409, 'used only once');
 
     const expired = new URLSearchParams(params);
     expired.set('exp', String(Date.now() - 1000));
-    assert.equal((await rejects(() => receiveLocalUpload(expired, 'image/jpeg', body))).status, 403);
+    assert.equal((await rejects(() => receiveSignedUpload(expired, 'image/jpeg', body))).status, 403);
+  });
+});
+
+describe('Vercel Blob connected with OIDC (no read-write token)', () => {
+  test('photos go through the signed app address, limited to what a Vercel function accepts', async () => {
+    const saved = { id: process.env.BLOB_STORE_ID, mb: process.env.UPLOAD_MAX_MB };
+    try {
+      process.env.BLOB_STORE_ID = 'store_test123';
+      process.env.UPLOAD_MAX_MB = '8';
+      resetConfigForTests();
+      const grant = await createUploadGrant('image/jpeg', 1024);
+      assert.equal(grant.driver, 'server');
+      if (grant.driver !== 'server') return;
+      assert.match(grant.uploadUrl, /^\/api\/uploads\/photo\?/);
+      assert.equal(grant.maxBytes, 4 * 1024 * 1024, 'at most 4 MB through a function');
+      assert.equal((await rejects(() => createUploadGrant('image/jpeg', 5 * 1024 * 1024))).code, 'PHOTO_INVALID');
+    } finally {
+      if (saved.id === undefined) delete process.env.BLOB_STORE_ID; else process.env.BLOB_STORE_ID = saved.id;
+      if (saved.mb === undefined) delete process.env.UPLOAD_MAX_MB; else process.env.UPLOAD_MAX_MB = saved.mb;
+      resetConfigForTests();
+    }
   });
 });
 

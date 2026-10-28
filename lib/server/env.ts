@@ -43,13 +43,17 @@ const bbox = z.preprocess(blank, z.string().default('40.85,19.75,41.35,20.45')).
 });
 
 const EnvSchema = z.object({
-  APP_URL: str('http://localhost:3000'),
+  APP_URL: str(),
+  /** Set by Vercel on every deployment, e.g. elbasani-raporto.vercel.app. Used when APP_URL is empty. */
+  VERCEL_PROJECT_PRODUCTION_URL: str(),
   DATABASE_URL: str(),
   AUTH_SECRET: str(),
   SESSION_MAX_AGE_HOURS: int(12, 1, 24 * 30),
   ADMIN_EMAIL: str(''),
   BCRYPT_ROUNDS: int(11, 4, 15),
   BLOB_READ_WRITE_TOKEN: str(),
+  /** Set by Vercel when a Blob store is connected with OIDC (the default since June 2026). */
+  BLOB_STORE_ID: str(),
   LOCAL_UPLOAD_DIR: str('.uploads'),
   UPLOAD_MAX_MB: int(8, 1, 50),
   UPSTASH_REDIS_REST_URL: str(),
@@ -84,6 +88,22 @@ const EnvSchema = z.object({
   EMBED_ALLOWED_ORIGINS: list('https://elbasani.gov.al,https://www.elbasani.gov.al'),
 });
 
+/**
+ * Where photos go:
+ *  - "token": Vercel Blob with a read-write token. The browser uploads straight to Blob with a one-file client token.
+ *  - "oidc":  Vercel Blob connected with OIDC (no long-lived token; Vercel's default for new stores). The browser
+ *             sends the photo to our signed /api/uploads/photo address and the server writes it to Blob. Vercel
+ *             functions accept at most 4.5 MB per request, so photos are limited to 4 MB (the browser shrinks them first).
+ *  - "local": a folder on disk, for development and tests.
+ */
+function storageConfig(e: z.output<typeof EnvSchema>, missing: (v: string | undefined) => boolean) {
+  const blobToken = missing(e.BLOB_READ_WRITE_TOKEN) ? null : e.BLOB_READ_WRITE_TOKEN!;
+  const blobStoreId = missing(e.BLOB_STORE_ID) ? null : e.BLOB_STORE_ID!;
+  const driver: 'token' | 'oidc' | 'local' = blobToken ? 'token' : blobStoreId ? 'oidc' : 'local';
+  const maxMb = driver === 'oidc' ? Math.min(e.UPLOAD_MAX_MB, 4) : e.UPLOAD_MAX_MB;
+  return { driver, blobToken, blobStoreId, localDir: e.LOCAL_UPLOAD_DIR, maxBytes: maxMb * 1024 * 1024 };
+}
+
 function load() {
   const env = appEnv();
   const parsed = EnvSchema.safeParse(process.env);
@@ -94,6 +114,7 @@ function load() {
   const e = parsed.data;
   const strict = env === 'staging' || env === 'production';
   const redisUrl = e.UPSTASH_REDIS_REST_URL ?? e.KV_REST_API_URL;
+  const appUrl = (e.APP_URL ?? (e.VERCEL_PROJECT_PRODUCTION_URL ? `https://${e.VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:3000')).replace(/\/$/, '');
   const redisToken = e.UPSTASH_REDIS_REST_TOKEN ?? e.KV_REST_API_TOKEN;
 
   const problems: string[] = [];
@@ -105,13 +126,13 @@ function load() {
   if (e.MAIL_DRIVER === 'smtp' && missing(e.SMTP_HOST)) problems.push('MAIL_DRIVER=smtp needs SMTP_HOST');
   if (strict) {
     if (missing(e.ADMIN_EMAIL)) problems.push('ADMIN_EMAIL is missing');
-    if (missing(e.BLOB_READ_WRITE_TOKEN)) problems.push('BLOB_READ_WRITE_TOKEN is missing (connect a Vercel Blob store)');
+    if (missing(e.BLOB_READ_WRITE_TOKEN) && missing(e.BLOB_STORE_ID)) problems.push('Vercel Blob is not connected (BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID is missing)');
     if (missing(redisUrl) || missing(redisToken)) problems.push('UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN are missing');
     if (missing(e.CRON_SECRET)) problems.push('CRON_SECRET is missing');
     if (e.QSTASH_TOKEN && (missing(e.QSTASH_CURRENT_SIGNING_KEY) || missing(e.QSTASH_NEXT_SIGNING_KEY))) {
       problems.push('QSTASH_TOKEN is set but the QStash signing keys are missing');
     }
-    if (!e.APP_URL.startsWith('https://')) problems.push('APP_URL must start with https://');
+    if (!appUrl.startsWith('https://')) problems.push('APP_URL must start with https://');
   }
   if (problems.length) throw new Error(`Invalid configuration (APP_ENV=${env}):\n - ${problems.join('\n - ')}`);
 
@@ -119,7 +140,7 @@ function load() {
     env,
     isStrict: strict,
     isTest: env === 'test',
-    appUrl: e.APP_URL.replace(/\/$/, ''),
+    appUrl,
     databaseUrl: e.DATABASE_URL!,
     auth: {
       secret: e.AUTH_SECRET!,
@@ -127,11 +148,7 @@ function load() {
       adminEmail: e.ADMIN_EMAIL.toLowerCase(),
       bcryptRounds: e.BCRYPT_ROUNDS,
     },
-    storage: {
-      blobToken: missing(e.BLOB_READ_WRITE_TOKEN) ? null : e.BLOB_READ_WRITE_TOKEN!,
-      localDir: e.LOCAL_UPLOAD_DIR,
-      maxBytes: e.UPLOAD_MAX_MB * 1024 * 1024,
-    },
+    storage: storageConfig(e, missing),
     redis: missing(redisUrl) || missing(redisToken) ? null : { url: redisUrl!, token: redisToken! },
     qstash: missing(e.QSTASH_TOKEN)
       ? null
