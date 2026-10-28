@@ -182,7 +182,7 @@ const en = {
     before: 'Before', after: 'After', history: 'History',
     category: 'Category', opened: 'Opened', updated: 'Updated', resolvedOn: 'Resolved', sector: 'Sector',
     location: 'Location', others: 'Others',
-    sameProblem: 'I have this problem too', sameProblemHint: 'This shows the municipality how many residents are affected, without duplicate reports.', sameProblemDone: 'Thank you! Your support was added.', supporters: { one: '1 resident reported the same problem', other: '{n} residents reported the same problem' },
+    sameProblem: 'I have this problem too', sameProblemHint: 'This shows the municipality how many residents are affected, without duplicate reports.', sameProblemDone: 'Thank you! Your support was added.', sameProblemAlready: 'You have marked that you have this problem too.', supporters: { one: '1 resident reported the same problem', other: '{n} residents reported the same problem' },
   },
   map: {
     title: 'Map of reports', status: 'Status', open: 'Open', closed: 'Resolved', all: 'All',

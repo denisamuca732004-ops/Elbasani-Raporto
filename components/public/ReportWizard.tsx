@@ -22,6 +22,7 @@ import { CategoryIcon, ErrorAlert, Field } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { ActionFailure, call } from '@/lib/client/action';
 import { distanceLabel, EMAIL_RE, insideArea, key, phoneDigits, typeName, type LatLng } from '@/lib/client/format';
+import { isMine, rememberMine, rememberSupported } from '@/lib/client/myReports';
 import { newClientRef, queueReport } from '@/lib/client/offlineQueue';
 import { uploadPhoto } from '@/lib/client/upload';
 import { LIMITS } from '@/lib/shared/domain';
@@ -92,7 +93,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     let cancelled = false;
     const timer = setTimeout(() => {
       call(findNearbyAction({ requestTypeId: type.id, latitude: pin.latitude, longitude: pin.longitude }))
-        .then((items) => { if (!cancelled) setDuplicates(items); })
+        .then((items) => { if (!cancelled) setDuplicates(items.filter((d) => !isMine(d.caseNumber))); })
         .catch(() => { if (!cancelled) setDuplicates([]); });
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
@@ -167,6 +168,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     try {
       const email = contactMode === 'contact' && EMAIL_RE.test(contact.email.trim()) ? contact.email.trim() : undefined;
       await call(followReportAction({ caseNumber, ...(email ? { email } : {}) }));
+      rememberSupported(caseNumber);
       setFollowed(caseNumber);
     } catch (err) {
       setError(err as ActionFailure);
@@ -212,6 +214,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       if (!navigator.onLine) throw new ActionFailure({ code: 'NETWORK', status: 0, message: 'network' });
       const photoKey = await photoKeyFor(photo);
       const res = await call(createReportAction({ ...data, photoKey }));
+      rememberMine(res.caseNumber);
       setResult({ caseNumber: res.caseNumber });
     } catch (raw) {
       const err = raw as ActionFailure;

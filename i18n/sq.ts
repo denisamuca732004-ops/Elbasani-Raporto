@@ -182,7 +182,7 @@ const sq = {
     before: 'Para', after: 'Pas', history: 'Historiku',
     category: 'Kategoria', opened: 'Hapur më', updated: 'Përditësuar', resolvedOn: 'Zgjidhur më', sector: 'Sektori',
     location: 'Vendndodhja', others: 'Të tjerë',
-    sameProblem: 'Edhe unë e kam këtë problem', sameProblemHint: 'Kështu Bashkia sheh sa qytetarë prek ky problem, pa raportime të dyfishta.', sameProblemDone: 'Faleminderit! U shtua mbështetja juaj.', supporters: { one: '1 qytetar raportoi të njëjtin problem', other: '{n} qytetarë raportuan të njëjtin problem' },
+    sameProblem: 'Edhe unë e kam këtë problem', sameProblemHint: 'Kështu Bashkia sheh sa qytetarë prek ky problem, pa raportime të dyfishta.', sameProblemDone: 'Faleminderit! U shtua mbështetja juaj.', sameProblemAlready: 'E keni shënuar që e keni edhe ju këtë problem.', supporters: { one: '1 qytetar raportoi të njëjtin problem', other: '{n} qytetarë raportuan të njëjtin problem' },
   },
   map: {
     title: 'Harta e raportimeve', status: 'Statusi', open: 'Të hapura', closed: 'Të zgjidhura', all: 'Të gjitha',

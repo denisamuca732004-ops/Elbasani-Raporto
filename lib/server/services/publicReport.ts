@@ -18,7 +18,7 @@ import { AppError, conflict, notFound } from '../errors';
 import { queueEmails } from '../mail';
 import * as tpl from '../mailTemplates';
 import { hashToken } from '../tokens';
-import { otherZonePlace } from '@/lib/shared/zones';
+import { CITY_ZONE_CODE, otherZonePlace } from '@/lib/shared/zones';
 import { boundingBox, distanceMeters, insideMunicipality, roundCoord, zoneOfPoint } from './geo';
 import { isPubliclyVerified, publicInclude, toPublicCard, toPublicCase } from './mapper';
 import { departmentRecipients } from './notification';
@@ -109,7 +109,12 @@ async function resolveLocation(data: CitizenReport, problems: ReportProblem[]): 
     const other = otherZonePlace(text, zone.id, zones);
     if (other) problems.push(problem('address', 'other_zone', `“${other.place}” ndodhet në zonën ${other.zone}. Zgjidhni zonën e duhur ose ndryshoni adresën.`));
   }
-  const address = [text, locality?.name].filter(Boolean).join(', ').slice(0, LIMITS.maxAddress);
+  // "Rruga Qemal Stafa 12, Lagjja Qemal Stafa" / "pranë shkollës, fshati Lleshan, njësia Gjinar"
+  const where = !locality || !zone ? null
+    : zone.code === CITY_ZONE_CODE ? `Lagjja ${locality.name}`
+    : plainText(locality.name) === plainText(zone.name) ? `fshati ${locality.name}`
+    : `fshati ${locality.name}, njësia ${zone.name}`;
+  const address = [text, where].filter(Boolean).join(', ').slice(0, LIMITS.maxAddress);
   return { latitude: null, longitude: null, neighbourhoodId: zone?.id ?? null, address: address || null };
 }
 

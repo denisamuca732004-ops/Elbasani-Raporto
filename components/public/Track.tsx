@@ -1,7 +1,11 @@
 'use client';
-/** "Ndiq kërkesën": find a request by its case number and see its progress. */
+/**
+ * "Ndiq raportimin". /ndiq: a box for the case number. /ndiq/EL-2026-00042:
+ * that report only (the number is already on the page, so no search box,
+ * unless the number was not found).
+ */
 import { useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { followReportAction } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { MiniMap } from '@/components/maps';
@@ -9,6 +13,7 @@ import { StatusBadge, TestBadge } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { ActionFailure, call } from '@/lib/client/action';
 import { formatDate, key, typeName } from '@/lib/client/format';
+import { hasSupported, isMine, rememberSupported } from '@/lib/client/myReports';
 import type { PublicCase } from '@/lib/shared/types';
 import { PublicTimeline } from './Cases';
 
@@ -42,17 +47,29 @@ export function TrackForm({ initial = '', basePath = '/ndiq' }: { initial?: stri
 
 export type CaseLookup = { found: true; data: PublicCase } | { found: false; caseNumber: string; error?: boolean };
 
-/** "I have this problem too": one more resident affected, instead of a duplicate report. */
+/**
+ * "I have this problem too": for OTHER residents who find a verified, open
+ * report (on the map or by searching their street), instead of reporting it
+ * again. Never shown to the person who made the report on this device, and
+ * only once per device.
+ */
 function SameProblem({ caseNumber, supporters }: { caseNumber: string; supporters: number }) {
   const { t } = useI18n();
   const [done, setDone] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ActionFailure | null>(null);
+  // Decided after loading, from what this device remembers (the server cannot know who made a report).
+  const [state, setState] = useState<'unknown' | 'mine' | 'supported' | 'other'>('unknown');
+  useEffect(() => {
+    setState(isMine(caseNumber) ? 'mine' : hasSupported(caseNumber) ? 'supported' : 'other');
+  }, [caseNumber]);
   async function follow() {
     setBusy(true);
     setError(null);
     try {
-      setDone((await call(followReportAction({ caseNumber }))).supporters);
+      const res = await call(followReportAction({ caseNumber }));
+      rememberSupported(caseNumber);
+      setDone(res.supporters);
     } catch (err) {
       setError(err as ActionFailure);
     } finally {
@@ -62,6 +79,8 @@ function SameProblem({ caseNumber, supporters }: { caseNumber: string; supporter
   if (done !== null) {
     return <div className="alert alert-ok" role="status">{t('track.sameProblemDone')} {t('track.supporters', { n: done })}</div>;
   }
+  if (state === 'unknown' || state === 'mine') return null;
+  if (state === 'supported') return <p className="hint"><Icon name="check" size={14} /> {t('track.sameProblemAlready')}</p>;
   return (
     <div>
       <button type="button" className="btn btn-outline" disabled={busy} onClick={follow}>
@@ -88,7 +107,8 @@ export function CaseView({ lookup }: { lookup: CaseLookup }) {
         <h1 style={{ marginBottom: 4 }}>{typeName(data.type, lang)}</h1>
         <p className="case-number" style={{ fontSize: '1.2rem' }}>{data.caseNumber}</p>
         <p className="muted">{t(`statusHelp.${key(data.publicStatus)}`)}</p>
-        {['RECEIVED', 'OPEN', 'IN_PROGRESS'].includes(data.publicStatus) && <SameProblem key={data.caseNumber} caseNumber={data.caseNumber} supporters={data.supporters} />}
+        {/* Only verified, open reports: a just-received report is not public yet, so only its author has the number. */}
+        {['OPEN', 'IN_PROGRESS'].includes(data.publicStatus) && <SameProblem key={data.caseNumber} caseNumber={data.caseNumber} supporters={data.supporters} />}
         {data.rejectionReason && <div className="alert alert-error"><strong>{t('track.rejectionReason')}:</strong> {data.rejectionReason}</div>}
         {data.closingNote && <div className="alert alert-ok"><strong>{t('track.closingNote')}:</strong> {data.closingNote}</div>}
         {(data.beforePhotoUrl || data.afterPhotoUrl) && (
@@ -131,8 +151,10 @@ export default function Track({ lookup }: { lookup?: CaseLookup }) {
       <div className="container stack">
         {!lookup && <h1>{t('track.title')}</h1>}
         {!lookup && <p className="muted">{t('track.intro')}</p>}
-        <TrackForm initial={caseNumber} key={caseNumber} />
-        {lookup && <><hr className="divider" /><CaseView lookup={lookup} /></>}
+        {/* The search box only where a number is still needed: no number yet, or one that was not found. */}
+        {(!lookup || !lookup.found) && <TrackForm initial={caseNumber} key={caseNumber} />}
+        {lookup && !lookup.found && <hr className="divider" />}
+        {lookup && <CaseView lookup={lookup} />}
       </div>
     </div>
   );

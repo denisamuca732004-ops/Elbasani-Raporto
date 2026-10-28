@@ -113,7 +113,11 @@ describe('way 2: typing the address', () => {
     }));
     const report = await db.report.findUniqueOrThrow({ where: { caseNumber: res.caseNumber }, include: { neighbourhood: true } });
     assert.equal(report.neighbourhood?.code, 'gjinar');
-    assert.equal(report.address, 'pranë shkollës, Lleshan');
+    assert.equal(report.address, 'pranë shkollës, fshati Lleshan, njësia Gjinar');
+    const city = await createCitizenReport(await byHand({
+      neighbourhoodId: await zoneId('elbasan'), localityId: await placeId('elbasan', 'Qemal Stafa'), address: 'Rruga Qemal Stafa 12',
+    }));
+    assert.equal((await db.report.findUniqueOrThrow({ where: { caseNumber: city.caseNumber } })).address, 'Rruga Qemal Stafa 12, Lagjja Qemal Stafa');
     assert.equal(report.latitude, null);
     assert.equal(report.longitude, null);
   });

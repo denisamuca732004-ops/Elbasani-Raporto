@@ -8,6 +8,7 @@ import { createStore, del, entries, set, type UseStore } from 'idb-keyval';
 import { createReportAction } from '@/actions/reports';
 import { ActionFailure, call } from './action';
 import { uploadPhoto } from './upload';
+import { rememberMine } from './myReports';
 
 type QueuedReport = { data: Record<string, unknown> & { clientRef: string }; photo: Blob; queuedAt: number };
 
@@ -46,6 +47,7 @@ export async function flushQueue(): Promise<string[]> {
         const photoKey = await uploadPhoto(item.photo);
         const res = await call(createReportAction({ ...item.data, photoKey }));
         sent.push(res.caseNumber);
+        rememberMine(res.caseNumber);
         await del(key, s);
       } catch (err) {
         const status = err instanceof ActionFailure ? err.status : 0;
