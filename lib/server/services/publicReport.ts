@@ -1,0 +1,337 @@
+/**
+ * Everything a resident can do without an account: report a problem (every
+ * step is mandatory), check for the same problem nearby, follow a case, track
+ * it, browse the map and confirm or reopen a resolved report.
+ * Contact details are never returned by these functions.
+ */
+import 'server-only';
+import { FINAL_STATUSES, LIMITS, OPEN_STATUSES, PUBLIC_LISTED_STATUSES, publicStatusOf, type Status } from '@/lib/shared/domain';
+import type { FieldError } from '@/lib/shared/result';
+import type { MapPoint, PublicCard, PublicCase } from '@/lib/shared/types';
+import { citizenReportShape, type FeedbackInput, type MapQuery, type RecentQuery } from '@/lib/validation/report';
+import { check } from '@/lib/validation/zod';
+import type { RequestType } from '@/lib/generated/prisma/client';
+import { db, type Prisma } from '../db';
+import { config } from '../env';
+import { AppError, conflict, notFound } from '../errors';
+import { queueEmails } from '../mail';
+import * as tpl from '../mailTemplates';
+import { hashToken } from '../tokens';
+import { boundingBox, distanceMeters, insideServiceArea, roundCoord } from './geo';
+import { isPubliclyVerified, publicInclude, toPublicCard, toPublicCase } from './mapper';
+import { departmentRecipients } from './notification';
+import { persistNewReport } from './reportCreation';
+
+/* ───────────────────────── Strict citizen report ───────────────────────── */
+
+/** Wizard step of every field, so the website can send the resident back to the right step. */
+const STEP_OF_FIELD: Record<string, string> = {
+  requestTypeId: 'type',
+  latitude: 'location', longitude: 'location', address: 'location', neighbourhoodId: 'location',
+  photoKey: 'photo', photo: 'photo',
+  description: 'details',
+  anonymous: 'contact', contactName: 'contact', contactEmail: 'contact', contactPhone: 'contact',
+};
+
+const MESSAGES: Record<string, string> = {
+  'requestTypeId.required': 'Zgjidhni llojin e problemit.',
+  'requestTypeId.unknown': 'Ky lloj raportimi nuk ekziston më. Zgjidhni një tjetër.',
+  'latitude.required': 'Vendosni pikën në hartë.',
+  'longitude.required': 'Vendosni pikën në hartë.',
+  'latitude.outside_area': 'Pika në hartë duhet të jetë brenda Bashkisë Elbasan.',
+  'address.required': 'Shkruani adresën ose një pikë reference.',
+  'address.too_short': `Adresa duhet të ketë të paktën ${LIMITS.minAddress} shkronja.`,
+  'neighbourhoodId.required': 'Zgjidhni zonën (njësinë administrative).',
+  'neighbourhoodId.unknown': 'Zgjidhni një zonë nga lista.',
+  'photo.required': 'Shtoni një foto të problemit.',
+  'description.required': 'Përshkruani problemin.',
+  'description.too_short': `Përshkrimi duhet të ketë të paktën ${LIMITS.minDescription} shkronja.`,
+  'anonymous.required': 'Zgjidhni nëse doni të lini kontakt ose të raportoni anonim.',
+  'contactName.required': 'Shkruani emrin tuaj ose zgjidhni "Anonim".',
+  'contactEmail.invalid': 'Emaili nuk është i saktë.',
+  'contactPhone.invalid': 'Numri i telefonit nuk është i saktë.',
+  'contactEmail.contact_required': 'Shkruani emailin ose numrin e telefonit, ose zgjidhni "Anonim".',
+};
+
+export type ReportProblem = FieldError & { step: string };
+
+function problem(field: string, code: string, fallback?: string): ReportProblem {
+  const f = field === 'photoKey' ? 'photo' : field;
+  return { field: f, code, step: STEP_OF_FIELD[f] ?? 'review', message: MESSAGES[`${f}.${code}`] ?? fallback ?? 'Fushë e pavlefshme.' };
+}
+
+const clean = (s: unknown): string => (typeof s === 'string' ? s.trim().replace(/\s+/g, ' ') : '');
+const cleanMultiline = (s: unknown): string => (typeof s === 'string' ? s.trim() : '');
+const phoneDigits = (s: string): number => s.replace(/\D/g, '').length;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/**
+ * Creates a resident's report only when EVERY step is complete:
+ * type → location (pin + address + area) → photo → description → contact (or anonymous).
+ * All problems are returned together, each with the wizard step it belongs to.
+ */
+export async function createCitizenReport(raw: unknown) {
+  const problems: ReportProblem[] = [];
+  const parsed = check(citizenReportShape, raw);
+  if (!parsed.ok) {
+    for (const e of parsed.errors) {
+      const field = e.field.split('.')[0] ?? '';
+      problems.push(problem(field, e.code === 'required' ? 'required' : 'invalid', e.message));
+    }
+  }
+
+  let type: RequestType | null = null;
+  if (parsed.ok) {
+    const data = parsed.data;
+    type = await db.requestType.findFirst({ where: { id: data.requestTypeId, active: true, category: { active: true } } });
+    if (!type) problems.push(problem('requestTypeId', 'unknown'));
+
+    if (!insideServiceArea(data.latitude, data.longitude)) problems.push(problem('latitude', 'outside_area'));
+
+    const address = clean(data.address);
+    if (!address) problems.push(problem('address', 'required'));
+    else if (address.length < LIMITS.minAddress) problems.push(problem('address', 'too_short'));
+
+    const area = await db.neighbourhood.findFirst({ where: { id: data.neighbourhoodId, active: true }, select: { id: true } });
+    if (!area) problems.push(problem('neighbourhoodId', 'unknown'));
+
+    const description = cleanMultiline(data.description);
+    if (!description) problems.push(problem('description', 'required'));
+    else if (description.length < LIMITS.minDescription) problems.push(problem('description', 'too_short'));
+
+    if (!data.anonymous) {
+      const name = clean(data.contactName);
+      const email = clean(data.contactEmail);
+      const phone = clean(data.contactPhone);
+      if (name.length < 2) problems.push(problem('contactName', 'required'));
+      if (email && !EMAIL.test(email)) problems.push(problem('contactEmail', 'invalid'));
+      if (phone && (phoneDigits(phone) < 6 || !/^[0-9 +()-]+$/.test(phone))) problems.push(problem('contactPhone', 'invalid'));
+      if (!email && !phone) problems.push(problem('contactEmail', 'contact_required'));
+    }
+  }
+
+  if (problems.length || !parsed.ok || !type) {
+    // Deduplicate (e.g. latitude + longitude both missing) while keeping the order.
+    const seen = new Set<string>();
+    const unique = problems.filter((p) => {
+      const key = `${p.step}:${p.field === 'longitude' ? 'latitude' : p.field}:${p.code}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    throw new AppError(400, 'REPORT_INCOMPLETE', 'Plotësoni të gjitha hapat e raportimit.', unique);
+  }
+
+  const data = parsed.data;
+  const anonymous = data.anonymous;
+  const email = anonymous ? '' : clean(data.contactEmail).toLowerCase();
+  const phone = anonymous ? '' : clean(data.contactPhone);
+  let created;
+  try {
+    created = await persistNewReport({
+      type,
+      channel: data.channel,
+      description: cleanMultiline(data.description),
+      address: clean(data.address),
+      latitude: data.latitude,
+      longitude: data.longitude,
+      neighbourhoodId: data.neighbourhoodId,
+      anonymous,
+      contactName: anonymous ? null : clean(data.contactName),
+      contactEmail: email || null,
+      contactPhone: phone || null,
+      createdById: null,
+      clientRef: data.clientRef?.trim() || null,
+      photoKey: data.photoKey,
+    });
+  } catch (err) {
+    // A missing, too large or unreadable photo sends the resident back to the photo step.
+    if (err instanceof AppError && err.code === 'PHOTO_INVALID') {
+      throw new AppError(400, 'REPORT_INCOMPLETE', 'Plotësoni të gjitha hapat e raportimit.', err.details);
+    }
+    throw err;
+  }
+  return {
+    caseNumber: created.report.caseNumber,
+    publicStatus: publicStatusOf(created.report.status as Status),
+    trackUrl: tpl.trackUrl(created.report.caseNumber),
+    duplicateSubmission: created.duplicateSubmission,
+  };
+}
+
+/* ───────────────────────── Public views ───────────────────────── */
+
+export async function findNearbyOpen(input: { requestTypeId: number; latitude: number; longitude: number }): Promise<PublicCard[]> {
+  const type = await db.requestType.findUnique({ where: { id: input.requestTypeId }, select: { categoryId: true } });
+  if (!type) throw notFound('Ky lloj raportimi nuk ekziston.');
+  const radius = config().rules.duplicateRadiusMeters;
+  const box = boundingBox(input.latitude, input.longitude, radius);
+  const candidates = await db.report.findMany({
+    where: {
+      categoryId: type.categoryId,
+      status: { in: [...OPEN_STATUSES] },
+      latitude: { gte: box.minLat, lte: box.maxLat },
+      longitude: { gte: box.minLng, lte: box.maxLng },
+    },
+    include: publicInclude,
+    take: 50,
+  });
+  return candidates
+    .map((r) => ({ r, d: distanceMeters(input.latitude, input.longitude, r.latitude ?? 0, r.longitude ?? 0) }))
+    .filter(({ d }) => d <= radius)
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 5)
+    .map(({ r, d }) => toPublicCard(r, d));
+}
+
+export async function followReport(caseNumber: string, email: string | undefined) {
+  const report = await db.report.findUnique({ where: { caseNumber }, select: { id: true, status: true } });
+  if (!report) throw notFound('Raportimi nuk u gjet.');
+  if (FINAL_STATUSES.includes(report.status)) throw conflict('Ky raportim është mbyllur tashmë.');
+  const updated = await db.$transaction(async (tx) => {
+    await tx.reportFollower.create({ data: { reportId: report.id, email: email ?? null } });
+    await tx.reportEvent.create({ data: { reportId: report.id, type: 'FOLLOWER_ADDED', message: 'Një qytetar tjetër raportoi të njëjtin problem.' } });
+    return tx.report.update({ where: { id: report.id }, data: { supportersCount: { increment: 1 } }, select: { caseNumber: true, supportersCount: true } });
+  });
+  return { caseNumber: updated.caseNumber, supporters: updated.supportersCount };
+}
+
+export async function getPublicCase(caseNumber: string): Promise<PublicCase> {
+  const report = await db.report.findUnique({ where: { caseNumber }, include: publicInclude });
+  if (!report) throw notFound('Raportimi nuk u gjet.');
+  const events = await db.reportEvent.findMany({
+    where: { reportId: report.id, isPublic: true },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    select: { type: true, toStatus: true, message: true, isPublic: true, createdAt: true },
+  });
+  return toPublicCase(report, events);
+}
+
+function publicStatusFilter(status: 'open' | 'closed' | 'all' | undefined): Status[] {
+  if (status === 'open') return ['VERIFIED', 'ASSIGNED', 'IN_PROGRESS'];
+  if (status === 'closed') return ['RESOLVED', 'CLOSED'];
+  return [...PUBLIC_LISTED_STATUSES];
+}
+
+export async function listRecent(query: RecentQuery): Promise<PublicCard[]> {
+  const near = query.latitude !== undefined && query.longitude !== undefined;
+  const where: Prisma.ReportWhereInput = { status: { in: publicStatusFilter(query.status) } };
+  if (query.q) {
+    where.OR = [
+      { caseNumber: { contains: query.q, mode: 'insensitive' } },
+      { address: { contains: query.q, mode: 'insensitive' } },
+      { description: { contains: query.q, mode: 'insensitive' } },
+    ];
+  }
+  if (query.category) where.category = { code: query.category };
+  if (near) {
+    const box = boundingBox(query.latitude!, query.longitude!, 3000);
+    where.latitude = { gte: box.minLat, lte: box.maxLat };
+    where.longitude = { gte: box.minLng, lte: box.maxLng };
+  }
+  const rows = await db.report.findMany({ where, include: publicInclude, orderBy: { createdAt: 'desc' }, take: near ? 200 : query.limit });
+  if (!near) return rows.map((r) => toPublicCard(r));
+  return rows
+    .map((r) => ({ r, d: distanceMeters(query.latitude!, query.longitude!, r.latitude ?? 0, r.longitude ?? 0) }))
+    .sort((a, b) => a.d - b.d)
+    .slice(0, query.limit)
+    .map(({ r, d }) => toPublicCard(r, d));
+}
+
+export async function mapPoints(query: MapQuery): Promise<MapPoint[]> {
+  const rows = await db.report.findMany({
+    where: {
+      status: { in: publicStatusFilter(query.status) },
+      latitude: { not: null },
+      longitude: { not: null },
+      createdAt: { gte: new Date(Date.now() - query.days * 86_400_000) },
+      ...(query.category ? { category: { code: query.category } } : {}),
+    },
+    select: {
+      caseNumber: true, status: true, latitude: true, longitude: true, createdAt: true, isTest: true,
+      requestType: { select: { nameSq: true, nameEn: true } },
+      category: { select: { code: true, icon: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 2000,
+  });
+  return rows.map((r) => ({
+    caseNumber: r.caseNumber,
+    publicStatus: publicStatusOf(r.status),
+    latitude: roundCoord(r.latitude)!,
+    longitude: roundCoord(r.longitude)!,
+    categoryCode: r.category.code,
+    icon: r.category.icon,
+    typeNameSq: r.requestType.nameSq,
+    typeNameEn: r.requestType.nameEn,
+    isTest: r.isTest,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+/** A photo anyone may see: public, and (for the resident's photo) the report was verified. */
+export async function getPublicPhoto(id: string) {
+  const attachment = await db.attachment.findUnique({
+    where: { id },
+    include: { report: { select: { status: true, verifiedAt: true } } },
+  });
+  if (!attachment || !attachment.isPublic) throw notFound('Fotoja nuk u gjet.');
+  if (attachment.kind === 'BEFORE' && !isPubliclyVerified(attachment.report)) throw notFound('Fotoja nuk u gjet.');
+  return attachment;
+}
+
+/* ───────────────────────── Resident feedback ───────────────────────── */
+
+async function findByFeedbackToken(token: string) {
+  const report = await db.report.findUnique({ where: { citizenTokenHash: hashToken(token) }, include: publicInclude });
+  if (!report) throw notFound('Ky link nuk është më i vlefshëm.');
+  return report;
+}
+
+export async function getFeedbackInfo(token: string): Promise<PublicCase> {
+  return toPublicCase(await findByFeedbackToken(token));
+}
+
+export async function submitCitizenFeedback(input: FeedbackInput) {
+  const report = await findByFeedbackToken(input.token);
+  if (report.status !== 'RESOLVED') throw conflict('Ky raportim nuk pret konfirmimin tuaj.');
+  const comment = input.comment ?? null;
+  const rating = input.rating ?? null;
+  const confirm = input.action === 'confirm';
+  const next = await db.$transaction(async (tx) => {
+    // Only the first answer counts: the token is cleared in the same statement.
+    const claimed = await tx.report.updateMany({
+      where: { id: report.id, status: 'RESOLVED', citizenTokenHash: report.citizenTokenHash },
+      data: confirm
+        ? { status: 'CLOSED', closedAt: new Date(), citizenRating: rating, citizenComment: comment, citizenTokenHash: null }
+        : {
+            status: 'IN_PROGRESS', resolvedAt: null, closedAt: null, closingNote: null, citizenRating: rating, citizenComment: comment,
+            citizenTokenHash: null, reopenCount: { increment: 1 },
+          },
+    });
+    if (claimed.count === 0) throw conflict('Ky raportim nuk pret konfirmimin tuaj.');
+    await tx.reportEvent.create({
+      data: confirm
+        ? {
+            reportId: report.id, type: 'CITIZEN_CONFIRMED', fromStatus: 'RESOLVED', toStatus: 'CLOSED', isPublic: true,
+            message: 'Qytetari konfirmoi se problemi u rregullua.', meta: { rating },
+          }
+        : {
+            reportId: report.id, type: 'CITIZEN_REOPENED', fromStatus: 'RESOLVED', toStatus: 'IN_PROGRESS', isPublic: true,
+            message: 'Qytetari njoftoi se problemi nuk është rregulluar.', meta: { comment },
+          },
+    });
+    return confirm ? ('CLOSED' as const) : ('IN_PROGRESS' as const);
+  });
+
+  if (!confirm && !report.isTest) {
+    const to: string[] = [];
+    if (report.assignedToId) {
+      const assignee = await db.user.findUnique({ where: { id: report.assignedToId }, select: { email: true, active: true } });
+      if (assignee?.active) to.push(assignee.email);
+    }
+    if (!to.length && report.departmentId) to.push(...(await departmentRecipients(report.departmentId)));
+    await queueEmails(to, tpl.staffReopened({ caseNumber: report.caseNumber, reportId: report.id, comment }), report.id);
+  }
+  return { caseNumber: report.caseNumber, publicStatus: publicStatusOf(next) };
+}

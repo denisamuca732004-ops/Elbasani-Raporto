@@ -1,0 +1,434 @@
+// Elbasani Raporton – database schema (PostgreSQL).
+//
+// Every relation is a real foreign key. ON DELETE rules are explicit:
+//   RESTRICT  where deleting the parent would lose history (departments, types, categories);
+//   CASCADE   for rows that only exist because of their report (photos, events, transfers);
+//   SET NULL  for optional links (the person who did something may be removed later).
+// Statuses, roles and priorities are PostgreSQL enums, so the database itself
+// refuses any value that is not listed here. CHECK constraints, which
+// schema.prisma cannot express, are added at the end of the first migration:
+// prisma/migrations/20261028120000_init/migration.sql.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// USER: an account without panel access. MUNICIPALITY_STAFF: the head of one
+/// department (sees only that department). ADMIN: sees and edits everything.
+enum Role {
+  USER
+  MUNICIPALITY_STAFF
+  ADMIN
+}
+
+/// PENDING: just received, the automatic check has not finished.
+/// NEEDS_REVIEW: a person must verify it. VERIFIED: confirmed, waiting.
+/// ASSIGNED: a person is responsible. IN_PROGRESS: work started.
+/// RESOLVED: done, waiting for the resident. CLOSED / REJECTED: final.
+enum ReportStatus {
+  PENDING
+  NEEDS_REVIEW
+  VERIFIED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  REJECTED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum RequestKind {
+  PROBLEM
+  SERVICE
+}
+
+enum Channel {
+  WEB
+  APP
+  EMBED
+  IN_PERSON
+  PHONE
+  FACEBOOK
+  EMAIL
+}
+
+enum AiStatus {
+  PENDING
+  DONE
+  FAILED
+  DISABLED
+}
+
+enum AttachmentKind {
+  BEFORE
+  AFTER
+}
+
+enum TransferStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+enum EventType {
+  CREATED
+  STATUS_CHANGED
+  ASSIGNED
+  ROUTING_CHANGED
+  PRIORITY_CHANGED
+  DETAILS_UPDATED
+  AI_TRIAGE
+  AI_CLOSING_CHECK
+  NOTE
+  MESSAGE_TO_CITIZEN
+  FOLLOWER_ADDED
+  CITIZEN_CONFIRMED
+  CITIZEN_REOPENED
+  PHOTO_VISIBILITY
+  TRANSFER_REQUESTED
+  TRANSFER_APPROVED
+  TRANSFER_DECLINED
+}
+
+/// QUEUED: written, waiting for the background job. SENDING: the job is sending it.
+/// LOGGED: MAIL_DRIVER=log, kept only in the log. SENT / FAILED: SMTP result.
+enum MailStatus {
+  QUEUED
+  SENDING
+  LOGGED
+  SENT
+  FAILED
+}
+
+model User {
+  id                 String      @id @default(uuid()) @db.Uuid
+  /// Always stored in lower case.
+  email              String      @unique @db.VarChar(200)
+  name               String      @db.VarChar(160)
+  phone              String?     @db.VarChar(40)
+  passwordHash       String      @map("password_hash") @db.VarChar(200)
+  role               Role        @default(USER)
+  /// Required for MUNICIPALITY_STAFF, empty for the other roles (CHECK constraint).
+  departmentId       Int?        @map("department_id")
+  department         Department? @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  mustChangePassword Boolean     @default(false) @map("must_change_password")
+  passwordChangedAt  DateTime?   @map("password_changed_at") @db.Timestamptz(3)
+  /// Raised on password change, reset or deactivation: every older session stops working.
+  sessionVersion     Int         @default(0) @map("session_version")
+  active             Boolean     @default(true)
+  lastLoginAt        DateTime?   @map("last_login_at") @db.Timestamptz(3)
+  createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  assignedReports    Report[]             @relation("ReportAssignee")
+  createdReports     Report[]             @relation("ReportCreator")
+  events             ReportEvent[]
+  requestedTransfers DepartmentTransfer[] @relation("TransferRequester")
+  decidedTransfers   DepartmentTransfer[] @relation("TransferDecider")
+
+  @@index([role, active])
+  @@index([departmentId])
+  @@map("users")
+}
+
+/// A sector of the municipality ("Sektori") that handles some report types.
+model Department {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @db.VarChar(60)
+  nameSq      String   @map("name_sq") @db.VarChar(160)
+  nameEn      String   @map("name_en") @db.VarChar(160)
+  description String?
+  /// Shared mailbox that also receives the notifications of this department.
+  email       String?  @db.VarChar(200)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  users              User[]
+  requestTypes       RequestType[]
+  reports            Report[]
+  transfersFrom      DepartmentTransfer[] @relation("TransferFrom")
+  transfersSuggested DepartmentTransfer[] @relation("TransferSuggested")
+  transfersTo        DepartmentTransfer[] @relation("TransferTo")
+
+  @@map("departments")
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(60)
+  nameSq    String   @map("name_sq") @db.VarChar(160)
+  nameEn    String   @map("name_en") @db.VarChar(160)
+  icon      String   @default("other") @db.VarChar(40)
+  sortOrder Int      @default(0) @map("sort_order")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  requestTypes RequestType[]
+  reports      Report[]
+
+  @@map("categories")
+}
+
+/// What a resident can report, and which department receives it.
+model RequestType {
+  id              Int         @id @default(autoincrement())
+  categoryId      Int         @map("category_id")
+  category        Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  /// Empty: reports of this type go to "No department" and the admin routes them.
+  departmentId    Int?        @map("department_id")
+  department      Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  code            String      @unique @db.VarChar(80)
+  nameSq          String      @map("name_sq") @db.VarChar(160)
+  nameEn          String      @map("name_en") @db.VarChar(160)
+  kind            RequestKind @default(PROBLEM)
+  slaDays         Int         @default(10) @map("sla_days")
+  defaultPriority Priority    @default(MEDIUM) @map("default_priority")
+  /// Comma-separated words used by the automatic check when the AI is off.
+  keywords        String?
+  sortOrder       Int         @default(0) @map("sort_order")
+  active          Boolean     @default(true)
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  reports          Report[] @relation("ReportType")
+  aiSuggestedFor   Report[] @relation("ReportAiSuggestedType")
+
+  @@index([categoryId])
+  @@index([departmentId])
+  @@map("request_types")
+}
+
+/// Administrative units of the municipality ("Zona").
+model Neighbourhood {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(160)
+  sortOrder Int      @default(0) @map("sort_order")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  reports Report[]
+
+  @@map("neighbourhoods")
+}
+
+/// Gives every report a readable number: EL-2026-00042.
+model CaseCounter {
+  year    Int @id
+  lastSeq Int @default(0) @map("last_seq")
+
+  @@map("case_counters")
+}
+
+model Report {
+  id                  String        @id @default(uuid()) @db.Uuid
+  caseNumber          String        @unique @map("case_number") @db.VarChar(32)
+  requestTypeId       Int           @map("request_type_id")
+  requestType         RequestType   @relation("ReportType", fields: [requestTypeId], references: [id], onDelete: Restrict)
+  categoryId          Int           @map("category_id")
+  category            Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  /// Empty: "No department", waiting for the admin.
+  departmentId        Int?          @map("department_id")
+  department          Department?   @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  neighbourhoodId     Int?          @map("neighbourhood_id")
+  neighbourhood       Neighbourhood? @relation(fields: [neighbourhoodId], references: [id], onDelete: SetNull)
+  kind                RequestKind
+  status              ReportStatus  @default(PENDING)
+  priority            Priority      @default(MEDIUM)
+  channel             Channel       @default(WEB)
+  description         String?
+  address             String?       @db.VarChar(300)
+  latitude            Float?
+  longitude           Float?
+  anonymous           Boolean       @default(false)
+  contactName         String?       @map("contact_name") @db.VarChar(160)
+  contactEmail        String?       @map("contact_email") @db.VarChar(200)
+  contactPhone        String?       @map("contact_phone") @db.VarChar(40)
+  wantsUpdates        Boolean       @default(false) @map("wants_updates")
+  assignedToId        String?       @map("assigned_to_id") @db.Uuid
+  assignedTo          User?         @relation("ReportAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdById         String?       @map("created_by_id") @db.Uuid
+  createdBy           User?         @relation("ReportCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  aiStatus            AiStatus      @default(PENDING) @map("ai_status")
+  aiSummary           String?       @map("ai_summary") @db.VarChar(300)
+  aiConfidence        Int?          @map("ai_confidence")
+  aiPrivacyIssue      Boolean       @default(false) @map("ai_privacy_issue")
+  aiSuggestedTypeId   Int?          @map("ai_suggested_type_id")
+  aiSuggestedType     RequestType?  @relation("ReportAiSuggestedType", fields: [aiSuggestedTypeId], references: [id], onDelete: SetNull)
+  aiSuggestedPriority Priority?     @map("ai_suggested_priority")
+  aiReason            String?       @map("ai_reason")
+  rejectionReason     String?       @map("rejection_reason")
+  closingNote         String?       @map("closing_note")
+  closingAiFixed      Boolean?      @map("closing_ai_fixed")
+  closingAiConfidence Int?          @map("closing_ai_confidence")
+  /// SHA-256 of the "was it fixed?" link sent to the resident. Only set while RESOLVED.
+  citizenTokenHash    String?       @unique @map("citizen_token_hash") @db.VarChar(128)
+  citizenRating       Int?          @map("citizen_rating")
+  citizenComment      String?       @map("citizen_comment")
+  supportersCount     Int           @default(0) @map("supporters_count")
+  reopenCount         Int           @default(0) @map("reopen_count")
+  dueAt               DateTime?     @map("due_at") @db.Timestamptz(3)
+  verifiedAt          DateTime?     @map("verified_at") @db.Timestamptz(3)
+  resolvedAt          DateTime?     @map("resolved_at") @db.Timestamptz(3)
+  closedAt            DateTime?     @map("closed_at") @db.Timestamptz(3)
+  /// Demo data. Never counted in public statistics.
+  isTest              Boolean       @default(false) @map("is_test")
+  /// Sent by the app so a retried submission never creates a second report.
+  clientRef           String?       @unique @map("client_ref") @db.VarChar(64)
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  attachments Attachment[]
+  events      ReportEvent[]
+  followers   ReportFollower[]
+  transfers   DepartmentTransfer[]
+  emails      EmailLog[]
+
+  @@index([status])
+  @@index([departmentId, status])
+  @@index([priority])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@index([resolvedAt])
+  @@index([latitude, longitude])
+  @@index([isTest])
+  @@map("reports")
+}
+
+/// A photo. The file lives in Vercel Blob (or the local folder in development);
+/// people only ever see it through /api/files/[id], which checks who may look.
+model Attachment {
+  id         String         @id @default(uuid()) @db.Uuid
+  reportId   String         @map("report_id") @db.Uuid
+  report     Report         @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  kind       AttachmentKind @default(BEFORE)
+  /// Storage key (Blob pathname) and the private storage URL. Never sent to browsers.
+  storageKey String         @map("storage_key") @db.VarChar(300)
+  storageUrl String         @map("storage_url") @db.VarChar(600)
+  mime       String         @db.VarChar(60)
+  size       Int
+  width      Int?
+  height     Int?
+  isPublic   Boolean        @default(true) @map("is_public")
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([reportId])
+  @@map("attachments")
+}
+
+/// The history of a report. isPublic events are shown to residents.
+model ReportEvent {
+  id         BigInt        @id @default(autoincrement())
+  reportId   String        @map("report_id") @db.Uuid
+  report     Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  type       EventType
+  fromStatus ReportStatus? @map("from_status")
+  toStatus   ReportStatus? @map("to_status")
+  message    String?
+  isPublic   Boolean       @default(false) @map("is_public")
+  actorId    String?       @map("actor_id") @db.Uuid
+  actor      User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  meta       Json?
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([reportId, createdAt])
+  @@map("report_events")
+}
+
+/// Residents who reported the same problem and want updates.
+model ReportFollower {
+  id        Int      @id @default(autoincrement())
+  reportId  String   @map("report_id") @db.Uuid
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  email     String?  @db.VarChar(200)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([reportId])
+  @@map("report_followers")
+}
+
+/// "Not our department": a department head asks the admin to move a report.
+model DepartmentTransfer {
+  id                    String         @id @default(uuid()) @db.Uuid
+  reportId              String         @map("report_id") @db.Uuid
+  report                Report         @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  /// Equals reportId while the request is PENDING and is cleared once it is decided.
+  /// Its unique index allows only one open request per report (see the CHECK in the migration).
+  pendingReportId       String?        @unique @map("pending_report_id") @db.Uuid
+  fromDepartmentId      Int            @map("from_department_id")
+  fromDepartment        Department     @relation("TransferFrom", fields: [fromDepartmentId], references: [id], onDelete: Restrict)
+  suggestedDepartmentId Int?           @map("suggested_department_id")
+  suggestedDepartment   Department?    @relation("TransferSuggested", fields: [suggestedDepartmentId], references: [id], onDelete: SetNull)
+  toDepartmentId        Int?           @map("to_department_id")
+  toDepartment          Department?    @relation("TransferTo", fields: [toDepartmentId], references: [id], onDelete: SetNull)
+  reason                String
+  status                TransferStatus @default(PENDING)
+  requestedById         String?        @map("requested_by_id") @db.Uuid
+  requestedBy           User?          @relation("TransferRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+  decidedById           String?        @map("decided_by_id") @db.Uuid
+  decidedBy             User?          @relation("TransferDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  decisionNote          String?        @map("decision_note")
+  decidedAt             DateTime?      @map("decided_at") @db.Timestamptz(3)
+  createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([status, createdAt])
+  @@index([fromDepartmentId])
+  @@index([reportId])
+  @@map("department_transfers")
+}
+
+/// Every email the platform sends, also in development (MAIL_DRIVER=log).
+model EmailLog {
+  id        BigInt     @id @default(autoincrement())
+  toAddress String     @map("to_address") @db.VarChar(200)
+  subject   String     @db.VarChar(300)
+  bodyText  String     @map("body_text")
+  template  String?    @db.VarChar(60)
+  reportId  String?    @map("report_id") @db.Uuid
+  report    Report?    @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  status    MailStatus @default(QUEUED)
+  error     String?
+  attempts  Int        @default(0)
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  sentAt    DateTime?  @map("sent_at") @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@index([reportId])
+  @@index([status])
+  @@map("email_logs")
+}
+
+/// AI answers are cached so the same question is never paid twice.
+model AiResult {
+  id        BigInt   @id @default(autoincrement())
+  cacheKey  String   @unique @map("cache_key") @db.VarChar(128)
+  kind      String   @db.VarChar(32)
+  model     String?  @db.VarChar(80)
+  output    Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("ai_results")
+}
+
+/// Branding and the embedding allow-list, edited by the admin.
+model Setting {
+  key       String   @id @db.VarChar(60)
+  value     Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("settings")
+}

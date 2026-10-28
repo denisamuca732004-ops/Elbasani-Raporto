@@ -1,0 +1,62 @@
+{
+  "name": "elbasani-raporton",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Elbasani Raporton \u2013 Next.js (App Router) + Prisma + Auth.js + Vercel Blob + Upstash",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force",
+    "test": "node scripts/test.mjs",
+    "check:i18n": "node --import tsx scripts/check-i18n.mjs",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@fontsource/lora": "^5.3.0",
+    "@fontsource/montserrat": "^5.3.0",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "@upstash/qstash": "^2.12.1",
+    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/redis": "^1.40.0",
+    "@vercel/blob": "^2.8.2",
+    "bcryptjs": "^3.0.3",
+    "idb-keyval": "^6.3.0",
+    "leaflet": "1.9.4",
+    "next": "16.4.3",
+    "next-auth": "5.0.0-beta.32",
+    "nodemailer": "^10.2.1",
+    "pg": "^8.23.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-leaflet": "^5.0.0",
+    "server-only": "^0.0.1",
+    "sharp": "^0.35.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.22",
+    "@types/node": "^22.20.5",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "dotenv": "^16.4.7",
+    "prisma": "7.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "zod": "$zod",
+    "nodemailer": "$nodemailer"
+  }
+}
