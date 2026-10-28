@@ -22,7 +22,11 @@ export async function getCatalog(): Promise<Catalog> {
         include: { requestTypes: { where: { active: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } },
         orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
       }),
-      db.neighbourhood.findMany({ where: { active: true }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+      db.neighbourhood.findMany({
+        where: { active: true },
+        include: { localities: { where: { active: true }, select: { id: true, name: true } } },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      }),
       db.department.findMany({ where: { active: true }, orderBy: { nameSq: 'asc' } }),
     ]);
     return {
@@ -36,7 +40,12 @@ export async function getCatalog(): Promise<Catalog> {
           nameEn: c.nameEn,
           types: c.requestTypes.map((t) => ({ id: t.id, code: t.code, nameSq: t.nameSq, nameEn: t.nameEn, kind: t.kind, departmentId: t.departmentId })),
         })),
-      neighbourhoods: neighbourhoods.map((n) => ({ id: n.id, name: n.name })),
+      neighbourhoods: neighbourhoods.map((n) => ({
+        id: n.id,
+        name: n.name,
+        code: n.code,
+        localities: [...n.localities].sort((a, b) => a.name.localeCompare(b.name, 'sq', { numeric: true })),
+      })),
       departments: departments.map((d) => ({ id: d.id, code: d.code, nameSq: d.nameSq, nameEn: d.nameEn, description: d.description })),
     };
   });

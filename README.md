@@ -69,7 +69,7 @@ Every request is checked in layers.
 
 | Who | What |
 |---|---|
-| Resident (no account) | **Ask or search** on the home page: a question ("si raportoj", "sa zgjat") gets a short answer with a button, "zjarr" or "aksident" gets the emergency numbers first, a report number opens its progress, a problem opens its report type, a street lists the open reports there. **Report** in six steps: type → location (pin inside the municipality, address, area) → photo → description (10+ characters) → contact or anonymous → review. Nothing can be skipped, and the server rejects incomplete reports and names the step to go back to. Works offline (queued on the phone). **Also:** track by case number, map, public statistics, confirm or reopen from the "resolved" email. |
+| Resident (no account) | **Ask or search** on the home page: a question ("si raportoj", "sa zgjat") gets a short answer with a button, "zjarr" or "aksident" gets the emergency numbers first, a report number opens its progress, a problem opens its report type, a street lists the open reports there. **Report** in six steps: type → location (either GPS / a tap on the map, with the zone found from the zone borders and no address needed, or by hand: zone → one of its lagje or villages → street) → photo → description (10+ characters) → contact or anonymous → review. Nothing can be skipped, and the server rejects incomplete reports and names the step to go back to. Works offline (queued on the phone). **Also:** track by case number, map, public statistics, confirm or reopen from the "resolved" email. |
 | System | Routes each report to the department of its type and checks it (AI when enabled, keyword rules otherwise). Emails the department and the resident in the background. |
 | Department head (`MUNICIPALITY_STAFF`) | Sees only their department, split into **High / Medium / Low** priority tabs. **Can:** verify, assign, start work, resolve with an "after" photo, reject with a reason, add notes and message the resident. **"Not our department":** sends a review request to the admin. |
 | Admin (`ADMIN`) | Dashboard for **week / month / year**, every report, one link per department, reports without a department and the review requests. **Can:** set any status, edit any detail, move or delete reports. **Manages:** departments, accounts, report types (routing, deadline, default priority), areas, appearance, email log, embed code and demo data. |
@@ -102,7 +102,7 @@ Without Vercel Blob, Upstash Redis or QStash, the app uses local fallbacks: a di
 
 ```bash
 npm run typecheck     # TypeScript, strict
-npm test              # 106 tests against a real PostgreSQL (raporton_next_test)
+npm test              # 120 tests against a real PostgreSQL (raporton_next_test)
 npm run check:i18n    # every text exists in Albanian and English, including every enum value
 npm run build         # production build
 ```
@@ -122,7 +122,28 @@ The tests cover:
 - background emails (sent once);
 - the dashboard periods in Tirana time;
 - admin PATCH semantics;
-- the search guide (what residents get for typical questions, emergencies first, admin edits, seed never overwrites them).
+- the search guide (what residents get for typical questions, emergencies first, admin edits, seed never overwrites them);
+- the location (zone borders, GPS without an address, zone ↔ lagje/village always matching, phone reports and demo data in the right zone).
+
+## Location: GPS or address, zone always right
+
+A resident gives the place one of two ways. The server refuses anything else.
+
+1. **GPS or a tap on the map.**
+   - The zone is found from the point, using the borders of the 13 administrative units ([`lib/shared/zones.ts`](lib/shared/zones.ts), data in `lib/shared/data/elbasan-zones.json`). This works in the browser too, also offline.
+   - No address is needed; a landmark is optional.
+   - A point outside the borders (Tirana, Cërrik, Durrës) is refused, even inside the old rectangle.
+2. **By hand.**
+   - Choose the zone, then one of **its** lagje (city) or villages, then type the street, number or landmark. The list only shows the places of that zone, and the server checks it again.
+   - A street that names a village or zone of another zone ("fshati Lleshan" with the city chosen) is refused, with the right zone in the message.
+   - Street names themselves are not checked yet: that needs the Municipality's street register.
+
+**Sources:**
+- *Zone borders:* geoBoundaries (OpenStreetMap, © OpenStreetMap contributors, ODbL), rebuilt with `scripts/build-zones.py`.
+- *Lagje and villages:* the Municipality's "Ndarja administrativo-territoriale" (2021) and "Nëndarjet e Bashkisë" (2023).
+- *Mollas* belongs to the Municipality of Cërrik, so it is not an Elbasan zone. The migration hides it on existing databases.
+
+The admin edits lagje and villages in *Administrimi → Zonat*.
 
 ## Search guide ("Ask or search")
 

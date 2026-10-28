@@ -75,6 +75,18 @@ export const neighbourhoodSchema = z.strictObject({
 });
 export const neighbourhoodPatchSchema = z.strictObject(neighbourhoodFields).partial().refine((v) => Object.keys(v).length > 0, { message: 'Nuk ka asnjë ndryshim.' });
 
+/** A lagje of the city or a village of a zone. */
+const localityFields = { name: name160, sortOrder: z.coerce.number().int(), active: z.boolean() };
+export const localitySchema = z.strictObject({
+  neighbourhoodId: id,
+  ...localityFields,
+  sortOrder: localityFields.sortOrder.default(0),
+  active: z.boolean().default(true),
+});
+export const localityPatchSchema = z.strictObject(localityFields).partial().refine((v) => Object.keys(v).length > 0, { message: 'Nuk ka asnjë ndryshim.' });
+export type LocalityInput = z.output<typeof localitySchema>;
+export type LocalityPatch = z.output<typeof localityPatchSchema>;
+
 /** Plain text over several lines (no HTML is ever rendered): trimmed, Windows line ends unified. */
 const multiLine = (min: number, max: number) =>
   z.preprocess((v) => (typeof v === 'string' ? v.replace(/\r\n?/g, '\n').trim() : v), z.string().min(min).max(max));

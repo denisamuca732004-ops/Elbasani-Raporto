@@ -3,7 +3,7 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import Icon from '@/components/Icon';
 import { useSettings } from '@/components/providers';
@@ -32,9 +32,17 @@ function Recenter({ position }: { position: LatLng | null }) {
   return null;
 }
 
-export interface LocationPickerProps { value: LatLng | null; onChange: (p: LatLng) => void; error?: string | null }
+export interface LocationPickerProps {
+  value: LatLng | null;
+  onChange: (p: LatLng) => void;
+  error?: string | null;
+  /** Ask for the GPS position as soon as the map opens (when no pin is set yet). */
+  autoLocate?: boolean;
+  /** The pin is outside the Municipality (decided by the caller, e.g. from the zone borders). */
+  outside?: boolean;
+}
 
-export function LocationPicker({ value, onChange, error }: LocationPickerProps) {
+export function LocationPicker({ value, onChange, error, autoLocate = false, outside }: LocationPickerProps) {
   const { t } = useI18n();
   const { rules } = useSettings();
   const [locating, setLocating] = useState(false);
@@ -63,6 +71,16 @@ export function LocationPicker({ value, onChange, error }: LocationPickerProps) 
     );
   }
 
+  // Once, when the map opens with no pin: the resident chose "my location".
+  const asked = useRef(false);
+  useEffect(() => {
+    if (autoLocate && !value && !asked.current) {
+      asked.current = true;
+      useMyLocation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoLocate]);
+
   const markerHandlers = useMemo(() => ({
     dragend: (e: L.DragEndEvent) => {
       const ll = (e.target as L.Marker).getLatLng();
@@ -79,7 +97,7 @@ export function LocationPicker({ value, onChange, error }: LocationPickerProps) 
         <span className="hint" style={{ margin: 0 }}>{t('report.mapHint')}</span>
       </div>
       {geoError && <div className="alert alert-warn">{geoError}</div>}
-      {value && !insideArea(value, rules.serviceArea) && <div className="alert alert-error" role="alert">{t('report.outsideArea')}</div>}
+      {value && (outside ?? !insideArea(value, rules.serviceArea)) && <div className="alert alert-error" role="alert">{t('report.outsideArea')}</div>}
       <div className={`map-box${error ? ' has-error' : ''}`}>
         <MapContainer center={value ? [value.latitude, value.longitude] : ELBASAN_CENTER} zoom={value ? 17 : 14} style={{ height: '100%' }} scrollWheelZoom={false}>
           <TileLayer url={TILE_URL} attribution={ATTRIBUTION} />

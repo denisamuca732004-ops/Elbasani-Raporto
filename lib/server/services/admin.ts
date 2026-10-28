@@ -6,7 +6,8 @@
 import 'server-only';
 import { OPEN_STATUSES, type Channel, type Priority, type Status } from '@/lib/shared/domain';
 import type { AppSettings, Paged, Principal } from '@/lib/shared/types';
-import type { DepartmentInput, DepartmentPatch, EmailLogQuery, RequestTypeInput, SettingsInput } from '@/lib/validation/admin';
+import { zoneCodeAt } from '@/lib/shared/zones';
+import type { DepartmentInput, DepartmentPatch, EmailLogQuery, LocalityInput, LocalityPatch, RequestTypeInput, SettingsInput } from '@/lib/validation/admin';
 import { Prisma, db } from '../db';
 import { badRequest, conflict, notFound } from '../errors';
 import { deleteStoredImage } from '../storage';
@@ -149,7 +150,11 @@ export async function updateRequestType(admin: Principal, id: number, input: Par
 
 export async function listNeighbourhoods(admin: Principal) {
   assertAdmin(admin);
-  return db.neighbourhood.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
+  const zones = await db.neighbourhood.findMany({
+    include: { localities: { select: { id: true, name: true, active: true } } },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+  });
+  return zones.map((z) => ({ ...z, localities: [...z.localities].sort((a, b) => a.name.localeCompare(b.name, 'sq', { numeric: true })) }));
 }
 
 export async function createNeighbourhood(admin: Principal, input: { name: string; sortOrder: number; active: boolean }) {
@@ -160,6 +165,19 @@ export async function createNeighbourhood(admin: Principal, input: { name: strin
 export async function updateNeighbourhood(admin: Principal, id: number, input: Partial<{ name: string; sortOrder: number; active: boolean }>) {
   assertAdmin(admin);
   return saveUnique(() => db.neighbourhood.update({ where: { id }, data: input }), 'name');
+}
+
+/* ── Lagje and villages of a zone ── */
+
+export async function createLocality(admin: Principal, input: LocalityInput) {
+  assertAdmin(admin);
+  if (!(await db.neighbourhood.findUnique({ where: { id: input.neighbourhoodId } }))) throw notFound('Zona nuk u gjet.');
+  return saveUnique(() => db.locality.create({ data: input }), 'name');
+}
+
+export async function updateLocality(admin: Principal, id: number, input: LocalityPatch) {
+  assertAdmin(admin);
+  return saveUnique(() => db.locality.update({ where: { id }, data: input }), 'name');
 }
 
 /* ── Appearance ── */
@@ -257,6 +275,10 @@ export async function loadSampleData(admin: Principal, count = 60) {
     const resolveDays = Math.min(type.slaDays + (i % 3 === 0 ? 2 : -1), Math.max(daysAgo - 0.05, 0.05));
     const resolvedAt = done ? addDays(createdAt, Math.max(resolveDays, 0.05)) : null;
     const street = SAMPLE_STREETS[i % SAMPLE_STREETS.length]!;
+    const latitude = ELBASAN_CENTER.latitude + (((i * 37) % 40) - 20) / 2000;
+    const longitude = ELBASAN_CENTER.longitude + (((i * 53) % 40) - 20) / 2000;
+    // The zone always matches the point (the sample streets are in the city).
+    const zoneCode = zoneCodeAt(latitude, longitude);
 
     await db.$transaction(async (tx) => {
       const caseNumber = await nextCaseNumber(tx, createdAt);
@@ -266,15 +288,15 @@ export async function loadSampleData(admin: Principal, count = 60) {
           requestTypeId: type.id,
           categoryId: type.categoryId,
           departmentId,
-          neighbourhoodId: areas.length ? areas[i % Math.min(areas.length, 6)]!.id : null,
+          neighbourhoodId: areas.find((a) => a.code !== null && a.code === zoneCode)?.id ?? null,
           kind: type.kind,
           status,
           priority,
           channel: channels[i % channels.length]!,
           description: SAMPLE_DESCRIPTIONS[i % SAMPLE_DESCRIPTIONS.length]!,
           address: `${street} ${10 + i}`,
-          latitude: ELBASAN_CENTER.latitude + (((i * 37) % 40) - 20) / 2000,
-          longitude: ELBASAN_CENTER.longitude + (((i * 53) % 40) - 20) / 2000,
+          latitude,
+          longitude,
           anonymous: i % 3 === 0,
           contactName: i % 3 === 0 ? null : 'Qytetar Shembull',
           contactPhone: i % 3 === 0 ? null : '+355 69 000 0000',

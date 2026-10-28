@@ -5,6 +5,7 @@
  * Contact details are never returned by these functions.
  */
 import 'server-only';
+import type { z } from 'zod';
 import { FINAL_STATUSES, LIMITS, OPEN_STATUSES, PUBLIC_LISTED_STATUSES, publicStatusOf, type Status } from '@/lib/shared/domain';
 import type { FieldError } from '@/lib/shared/result';
 import type { MapPoint, PublicCard, PublicCase } from '@/lib/shared/types';
@@ -17,7 +18,8 @@ import { AppError, conflict, notFound } from '../errors';
 import { queueEmails } from '../mail';
 import * as tpl from '../mailTemplates';
 import { hashToken } from '../tokens';
-import { boundingBox, distanceMeters, insideServiceArea, roundCoord } from './geo';
+import { otherZonePlace } from '@/lib/shared/zones';
+import { boundingBox, distanceMeters, insideMunicipality, roundCoord, zoneOfPoint } from './geo';
 import { isPubliclyVerified, publicInclude, toPublicCard, toPublicCase } from './mapper';
 import { departmentRecipients } from './notification';
 import { persistNewReport } from './reportCreation';
@@ -27,7 +29,7 @@ import { persistNewReport } from './reportCreation';
 /** Wizard step of every field, so the website can send the resident back to the right step. */
 const STEP_OF_FIELD: Record<string, string> = {
   requestTypeId: 'type',
-  latitude: 'location', longitude: 'location', address: 'location', neighbourhoodId: 'location',
+  locationMode: 'location', latitude: 'location', longitude: 'location', address: 'location', neighbourhoodId: 'location', localityId: 'location',
   photoKey: 'photo', photo: 'photo',
   description: 'details',
   anonymous: 'contact', contactName: 'contact', contactEmail: 'contact', contactPhone: 'contact',
@@ -36,13 +38,15 @@ const STEP_OF_FIELD: Record<string, string> = {
 const MESSAGES: Record<string, string> = {
   'requestTypeId.required': 'Zgjidhni llojin e problemit.',
   'requestTypeId.unknown': 'Ky lloj raportimi nuk ekziston më. Zgjidhni një tjetër.',
-  'latitude.required': 'Vendosni pikën në hartë.',
-  'longitude.required': 'Vendosni pikën në hartë.',
+  'latitude.required': 'Përdorni vendndodhjen tuaj (GPS) ose prekni hartën.',
+  'longitude.required': 'Përdorni vendndodhjen tuaj (GPS) ose prekni hartën.',
   'latitude.outside_area': 'Pika në hartë duhet të jetë brenda Bashkisë Elbasan.',
-  'address.required': 'Shkruani adresën ose një pikë reference.',
+  'address.required': 'Shkruani rrugën, numrin ose një pikë reference.',
   'address.too_short': `Adresa duhet të ketë të paktën ${LIMITS.minAddress} shkronja.`,
   'neighbourhoodId.required': 'Zgjidhni zonën (njësinë administrative).',
   'neighbourhoodId.unknown': 'Zgjidhni një zonë nga lista.',
+  'localityId.required': 'Zgjidhni lagjen ose fshatin.',
+  'localityId.other_zone': 'Kjo lagje ose fshat nuk është në zonën e zgjedhur.',
   'photo.required': 'Shtoni një foto të problemit.',
   'description.required': 'Përshkruani problemin.',
   'description.too_short': `Përshkrimi duhet të ketë të paktën ${LIMITS.minDescription} shkronja.`,
@@ -65,9 +69,55 @@ const cleanMultiline = (s: unknown): string => (typeof s === 'string' ? s.trim()
 const phoneDigits = (s: string): number => s.replace(/\D/g, '').length;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+interface ResolvedLocation { latitude: number | null; longitude: number | null; neighbourhoodId: number | null; address: string | null }
+
+/**
+ * The place of a resident's report, in one of two ways (see LOCATION_MODES):
+ *  - map: a point inside the Municipality; the zone comes from the point, never from the form;
+ *  - address: a zone, one of ITS lagje or villages, and the street, which may not name a place of another zone.
+ */
+async function resolveLocation(data: CitizenReport, problems: ReportProblem[]): Promise<ResolvedLocation> {
+  const text = clean(data.address);
+  if (data.locationMode === 'map') {
+    if (data.latitude === undefined || data.longitude === undefined) {
+      problems.push(problem('latitude', 'required'));
+      return { latitude: null, longitude: null, neighbourhoodId: null, address: null };
+    }
+    if (!insideMunicipality(data.latitude, data.longitude)) problems.push(problem('latitude', 'outside_area'));
+    const zone = await zoneOfPoint(data.latitude, data.longitude);
+    return { latitude: data.latitude, longitude: data.longitude, neighbourhoodId: zone?.id ?? null, address: text || null };
+  }
+
+  const zones = await db.neighbourhood.findMany({
+    where: { active: true },
+    select: { id: true, name: true, code: true, localities: { where: { active: true }, select: { id: true, name: true } } },
+  });
+  const zone = data.neighbourhoodId ? zones.find((z) => z.id === data.neighbourhoodId) : undefined;
+  if (!data.neighbourhoodId) problems.push(problem('neighbourhoodId', 'required'));
+  else if (!zone) problems.push(problem('neighbourhoodId', 'unknown'));
+
+  let locality: { id: number; name: string } | undefined;
+  if (zone && zone.localities.length > 0) {
+    locality = data.localityId ? zone.localities.find((l) => l.id === data.localityId) : undefined;
+    if (!data.localityId) problems.push(problem('localityId', 'required'));
+    else if (!locality) problems.push(problem('localityId', 'other_zone'));
+  }
+
+  if (!text) problems.push(problem('address', 'required'));
+  else if (text.length < LIMITS.minAddress) problems.push(problem('address', 'too_short'));
+  else if (zone) {
+    const other = otherZonePlace(text, zone.id, zones);
+    if (other) problems.push(problem('address', 'other_zone', `“${other.place}” ndodhet në zonën ${other.zone}. Zgjidhni zonën e duhur ose ndryshoni adresën.`));
+  }
+  const address = [text, locality?.name].filter(Boolean).join(', ').slice(0, LIMITS.maxAddress);
+  return { latitude: null, longitude: null, neighbourhoodId: zone?.id ?? null, address: address || null };
+}
+
+type CitizenReport = z.output<typeof citizenReportShape>;
+
 /**
  * Creates a resident's report only when EVERY step is complete:
- * type → location (pin + address + area) → photo → description → contact (or anonymous).
+ * type → location (a point on the map, or zone + lagje/village + street) → photo → description → contact (or anonymous).
  * All problems are returned together, each with the wizard step it belongs to.
  */
 export async function createCitizenReport(raw: unknown) {
@@ -80,20 +130,24 @@ export async function createCitizenReport(raw: unknown) {
     }
   }
 
+  // When other fields are malformed the location is not checked in full, but a missing one is still named.
+  if (!parsed.ok && !problems.some((p) => p.step === 'location')) {
+    const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    if (r.locationMode === 'address') {
+      if (r.neighbourhoodId === undefined) problems.push(problem('neighbourhoodId', 'required'));
+    } else if (r.latitude === undefined || r.longitude === undefined) {
+      problems.push(problem('latitude', 'required'));
+    }
+  }
+
   let type: RequestType | null = null;
+  let place: ResolvedLocation | null = null;
   if (parsed.ok) {
     const data = parsed.data;
     type = await db.requestType.findFirst({ where: { id: data.requestTypeId, active: true, category: { active: true } } });
     if (!type) problems.push(problem('requestTypeId', 'unknown'));
 
-    if (!insideServiceArea(data.latitude, data.longitude)) problems.push(problem('latitude', 'outside_area'));
-
-    const address = clean(data.address);
-    if (!address) problems.push(problem('address', 'required'));
-    else if (address.length < LIMITS.minAddress) problems.push(problem('address', 'too_short'));
-
-    const area = await db.neighbourhood.findFirst({ where: { id: data.neighbourhoodId, active: true }, select: { id: true } });
-    if (!area) problems.push(problem('neighbourhoodId', 'unknown'));
+    place = await resolveLocation(data, problems);
 
     const description = cleanMultiline(data.description);
     if (!description) problems.push(problem('description', 'required'));
@@ -110,7 +164,7 @@ export async function createCitizenReport(raw: unknown) {
     }
   }
 
-  if (problems.length || !parsed.ok || !type) {
+  if (problems.length || !parsed.ok || !type || !place) {
     // Deduplicate (e.g. latitude + longitude both missing) while keeping the order.
     const seen = new Set<string>();
     const unique = problems.filter((p) => {
@@ -132,10 +186,10 @@ export async function createCitizenReport(raw: unknown) {
       type,
       channel: data.channel,
       description: cleanMultiline(data.description),
-      address: clean(data.address),
-      latitude: data.latitude,
-      longitude: data.longitude,
-      neighbourhoodId: data.neighbourhoodId,
+      address: place.address,
+      latitude: place.latitude,
+      longitude: place.longitude,
+      neighbourhoodId: place.neighbourhoodId,
       anonymous,
       contactName: anonymous ? null : clean(data.contactName),
       contactEmail: email || null,

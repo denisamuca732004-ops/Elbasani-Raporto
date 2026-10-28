@@ -214,14 +214,34 @@ model RequestType {
 model Neighbourhood {
   id        Int      @id @default(autoincrement())
   name      String   @unique @db.VarChar(160)
+  /// Links the zone to its border in lib/shared/data/elbasan-zones.json ("elbasan", "gjinar"…),
+  /// so a point on the map finds its zone. Empty for zones the admin adds.
+  code      String?  @unique @db.VarChar(60)
   sortOrder Int      @default(0) @map("sort_order")
   active    Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  reports Report[]
+  reports    Report[]
+  localities Locality[]
 
   @@map("neighbourhoods")
+}
+
+/// A neighbourhood (lagje) of the city or a village (fshat) of a zone. A resident
+/// who types the address chooses one of the zone's own, so the two always match.
+model Locality {
+  id              Int           @id @default(autoincrement())
+  neighbourhoodId Int           @map("neighbourhood_id")
+  neighbourhood   Neighbourhood @relation(fields: [neighbourhoodId], references: [id], onDelete: Cascade)
+  name            String        @db.VarChar(160)
+  sortOrder       Int           @default(0) @map("sort_order")
+  active          Boolean       @default(true)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([neighbourhoodId, name])
+  @@map("localities")
 }
 
 /// Gives every report a readable number: EL-2026-00042.

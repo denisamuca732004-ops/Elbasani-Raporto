@@ -9,7 +9,7 @@ import { Redis } from '@upstash/redis';
 import { config } from './env';
 
 export const CACHE_KEYS = {
-  catalog: 'catalog:v1',
+  catalog: 'catalog:v2', // v2: zones carry their code and their lagje/villages
   departments: 'departments:active:v1',
   settings: 'settings:v1',
   guide: 'guide:active:v1',

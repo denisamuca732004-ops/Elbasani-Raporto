@@ -18,13 +18,24 @@ export const uploadKey = z.string().regex(/^tmp\/[0-9a-f-]{36}\.(jpg|png|webp)$/
 
 /* ─── Citizen report (all steps mandatory, checked field by field in the service) ─── */
 
+/**
+ * How the resident gives the place:
+ *  - map:     GPS or a tap on the map. The zone is found from the point; the text is an optional landmark.
+ *  - address: zone → lagje/village of THAT zone → street, number or landmark. No point on the map.
+ * Reports queued offline by an older version of the app have no mode: they are "map" reports.
+ */
+export const LOCATION_MODES = ['map', 'address'] as const;
+export type LocationMode = (typeof LOCATION_MODES)[number];
+
 /** Shape only. The service adds the rules that need the database and returns every problem with its wizard step. */
 export const citizenReportShape = z.strictObject({
   requestTypeId: id,
-  latitude,
-  longitude,
-  address: z.string().max(LIMITS.maxAddress),
-  neighbourhoodId: id,
+  locationMode: z.enum(LOCATION_MODES).default('map'),
+  latitude: latitude.optional(),
+  longitude: longitude.optional(),
+  address: z.string().max(LIMITS.maxAddress).default(''),
+  neighbourhoodId: id.optional(),
+  localityId: id.optional(),
   description: z.string().max(LIMITS.maxDescription),
   anonymous: z.boolean(),
   contactName: z.string().max(160).optional(),

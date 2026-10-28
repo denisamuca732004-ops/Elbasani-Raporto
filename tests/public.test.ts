@@ -37,12 +37,14 @@ const fieldsOf = (problems: Array<{ field: string; code: string; step?: string }
   problems.map((p) => (withStep ? [p.field, p.code, p.step] : [p.field, p.code]));
 
 describe('catalogue', () => {
-  test('lists categories with types (each routed to a department), the 14 areas and the departments', async () => {
+  test('lists categories with types (each routed to a department), the 13 zones with their lagje and villages, and the departments', async () => {
     const catalog = await getCatalog();
     assert.ok(catalog.categories.length >= 8);
     const pothole = catalog.categories.flatMap((c) => c.types).find((t) => t.code === 'streets.pothole');
     assert.ok(pothole?.departmentId);
-    assert.equal(catalog.neighbourhoods.length, 14);
+    assert.equal(catalog.neighbourhoods.length, 13);
+    assert.ok(!catalog.neighbourhoods.some((n) => n.name === 'Mollas'), 'Mollas belongs to the Municipality of Cërrik');
+    assert.ok(catalog.neighbourhoods.every((n) => n.code && n.localities.length > 0));
     assert.equal(catalog.departments.length, 7);
   });
 
@@ -95,12 +97,10 @@ describe('strict reporting: a report is created only when every step is complete
     for (const step of ['location', 'photo', 'details', 'contact']) assert.ok(steps.has(step), `missing step ${step}`);
   });
 
-  test('the location needs a pin inside the Municipality, an address and an area', async () => {
+  test('a pin on the map must be inside the Municipality (see tests/location.test.ts for both ways)', async () => {
     const outside = await problemsOf(await citizenData({ latitude: 41.3233, longitude: 19.4414 })); // Durrës
     assert.deepEqual(fieldsOf(outside, true), [['latitude', 'outside_area', 'location']]);
     await problemsOf(await citizenData({ latitude: 0, longitude: 0 }));
-    assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ address: '  ' }))), [['address', 'required']]);
-    assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ neighbourhoodId: 99999 }))), [['neighbourhoodId', 'unknown']]);
     const noPin = await citizenData();
     delete (noPin as Record<string, unknown>).latitude;
     delete (noPin as Record<string, unknown>).longitude;

@@ -13,7 +13,8 @@ import * as guide from '@/lib/server/services/guide';
 import { runDaily } from '@/lib/server/services/maintenance';
 import * as users from '@/lib/server/services/users';
 import {
-  categoryPatchSchema, categorySchema, departmentPatchSchema, departmentSchema, guideEntryPatchSchema, guideEntrySchema, neighbourhoodPatchSchema, neighbourhoodSchema,
+  categoryPatchSchema, categorySchema, departmentPatchSchema, departmentSchema, guideEntryPatchSchema, guideEntrySchema, localityPatchSchema, localitySchema,
+  neighbourhoodPatchSchema, neighbourhoodSchema,
   requestTypePatchSchema, requestTypeSchema, settingsSchema, userCreateSchema, userPatchSchema,
 } from '@/lib/validation/admin';
 import { parseInput, run } from './_shared';
@@ -90,6 +91,22 @@ export async function createNeighbourhoodAction(input: unknown) {
 export async function updateNeighbourhoodAction(id: unknown, input: unknown) {
   return run(async () => {
     const result = await admin.updateNeighbourhood(await requireAdmin(), parseInput(intId, id), parseInput(neighbourhoodPatchSchema, input));
+    refresh('/admin/areas');
+    return result;
+  });
+}
+
+export async function createLocalityAction(input: unknown) {
+  return run(async () => {
+    const result = await admin.createLocality(await requireAdmin(), parseInput(localitySchema, input));
+    refresh('/admin/areas');
+    return result;
+  });
+}
+
+export async function updateLocalityAction(id: unknown, input: unknown) {
+  return run(async () => {
+    const result = await admin.updateLocality(await requireAdmin(), parseInput(intId, id), parseInput(localityPatchSchema, input));
     refresh('/admin/areas');
     return result;
   });

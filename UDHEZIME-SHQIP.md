@@ -40,7 +40,12 @@ Kontrolli bëhet në tre nivele, dhe të tri duhet të kalojnë:
 
 - **Qytetari** raporton me 6 hapa: lloji → vendndodhja → foto → përshkrimi → kontakti → kontrolli.
   * Asnjë hap nuk anashkalohet.
-  * Pa foto, pa përshkrim, pa pikë në hartë, pa adresë ose pa zonë, raportimi **nuk krijohet**.
+  * Pa foto, pa përshkrim ose pa vendndodhje, raportimi **nuk krijohet**.
+  * **Vendndodhja jepet në njërën nga dy mënyrat:**
+    1. me **GPS** ose duke prekur hartën: zona gjendet vetë nga kufijtë e 13 njësive administrative, dhe adresa nuk kërkohet;
+    2. **me dorë:** zona → një nga lagjet ose fshatrat e **asaj** zone → rruga. Lagjja ose fshati nuk mund të jetë nga një zonë tjetër.
+  * Listat e lagjeve dhe fshatrave janë marrë nga dokumentet e Bashkisë (2021, 2023). Administratori i ndryshon te *Administrimi → Zonat*.
+  * Mollasi u hoq nga zonat, sepse i përket Bashkisë Cërrik.
   * Serveri i kontrollon sërish të gjitha. Nëse mungon diçka, e kthen qytetarin te hapi përkatës.
 - **Sistemi** e dërgon raportimin te sektori që mbulon atë lloj problemi.
 - **Përgjegjësi i sektorit:**
@@ -133,7 +138,7 @@ të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me 
 
 ```bash
 npm run typecheck     # TypeScript
-npm test              # 106 teste me PostgreSQL të vërtetë
+npm test              # 120 teste me PostgreSQL të vërtetë
 npm run check:i18n    # çdo tekst ekziston në shqip dhe anglisht
 npm run build         # ndërtimi për prodhim
 ```

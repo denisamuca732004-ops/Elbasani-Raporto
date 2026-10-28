@@ -2,6 +2,9 @@
 /**
  * Reporting flow like the BOS:311 app, one step per screen:
  * type → location → photo → description → contact → review → case number.
+ * The location is given ONE of two ways: GPS / a tap on the map (the zone is
+ * found from the point, no address needed), or by hand: zone → one of THAT
+ * zone's lagje or villages → street. So the zone and the place always match.
  * EVERY step is mandatory: the next step opens only when the current one is
  * complete, and the server (createReportAction) refuses incomplete reports
  * anyway, telling the wizard which step to go back to.
@@ -23,12 +26,13 @@ import { newClientRef, queueReport } from '@/lib/client/offlineQueue';
 import { uploadPhoto } from '@/lib/client/upload';
 import { LIMITS } from '@/lib/shared/domain';
 import type { PublicCard } from '@/lib/shared/types';
+import { otherZonePlace, zoneCodeAt } from '@/lib/shared/zones';
 
 const STEPS = ['type', 'location', 'photo', 'details', 'contact', 'review'] as const;
 type StepName = (typeof STEPS)[number];
 /** Field (as named by the server) → wizard step. */
 const STEP_OF_FIELD: Record<string, StepName> = {
-  requestTypeId: 'type', latitude: 'location', longitude: 'location', address: 'location', neighbourhoodId: 'location',
+  requestTypeId: 'type', locationMode: 'location', latitude: 'location', longitude: 'location', address: 'location', neighbourhoodId: 'location', localityId: 'location',
   photo: 'photo', photoKey: 'photo', description: 'details', anonymous: 'contact', contactName: 'contact', contactEmail: 'contact', contactPhone: 'contact',
 };
 type Errors = Partial<Record<string, string>>;
@@ -42,9 +46,12 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [step, setStep] = useState(initialTypeValid ? 1 : 0);
   const [categoryCode, setCategoryCode] = useState<string | null>(initialCategory ?? null);
   const [typeId, setTypeId] = useState<number | null>(initialTypeValid);
+  const [locationMode, setLocationMode] = useState<'map' | 'address' | null>(null);
   const [location, setLocation] = useState<LatLng | null>(null);
-  const [address, setAddress] = useState('');
-  const [neighbourhoodId, setNeighbourhoodId] = useState('');
+  const [reference, setReference] = useState(''); // map mode: optional landmark
+  const [neighbourhoodId, setNeighbourhoodId] = useState(''); // address mode
+  const [localityId, setLocalityId] = useState('');
+  const [street, setStreet] = useState('');
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [description, setDescription] = useState('');
   const [contactMode, setContactMode] = useState<'contact' | 'anonymous' | null>(null); // null until the resident chooses
@@ -63,37 +70,55 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   // A change made by the resident clears the server's message for that step.
   useEffect(() => {
     setServerErrors({});
-  }, [typeId, address, neighbourhoodId, description, contact, contactMode]);
+  }, [typeId, locationMode, reference, neighbourhoodId, localityId, street, description, contact, contactMode]);
 
   const type = typeId ? typeById(typeId) ?? null : null;
+  // Map mode: the zone of the pin, from the zone borders (works offline too).
+  const pin = locationMode === 'map' ? location : null;
+  const pinZoneCode = pin && insideArea(pin, rules.serviceArea) ? zoneCodeAt(pin.latitude, pin.longitude) : null;
+  const pinZone = pinZoneCode ? catalog.neighbourhoods.find((n) => n.code === pinZoneCode) : undefined;
+  // Address mode: the chosen zone and its own lagje / villages.
+  const zone = catalog.neighbourhoods.find((n) => n.id === Number(neighbourhoodId));
+  const locality = zone?.localities.find((l) => l.id === Number(localityId));
   const category = type?.category ?? (categoryCode ? categoryByCode(categoryCode) ?? null : null);
   const stepName = STEPS[step]!;
 
   // Duplicate check: open reports of the same kind close by.
   useEffect(() => {
-    if (!type || !location || !insideArea(location, rules.serviceArea)) {
+    if (!type || !pin || !pinZoneCode) {
       setDuplicates([]);
       return undefined;
     }
     let cancelled = false;
     const timer = setTimeout(() => {
-      call(findNearbyAction({ requestTypeId: type.id, latitude: location.latitude, longitude: location.longitude }))
+      call(findNearbyAction({ requestTypeId: type.id, latitude: pin.latitude, longitude: pin.longitude }))
         .then((items) => { if (!cancelled) setDuplicates(items); })
         .catch(() => { if (!cancelled) setDuplicates([]); });
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [type, location, rules.serviceArea]);
+  }, [type, pin, pinZoneCode]);
 
   /** What is still missing in a step (field → message). Empty object = the step is complete. */
   const errorsFor = useCallback((name: StepName): Errors => {
     const e: Errors = {};
     if (name === 'type' && !type) e.requestTypeId = t('report.errors.type');
     if (name === 'location') {
-      if (!location) e.latitude = t('report.errors.pin');
-      else if (!insideArea(location, rules.serviceArea)) e.latitude = t('report.outsideArea');
-      if (!address.trim()) e.address = t('report.errors.address');
-      else if (address.trim().length < LIMITS.minAddress) e.address = t('report.errors.addressShort', { n: LIMITS.minAddress });
-      if (!neighbourhoodId) e.neighbourhoodId = t('report.errors.area');
+      if (!locationMode) e.locationMode = t('report.errors.locationMode');
+      if (locationMode === 'map') {
+        if (!location) e.latitude = t('report.errors.pin');
+        else if (!pinZoneCode) e.latitude = t('report.outsideArea');
+      }
+      if (locationMode === 'address') {
+        if (!zone) e.neighbourhoodId = t('report.errors.area');
+        else if (zone.localities.length > 0 && !locality) e.localityId = t('report.errors.locality');
+        const text = street.trim();
+        if (!text) e.address = t('report.errors.street');
+        else if (text.length < LIMITS.minAddress) e.address = t('report.errors.addressShort', { n: LIMITS.minAddress });
+        else if (zone) {
+          const other = otherZonePlace(text, zone.id, catalog.neighbourhoods);
+          if (other) e.address = t('report.errors.otherZone', { place: other.place, zone: other.zone });
+        }
+      }
     }
     if (name === 'photo' && !photo) e.photo = t('report.errors.photo');
     if (name === 'details') {
@@ -112,7 +137,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       }
     }
     return e;
-  }, [type, location, address, neighbourhoodId, photo, description, contactMode, contact, rules.serviceArea, t]);
+  }, [type, locationMode, location, pinZoneCode, zone, locality, street, catalog.neighbourhoods, photo, description, contactMode, contact, t]);
 
   const currentErrors = useMemo(() => errorsFor(stepName), [errorsFor, stepName]);
   const firstIncompleteStep = useMemo(() => STEPS.findIndex((s) => s !== 'review' && Object.keys(errorsFor(s)).length > 0), [errorsFor]);
@@ -161,7 +186,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       setShowErrors(true);
       return;
     }
-    if (!type || !location || !photo) return;
+    if (!type || !photo || !locationMode || (locationMode === 'map' && !location)) return;
     setSubmitting(true);
     setError(null);
     setServerErrors({});
@@ -169,10 +194,10 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     const standalone = typeof window !== 'undefined' && window.matchMedia?.('(display-mode: standalone)').matches;
     const data = {
       requestTypeId: type.id,
-      latitude: location.latitude,
-      longitude: location.longitude,
-      address: address.trim(),
-      neighbourhoodId: Number(neighbourhoodId),
+      locationMode,
+      ...(locationMode === 'map' && location
+        ? { latitude: location.latitude, longitude: location.longitude, address: reference.trim() }
+        : { neighbourhoodId: Number(neighbourhoodId), ...(locality ? { localityId: locality.id } : {}), address: street.trim() }),
       description: description.trim(),
       anonymous,
       ...(anonymous ? {} : {
@@ -260,7 +285,9 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     );
   }
 
-  const area = catalog.neighbourhoods.find((n) => n.id === Number(neighbourhoodId));
+  const placeSummary = locationMode === 'map'
+    ? [t('report.pinOnMap'), pinZone?.name, reference.trim()].filter(Boolean).join(' · ')
+    : locationMode === 'address' ? [[street.trim(), locality?.name].filter(Boolean).join(', '), zone?.name].filter(Boolean).join(' · ') : '';
   return (
     <div className="wizard" ref={topRef}>
       <ol className="stepper" aria-label={t('report.progress')}>
@@ -313,18 +340,54 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
         <section>
           <h2>{t('report.whereTitle')}</h2>
           <p className="muted">{t('report.whereIntro')}</p>
-          <LocationPicker value={location} onChange={onLocation} error={visibleError('latitude')} />
-          <div className="grid-2" style={{ marginTop: 16 }}>
-            <Field label={t('report.address')} hint={t('report.addressHint')} htmlFor="address" error={visibleError('address')} required>
-              <input id="address" type="text" value={address} maxLength={LIMITS.maxAddress} aria-required="true" onChange={(e) => setAddress(e.target.value)} />
-            </Field>
-            <Field label={t('report.area')} htmlFor="area" error={visibleError('neighbourhoodId')} required>
-              <select id="area" value={neighbourhoodId} aria-required="true" onChange={(e) => setNeighbourhoodId(e.target.value)}>
-                <option value="">{t('report.areaChoose')}</option>
-                {catalog.neighbourhoods.map((n) => <option key={n.id} value={n.id}>{n.name}</option>)}
-              </select>
-            </Field>
-          </div>
+          <fieldset className={`choice-cards${visibleError('locationMode') ? ' has-error' : ''}`}>
+            <legend className="label">{t('report.whereChoose')}</legend>
+            <label className={`choice-card${locationMode === 'map' ? ' selected' : ''}`}>
+              <input type="radio" name="location-mode" value="map" checked={locationMode === 'map'} onChange={() => setLocationMode('map')} />
+              <span><strong><Icon name="gps" size={16} /> {t('report.modeMap')}</strong><span className="muted small">{t('report.modeMapText')}</span></span>
+            </label>
+            <label className={`choice-card${locationMode === 'address' ? ' selected' : ''}`}>
+              <input type="radio" name="location-mode" value="address" checked={locationMode === 'address'} onChange={() => setLocationMode('address')} />
+              <span><strong><Icon name="edit" size={16} /> {t('report.modeAddress')}</strong><span className="muted small">{t('report.modeAddressText')}</span></span>
+            </label>
+            {visibleError('locationMode') && <div className="field-error" role="alert"><Icon name="alert" size={14} />{visibleError('locationMode')}</div>}
+          </fieldset>
+
+          {locationMode === 'map' && (
+            <div className="location-mode">
+              <LocationPicker value={location} onChange={onLocation} error={visibleError('latitude')} autoLocate outside={Boolean(location && !pinZoneCode)} />
+              {pinZone && (
+                <p className="zone-found" role="status"><Icon name="check" size={16} strokeWidth={2.6} /><strong>{t('report.zoneFound', { zone: pinZone.name })}</strong> <span className="muted small">{t('report.zoneFoundHint')}</span></p>
+              )}
+              <Field label={t('report.reference')} hint={t('report.referenceHint')} htmlFor="reference">
+                <input id="reference" type="text" value={reference} maxLength={LIMITS.maxAddress} onChange={(e) => setReference(e.target.value)} />
+              </Field>
+            </div>
+          )}
+
+          {locationMode === 'address' && (
+            <div className="location-mode">
+              <div className="grid-2">
+                <Field label={t('report.area')} htmlFor="area" error={visibleError('neighbourhoodId')} required>
+                  <select id="area" value={neighbourhoodId} aria-required="true" onChange={(e) => { setNeighbourhoodId(e.target.value); setLocalityId(''); }}>
+                    <option value="">{t('report.areaChoose')}</option>
+                    {catalog.neighbourhoods.map((n) => <option key={n.id} value={n.id}>{n.name}</option>)}
+                  </select>
+                </Field>
+                {(!zone || zone.localities.length > 0) && (
+                  <Field label={t('report.locality')} hint={zone ? undefined : t('report.localityFirst')} htmlFor="locality" error={visibleError('localityId')} required>
+                    <select id="locality" value={localityId} aria-required="true" disabled={!zone} onChange={(e) => setLocalityId(e.target.value)}>
+                      <option value="">{t('report.localityChoose')}</option>
+                      {zone?.localities.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    </select>
+                  </Field>
+                )}
+              </div>
+              <Field label={t('report.street')} hint={t('report.streetHint')} htmlFor="street" error={visibleError('address')} required>
+                <input id="street" type="text" value={street} maxLength={LIMITS.maxAddress - 40} aria-required="true" onChange={(e) => setStreet(e.target.value)} />
+              </Field>
+            </div>
+          )}
           {duplicates.length > 0 && (
             <div className="duplicate-box">
               <h3 style={{ marginBottom: 6 }}>{t('report.duplicatesTitle')}</h3>
@@ -404,7 +467,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
           <dl className="review-list card">
             {([
               ['type', typeName(type, lang)],
-              ['location', `${address.trim()}${area ? ` · ${area.name}` : ''}`],
+              ['location', placeSummary],
               ['photo', photo ? t('report.photoAdded') : '–'],
               ['details', description.trim()],
               ['contact', contactMode === 'anonymous'

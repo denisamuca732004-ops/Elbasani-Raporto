@@ -380,6 +380,11 @@ pre.code { background: #10200F; color: #D8F5D8; padding: 14px; border-radius: va
 .choice-card strong { display: block; font-family: var(--font-head); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.04em; margin-bottom: 2px; }
 .choice-cards.has-error .choice-card { border-color: var(--danger); }
 .choice-cards .field-error { grid-column: 1 / -1; }
+.choice-card strong svg { vertical-align: -3px; margin-right: 2px; }
+/* Location step: the zone found from the pin */
+.location-mode { margin-top: 4px; }
+.zone-found { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin: 12px 0 16px; padding: 10px 14px; background: var(--ok-bg); border-left: 4px solid var(--ok); border-radius: var(--radius); }
+.zone-found svg { color: var(--ok); flex: none; }
 .review-list { margin: 0; padding: 0; }
 .review-row { display: grid; grid-template-columns: 150px 1fr auto; gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
 .review-row:last-child { border-bottom: 0; }
@@ -522,6 +527,12 @@ blockquote { margin: 6px 0; padding: 8px 12px; border-left: 4px solid var(--line
 .area-list li { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line-soft); }
 .area-list li:last-child { border-bottom: 0; }
 .area-list li.inactive { color: var(--muted); }
+.area-list > li.area-item { display: block; }
+.area-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.places { margin: 10px 0 4px; padding: 10px 12px; background: var(--bg-soft); border-radius: var(--radius); }
+.place-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); column-gap: 16px; }
+.area-list .place-list li { justify-content: space-between; padding: 2px 4px; }
+.place-list input { flex: 1; min-width: 0; }
 pre.code.light { background: #F7F7F7; color: var(--ink); }
 
 /* ── Trend chart ── */

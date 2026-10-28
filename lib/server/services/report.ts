@@ -21,7 +21,7 @@ import { enqueue } from '../queue';
 import { deleteStoredImage, discardTemporaryUpload, storeImage, takeTemporaryUpload, type StoredImage } from '../storage';
 import { createToken } from '../tokens';
 import { assertAdmin, assertCanAccessReport, isAdmin, reportScope } from './access';
-import { insideServiceArea } from './geo';
+import { insideMunicipality, zoneOfPoint } from './geo';
 import { allowedStatusesFor, detailInclude, listInclude, toDetail, toListItem } from './mapper';
 import { citizenRecipients, notifyCitizenStatus, notifyDepartmentOfReport } from './notification';
 import { persistNewReport, routeDepartmentId } from './reportCreation';
@@ -415,7 +415,7 @@ export async function updateReport(user: Principal, id: string, input: ReportUpd
   if (input.description !== undefined) record('description', input.description);
   if (input.address !== undefined) record('address', input.address);
   if (input.latitude !== undefined && input.longitude !== undefined) {
-    if (!insideServiceArea(input.latitude, input.longitude)) {
+    if (!insideMunicipality(input.latitude, input.longitude)) {
       throw badRequest('Pika duhet të jetë brenda Bashkisë Elbasan.', [{ field: 'latitude', code: 'outside_area', message: 'Pika duhet të jetë brenda Bashkisë Elbasan.' }]);
     }
     record('latitude', input.latitude);
@@ -493,13 +493,18 @@ export async function createStaffReport(user: Principal, data: StaffReportInput)
   const type = await db.requestType.findFirst({ where: { id: data.requestTypeId, active: true } });
   if (!type) problems.push({ field: 'requestTypeId', code: 'unknown', message: 'Zgjidhni llojin e raportimit.' });
   const hasPin = data.latitude !== undefined && data.longitude !== undefined;
-  if (hasPin && !insideServiceArea(data.latitude!, data.longitude!)) {
+  if (hasPin && !insideMunicipality(data.latitude!, data.longitude!)) {
     problems.push({ field: 'latitude', code: 'outside_area', message: 'Pika duhet të jetë brenda Bashkisë Elbasan.' });
   }
   const address = (data.address ?? '').replace(/\s+/g, ' ');
   if (!hasPin && address.length < 3) problems.push({ field: 'address', code: 'required', message: 'Vendosni pikën në hartë ose shkruani adresën.' });
   if (data.neighbourhoodId && !(await db.neighbourhood.findFirst({ where: { id: data.neighbourhoodId, active: true } }))) {
     problems.push({ field: 'neighbourhoodId', code: 'unknown', message: 'Kjo zonë nuk ekziston.' });
+  }
+  // With a pin, the zone comes from the map; a different zone chosen in the form is a mistake.
+  const pinZone = hasPin ? await zoneOfPoint(data.latitude!, data.longitude!) : null;
+  if (pinZone && data.neighbourhoodId && data.neighbourhoodId !== pinZone.id) {
+    problems.push({ field: 'neighbourhoodId', code: 'other_zone', message: `Pika në hartë është në zonën ${pinZone.name}. Zgjidhni atë zonë ose lëreni bosh.` });
   }
   if (problems.length || !type) throw new AppError(400, 'REPORT_INCOMPLETE', 'Plotësoni fushat e detyrueshme.', problems);
 
@@ -514,7 +519,7 @@ export async function createStaffReport(user: Principal, data: StaffReportInput)
     address: address || null,
     latitude: hasPin ? data.latitude! : null,
     longitude: hasPin ? data.longitude! : null,
-    neighbourhoodId: data.neighbourhoodId ?? null,
+    neighbourhoodId: data.neighbourhoodId ?? pinZone?.id ?? null,
     anonymous: !name && !email && !phone,
     contactName: name || null,
     contactEmail: email || null,

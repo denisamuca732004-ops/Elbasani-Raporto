@@ -1,6 +1,6 @@
 /**
- * Reference data: departments (sectors), report categories and types, areas,
- * the questions of the search guide, settings. Used by `npm run db:seed`. Idempotent: running it again never
+ * Reference data: departments (sectors), report categories and types, areas
+ * (zones, with their lagje and villages), the questions of the search guide, settings. Used by `npm run db:seed`. Idempotent: running it again never
  * duplicates rows and never overwrites what the admin changed afterwards.
  *
  * NOTE: department names, deadlines and default priorities are a sensible
@@ -107,10 +107,74 @@ export const CATEGORIES: Array<{ code: string; icon: string; nameSq: string; nam
   },
 ];
 
-/** Administrative units of the Municipality of Elbasan (2015 territorial reform). */
-export const NEIGHBOURHOODS = [
-  'Elbasan (qyteti)', 'Bradashesh', 'Funarë', 'Gjergjan', 'Gjinar', 'Gracen', 'Labinot-Fushë',
-  'Labinot-Mal', 'Mollas', 'Papër', 'Shirgjan', 'Shushicë', 'Tregan', 'Zavalinë',
+/**
+ * The administrative units ("zones") of the Municipality of Elbasan, with the
+ * neighbourhoods (lagje) of the city and the villages (fshatra) of every unit,
+ * as listed by the Municipality: "Ndarja administrativo-territoriale e Bashkisë
+ * Elbasan" (elbasani.gov.al, 2021) and "Nëndarjet e Bashkisë dhe strukturat
+ * komunitare" (2023). Mollas is not here: it belongs to the Municipality of
+ * Cërrik. `code` links a zone to its border (lib/shared/zones.ts).
+ */
+export const ZONES: Array<{ code: string; name: string; localities: string[] }> = [
+  {
+    code: 'elbasan', name: 'Elbasan (qyteti)',
+    localities: [
+      'Emin Matraxhiu', 'Kongresi i Elbasanit', 'Luigj Gurakuqi', 'Beqir Dardha', // Lagjja nr. 1
+      'Brigada 17 Sulmuese', 'Çlirimi', 'Qemal Stafa', 'Shënkoll', 'Sul Papri', // Lagjja nr. 2
+      'Dyli Haxhire', '28 Nëntori', 'Syrja Dylgjeri', 'Skënderbej', // Lagjja nr. 3
+      'Vullnetari', 'Partizani', 'Aqif Pasha', 'Kala', 'Visarion Xhuvani', // Lagjja nr. 4
+      'Haxhias', '11 Nëntori', // Lagjja nr. 5
+      '5 Maji', // Lagjja nr. 6
+    ],
+  },
+  {
+    code: 'bradashesh', name: 'Bradashesh',
+    localities: ['Bradashesh', 'Balëz Lart', 'Balëz Poshtë', 'Kusarth', 'Kozan', 'Karakullak', 'Letan', 'Rrillë', 'Shtemaj', 'Ulën', 'Katund i Ri', 'Fikas', 'Petresh', 'Shëmhill', 'Shijon', 'Reçan', 'Gurabardh'],
+  },
+  {
+    code: 'funare', name: 'Funarë',
+    localities: ['Branesh', 'Bixëlle', 'Prec e Sipërme', 'Prec e Poshtme', 'Cerujë', 'Korrë', 'Mollagjesh', 'Krrabë e Vogël', 'Stafaj'],
+  },
+  {
+    code: 'gjergjan', name: 'Gjergjan',
+    localities: ['Gjergjan', 'Bujaras', 'Gjonmë', 'Kështjellë', 'Kodër Bujaras', 'Muriqan', 'Thanë'],
+  },
+  {
+    code: 'gjinar', name: 'Gjinar',
+    localities: ['Gjinar', 'Lleshan', 'Valesh', 'Pashtresh', 'Derstilë', 'Lukan', 'Sterstan', 'Xibresh', 'Maskarth', 'Kaferr', 'Pobrat'],
+  },
+  {
+    code: 'gracen', name: 'Gracen',
+    localities: ['Gracen', 'Plangaricë', 'Tërbaç', 'Bodin', 'Shingjin', 'Gjorm', 'Pajengë', 'Mamel', 'Dopaj'],
+  },
+  {
+    code: 'labinot_fushe', name: 'Labinot-Fushë',
+    localities: ['Labinot-Fushë', 'Godolesh', 'Griqan i Sipërm', 'Griqan i Poshtëm', 'Xibrakë', 'Mengël'],
+  },
+  {
+    code: 'labinot_mal', name: 'Labinot-Mal',
+    localities: ['Labinot-Mal', 'Guri Zi', 'Sericë', 'Lamollë', 'Benë', 'Lugaxhi', 'Qafë', 'Qerret', 'Shmil', 'Dritas'],
+  },
+  {
+    code: 'paper', name: 'Papër',
+    localities: ['Papër', 'Broshkë', 'Murras', 'Valas', 'Vidhas', 'Pajun', 'Bizhutë', 'Papër-Sallak', 'Vidhas-Hasgjel', 'Lugaj', 'Jatesh', 'Balldre', 'Ullishtaj'],
+  },
+  {
+    code: 'shirgjan', name: 'Shirgjan',
+    localities: ['Shirgjan', 'Bathes', 'Bujqës', 'Jagodinë', 'Kuqan', 'Kryezjarr', 'Mjekës'],
+  },
+  {
+    code: 'shushice', name: 'Shushicë',
+    localities: ['Shushicë', 'Shelcan', 'Mlizë', 'Hajdaran', 'Fush-Bull', 'Vasjan', 'Polis i Vogël', 'Polis Vale', 'Vreshtaj'],
+  },
+  {
+    code: 'tregan', name: 'Tregan',
+    localities: ['Tregan', 'Blerimas', 'Bizhdan', 'Cikallesh', 'Gurisht', 'Kacivel', 'Kyçyk', 'Muçan', 'Shinavlash', 'Shilbater', 'Trepsenisht', 'Tudan'],
+  },
+  {
+    code: 'zavaline', name: 'Zavalinë',
+    localities: ['Zavalinë', 'Seltë', 'Kamiçan', 'Joronishtë', 'Nezhan', 'Burrishtë'],
+  },
 ];
 
 /**
@@ -300,8 +364,14 @@ export async function seedReferenceData(db: PrismaClient): Promise<void> {
     }
   }
 
-  for (const [i, name] of NEIGHBOURHOODS.entries()) {
-    await db.neighbourhood.upsert({ where: { name }, create: { name, sortOrder: i }, update: {} });
+  for (const [i, zone] of ZONES.entries()) {
+    // An existing zone keeps the admin's changes; it only gets its border code if it has none yet.
+    const row = await db.neighbourhood.upsert({ where: { name: zone.name }, create: { name: zone.name, code: zone.code, sortOrder: i }, update: {} });
+    if (!row.code) await db.neighbourhood.updateMany({ where: { id: row.id, code: null }, data: { code: zone.code } });
+    // Only for a zone without any yet: once the admin renames or hides one, the seed never brings it back.
+    if ((await db.locality.count({ where: { neighbourhoodId: row.id } })) === 0) {
+      await db.locality.createMany({ data: zone.localities.map((name, j) => ({ neighbourhoodId: row.id, name, sortOrder: j })), skipDuplicates: true });
+    }
   }
 
   for (const { code, emergency, ...entry } of GUIDE_ENTRIES) {

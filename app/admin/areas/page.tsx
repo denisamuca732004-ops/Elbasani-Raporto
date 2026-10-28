@@ -12,5 +12,5 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function AreasPage() {
   const admin = await pageAdmin('/admin/areas');
   const rows = await listNeighbourhoods(admin);
-  return <Areas items={rows.map((a) => ({ id: a.id, name: a.name, sortOrder: a.sortOrder, active: a.active }))} />;
+  return <Areas items={rows.map((a) => ({ id: a.id, name: a.name, code: a.code, sortOrder: a.sortOrder, active: a.active, localities: a.localities }))} />;
 }

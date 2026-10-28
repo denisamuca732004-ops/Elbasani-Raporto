@@ -1,4 +1,6 @@
 /** Small geographic helpers (no PostGIS needed for city-scale distances). */
+import { zoneCodeAt } from '@/lib/shared/zones';
+import { db } from '../db';
 import { config } from '../env';
 
 const EARTH_RADIUS_M = 6_371_000;
@@ -26,6 +28,18 @@ export function roundCoord(value: number | null | undefined): number | null {
 export function insideServiceArea(latitude: number, longitude: number): boolean {
   const a = config().rules.serviceArea;
   return latitude >= a.minLat && latitude <= a.maxLat && longitude >= a.minLng && longitude <= a.maxLng;
+}
+
+/** Inside the Municipality: the configured box AND the border of one of its zones (lib/shared/zones.ts). */
+export function insideMunicipality(latitude: number, longitude: number): boolean {
+  return insideServiceArea(latitude, longitude) && zoneCodeAt(latitude, longitude) !== null;
+}
+
+/** The active zone a point belongs to, found from the zone borders (null outside, or if that zone was deactivated). */
+export async function zoneOfPoint(latitude: number, longitude: number): Promise<{ id: number; name: string } | null> {
+  const code = zoneCodeAt(latitude, longitude);
+  if (!code) return null;
+  return db.neighbourhood.findFirst({ where: { code, active: true }, select: { id: true, name: true } });
 }
 
 /** Centre of Elbasan, used for sample data and as the default map position. */
