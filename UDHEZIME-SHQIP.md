@@ -55,6 +55,24 @@ Kontrolli bëhet në tre nivele, dhe të tri duhet të kalojnë:
 Statuset janë ato të v2: `PENDING`, `NEEDS_REVIEW`, `VERIFIED`, `ASSIGNED`, `IN_PROGRESS`,
 `RESOLVED`, `CLOSED`, `REJECTED`. Refuzimi kërkon gjithmonë arsye.
 
+## Kutia e kërkimit si udhëzues ("Pyesni ose kërkoni")
+
+Kutia e kërkimit në faqen kryesore u përgjigjet edhe pyetjeve.
+
+- **Çfarë merr qytetari:**
+  * *"si raportoj"* ose *"sa zgjat"*: një përgjigje e shkurtër me buton;
+  * *"zjarr"* ose *"aksident"*: numrat e emergjencës, gjithmonë të parët;
+  * *"EL-2026-00042"*: ecuria e raportimit;
+  * *"gropë"*: lloji i problemit, për ta raportuar;
+  * *"Rruga Rinia"*: raportimet e hapura aty.
+- **Ku ruhen përgjigjet:** në databazë, në shqip dhe anglisht. Platforma nis me 17 pyetje.
+- **Si i ndryshon Bashkia:** *Administrimi → Udhëzuesi*. Aty mund të:
+  * shtojë, ndryshojë ose fshehë pyetje, pa programues;
+  * provojë kërkimin ashtu si qytetari.
+- **Ku shfaqen:** 4 pyetjet e para dalin si butona nën kutinë e kërkimit. Të gjitha pyetjet janë te faqja **Ndihmë** (`/ndihme`).
+- **Pa AI:** kërkimi bëhet në telefonin e qytetarit. Është falas dhe i menjëhershëm, dhe nuk shpik kurrë përgjigje.
+- **Siguria:** butoni nën përgjigje zgjidhet nga një listë e mbyllur (raporto, ndiq, harta, statistikat, privatësia, telefono 112). Administratori nuk mund të vendosë lidhje të jashtme.
+
 ## Nisja në kompjuter
 
 Duhen **Node.js 22** dhe **Docker Desktop** (ose PostgreSQL i instaluar).
@@ -115,7 +133,7 @@ të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me 
 
 ```bash
 npm run typecheck     # TypeScript
-npm test              # 91 teste me PostgreSQL të vërtetë
+npm test              # 106 teste me PostgreSQL të vërtetë
 npm run check:i18n    # çdo tekst ekziston në shqip dhe anglisht
 npm run build         # ndërtimi për prodhim
 ```

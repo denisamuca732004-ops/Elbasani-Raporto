@@ -12,6 +12,7 @@ export const CACHE_KEYS = {
   catalog: 'catalog:v1',
   departments: 'departments:active:v1',
   settings: 'settings:v1',
+  guide: 'guide:active:v1',
   publicStats: 'stats:public:v1',
   userState: (userId: string) => `user:${userId}:state:v1`,
 } as const;

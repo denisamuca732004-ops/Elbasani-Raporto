@@ -1,6 +1,6 @@
 /** Zod schemas for administration (admin only). */
 import { z } from 'zod';
-import { PRIORITIES, REQUEST_KINDS } from '@/lib/shared/domain';
+import { GUIDE_ACTIONS, PRIORITIES, REQUEST_KINDS } from '@/lib/shared/domain';
 import { email, id, nullableId, optionalEmail, optionalText, password, phone, singleLine } from './zod';
 
 const code = z.preprocess((v) => (typeof v === 'string' ? v.trim().toLowerCase() : v), z.string().min(2).max(80).regex(/^[a-z0-9_.-]+$/));
@@ -74,6 +74,33 @@ export const neighbourhoodSchema = z.strictObject({
   active: z.boolean().default(true),
 });
 export const neighbourhoodPatchSchema = z.strictObject(neighbourhoodFields).partial().refine((v) => Object.keys(v).length > 0, { message: 'Nuk ka asnjë ndryshim.' });
+
+/** Plain text over several lines (no HTML is ever rendered): trimmed, Windows line ends unified. */
+const multiLine = (min: number, max: number) =>
+  z.preprocess((v) => (typeof v === 'string' ? v.replace(/\r\n?/g, '\n').trim() : v), z.string().min(min).max(max));
+
+/** A question of the search guide. The same limits are CHECK constraints in the database. */
+const guideFields = {
+  questionSq: singleLine(5, 200),
+  questionEn: singleLine(5, 200),
+  answerSq: multiLine(10, 1500),
+  answerEn: multiLine(10, 1500),
+  keywords: optionalText(500),
+  action: z.enum(GUIDE_ACTIONS),
+  emergency: z.boolean(),
+  sortOrder: z.coerce.number().int().min(0).max(9999),
+  active: z.boolean(),
+};
+export const guideEntrySchema = z.strictObject({
+  ...guideFields,
+  action: guideFields.action.default('NONE'),
+  emergency: z.boolean().default(false),
+  sortOrder: guideFields.sortOrder.default(0),
+  active: z.boolean().default(true),
+});
+export const guideEntryPatchSchema = z.strictObject(guideFields).partial().refine((v) => Object.keys(v).length > 0, { message: 'Nuk ka asnjë ndryshim.' });
+export type GuideEntryInput = z.output<typeof guideEntrySchema>;
+export type GuideEntryPatch = z.output<typeof guideEntryPatchSchema>;
 
 /** Accounts that can open the panel. USER accounts have no panel and are not created here. */
 const panelRole = z.enum(['MUNICIPALITY_STAFF', 'ADMIN']);

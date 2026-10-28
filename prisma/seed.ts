@@ -2,7 +2,7 @@
  * npm run db:seed  (also run by `prisma migrate reset` / `prisma db seed`)
  *
  * Inserts the reference data: departments, report categories and types,
- * areas and the default settings. Idempotent: running it again never
+ * areas, the questions of the search guide and the default settings. Idempotent: running it again never
  * duplicates rows and never overwrites what the admin changed later.
  *
  * It does NOT create any account. The first admin is created once, in the
@@ -25,8 +25,10 @@ const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) }
 
 try {
   await seedReferenceData(db);
-  const [departments, types, areas] = await Promise.all([db.department.count(), db.requestType.count(), db.neighbourhood.count()]);
-  console.log(`Seed OK: ${departments} departments, ${types} report types, ${areas} areas.`);
+  const [departments, types, areas, guide] = await Promise.all([
+    db.department.count(), db.requestType.count(), db.neighbourhood.count(), db.guideEntry.count(),
+  ]);
+  console.log(`Seed OK: ${departments} departments, ${types} report types, ${areas} areas, ${guide} guide questions.`);
 } catch (err) {
   console.error('Seed failed:', err);
   process.exitCode = 1;

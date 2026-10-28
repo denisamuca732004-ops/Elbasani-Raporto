@@ -49,6 +49,7 @@ const enumKeys = {
   'transfers.statuses': lower(domain.TRANSFER_STATUSES),
   'admin.emails.statuses': lower(domain.MAIL_STATUSES),
   'dashboard.periods': lower(domain.DASHBOARD_PERIODS),
+  'guide.actions': lower(domain.GUIDE_ACTIONS),
   'detail.status.to': [...lower(domain.STATUSES).filter((s) => !['pending', 'resolved', 'rejected'].includes(s)), 'reopen', 'release', 'pause'],
   timeline: ['created', 'status_changed', 'citizen_confirmed', 'citizen_reopened'],
 };

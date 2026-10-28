@@ -60,5 +60,6 @@ const enumsMatch: [
   Same<D.TransferStatus, $Enums.TransferStatus>,
   Same<D.EventType, $Enums.EventType>,
   Same<D.MailStatus, $Enums.MailStatus>,
-] = [true, true, true, true, true, true, true, true, true, true];
+  Same<D.GuideAction, $Enums.GuideAction>,
+] = [true, true, true, true, true, true, true, true, true, true, true];
 void enumsMatch;

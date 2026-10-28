@@ -104,6 +104,10 @@ export type EventType = (typeof EVENT_TYPES)[number];
 export const MAIL_STATUSES = ['QUEUED', 'SENDING', 'LOGGED', 'SENT', 'FAILED'] as const;
 export type MailStatus = (typeof MAIL_STATUSES)[number];
 
+/** Where the button under a guide answer leads (see GUIDE_ACTION_HREF in lib/shared/guide.ts). */
+export const GUIDE_ACTIONS = ['NONE', 'REPORT', 'TRACK', 'MAP', 'STATS', 'PRIVACY', 'CALL_112'] as const;
+export type GuideAction = (typeof GUIDE_ACTIONS)[number];
+
 export const DASHBOARD_PERIODS = ['week', 'month', 'year'] as const;
 export type DashboardPeriod = (typeof DASHBOARD_PERIODS)[number];
 

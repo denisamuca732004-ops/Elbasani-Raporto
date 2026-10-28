@@ -74,6 +74,7 @@ export function SiteHeader() {
     ['/ndiq', t('nav.track')],
     ['/harta', t('nav.map')],
     ['/statistika', t('nav.stats')],
+    ['/ndihme', t('nav.help')],
   ];
   return (
     <header className="site-header">
@@ -123,6 +124,7 @@ export function SiteFooter() {
           <div>
             <h4>{t('footer.info')}</h4>
             <ul>
+              <li><Link href="/ndihme">{t('nav.help')}</Link></li>
               <li><Link href="/privatesia">{t('nav.privacy')}</Link></li>
               <li><Link href="/hyrje">{t('nav.staff')}</Link></li>
               <li><a href="https://elbasani.gov.al" target="_blank" rel="noreferrer">elbasani.gov.al</a></li>

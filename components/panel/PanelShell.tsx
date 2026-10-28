@@ -87,6 +87,7 @@ function navGroups(principal: Principal, counts: SidebarCounts | null, t: (k: st
           { href: '/admin/users', icon: 'users', label: t('panel.nav.users') },
           { href: '/admin/report-types', icon: 'list', label: t('panel.nav.catalogue') },
           { href: '/admin/areas', icon: 'map', label: t('panel.nav.areas') },
+          { href: '/admin/guide', icon: 'help', label: t('panel.nav.guide') },
           { href: '/admin/appearance', icon: 'settings', label: t('panel.nav.appearance') },
           { href: '/admin/emails', icon: 'mail', label: t('panel.nav.emails') },
           { href: '/admin/integration', icon: 'code', label: t('panel.nav.integration') },

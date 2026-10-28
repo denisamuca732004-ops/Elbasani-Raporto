@@ -423,6 +423,45 @@ model AiResult {
   @@map("ai_results")
 }
 
+/// Where the button under a guide answer leads. A fixed list: the admin
+/// chooses one of these and can never type an arbitrary link.
+enum GuideAction {
+  NONE
+  REPORT
+  TRACK
+  MAP
+  STATS
+  PRIVACY
+  CALL_112
+}
+
+/// "Ask or search": the short answers the home search box shows when a
+/// resident types a question ("si raportoj", "sa zgjat", "zjarr"), and the
+/// Help page (/ndihme). Edited by the admin; only active entries are public.
+model GuideEntry {
+  id         Int         @id @default(autoincrement())
+  /// Set for the entries the seed adds, so running it again never duplicates them.
+  /// Empty for the entries the admin adds.
+  code       String?     @unique @db.VarChar(60)
+  questionSq String      @map("question_sq") @db.VarChar(200)
+  questionEn String      @map("question_en") @db.VarChar(200)
+  /// Plain text (line breaks kept, no HTML).
+  answerSq   String      @map("answer_sq")
+  answerEn   String      @map("answer_en")
+  /// Comma-separated words and phrases residents may type, in both languages.
+  keywords   String?
+  action     GuideAction @default(NONE)
+  /// Emergencies are shown first, in a red box, already open.
+  emergency  Boolean     @default(false)
+  sortOrder  Int         @default(0) @map("sort_order")
+  active     Boolean     @default(true)
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([active, sortOrder])
+  @@map("guide_entries")
+}
+
 /// Branding and the embedding allow-list, edited by the admin.
 model Setting {
   key       String   @id @db.VarChar(60)

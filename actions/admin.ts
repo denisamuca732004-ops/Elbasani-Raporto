@@ -9,10 +9,11 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireAdmin } from '@/lib/server/session';
 import * as admin from '@/lib/server/services/admin';
+import * as guide from '@/lib/server/services/guide';
 import { runDaily } from '@/lib/server/services/maintenance';
 import * as users from '@/lib/server/services/users';
 import {
-  categoryPatchSchema, categorySchema, departmentPatchSchema, departmentSchema, neighbourhoodPatchSchema, neighbourhoodSchema,
+  categoryPatchSchema, categorySchema, departmentPatchSchema, departmentSchema, guideEntryPatchSchema, guideEntrySchema, neighbourhoodPatchSchema, neighbourhoodSchema,
   requestTypePatchSchema, requestTypeSchema, settingsSchema, userCreateSchema, userPatchSchema,
 } from '@/lib/validation/admin';
 import { parseInput, run } from './_shared';
@@ -90,6 +91,30 @@ export async function updateNeighbourhoodAction(id: unknown, input: unknown) {
   return run(async () => {
     const result = await admin.updateNeighbourhood(await requireAdmin(), parseInput(intId, id), parseInput(neighbourhoodPatchSchema, input));
     refresh('/admin/areas');
+    return result;
+  });
+}
+
+/* ── Search guide (home search box and the Help page) ── */
+
+function refreshGuide() {
+  refresh('/admin/guide');
+  revalidatePath('/');
+  revalidatePath('/ndihme');
+}
+
+export async function createGuideEntryAction(input: unknown) {
+  return run(async () => {
+    const result = await guide.createGuideEntry(await requireAdmin(), parseInput(guideEntrySchema, input));
+    refreshGuide();
+    return result;
+  });
+}
+
+export async function updateGuideEntryAction(id: unknown, input: unknown) {
+  return run(async () => {
+    const result = await guide.updateGuideEntry(await requireAdmin(), parseInput(intId, id), parseInput(guideEntryPatchSchema, input));
+    refreshGuide();
     return result;
   });
 }
