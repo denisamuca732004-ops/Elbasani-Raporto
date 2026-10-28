@@ -15,7 +15,7 @@ import { seedReferenceData } from '../lib/server/referenceData';
 
 nextEnv.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== 'production');
 
-const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
+const url = process.env.DIRECT_URL || process.env.DATABASE_URL_UNPOOLED || process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL;
 if (!url) {
   console.error('DATABASE_URL (or DIRECT_URL) is not set.');
   process.exit(1);

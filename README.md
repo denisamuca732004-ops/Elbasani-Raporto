@@ -125,7 +125,7 @@ The tests cover:
 
 1. Import the repository in Vercel. The framework is detected as Next.js, and `vercel.json` sets the build command and the daily cron.
 2. **Storage** (Project → Storage):
-   - **Postgres.** Use Neon from the Vercel Marketplace, in an EU region near `fra1`, or Supabase. Set `DATABASE_URL` to the pooled URL and `DIRECT_URL` to the direct/unpooled URL.
+   - **Postgres.** Use Neon from the Vercel Marketplace, in an EU region near `fra1`, or Supabase. The integration sets `DATABASE_URL` (pooled) and `DATABASE_URL_UNPOOLED` (direct, used for migrations automatically). With another provider, set `DIRECT_URL` to the direct URL.
    - **Blob.** Connect a store; `BLOB_READ_WRITE_TOKEN` is added automatically.
    - **Upstash Redis.** `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; the `KV_REST_API_*` names also work.
 3. **QStash** (Upstash console): `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`.

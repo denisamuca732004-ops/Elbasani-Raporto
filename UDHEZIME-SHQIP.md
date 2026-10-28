@@ -84,8 +84,9 @@ të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me 
 1. Lidhni repository-n në Vercel. Projekti njihet si Next.js, dhe `vercel.json` vendos build-in
    dhe cron-in ditor.
 2. Te **Storage**, shtoni:
-   * **Postgres**: Neon nga Vercel Marketplace (rajon në Evropë) ose Supabase. Vendosni
-     `DATABASE_URL` (lidhja "pooled") dhe `DIRECT_URL` (lidhja direkte).
+   * **Postgres**: Neon nga Vercel Marketplace (rajon në Evropë). Neon i vendos vetë
+     `DATABASE_URL` dhe `DATABASE_URL_UNPOOLED`; nuk duhet shtuar asgjë tjetër. Me një ofrues tjetër,
+     vendosni `DIRECT_URL` (lidhja direkte).
    * **Blob**: `BLOB_READ_WRITE_TOKEN` shtohet vetë.
    * **Upstash Redis**: `UPSTASH_REDIS_REST_URL` dhe `UPSTASH_REDIS_REST_TOKEN`.
 3. Nga konsola e Upstash, shtoni **QStash**: `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`,
