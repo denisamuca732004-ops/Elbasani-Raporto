@@ -28,8 +28,13 @@ const sq = {
   },
   home: {
     title: 'Si mund t’ju ndihmojmë?',
-    searchLabel: 'Kërkoni llojin e problemit ose shërbimit',
-    searchPlaceholder: 'p.sh. gropë, dritë rruge, kontejner, qen endacak…',
+    searchLabel: 'Kërkoni problemin, rrugën ose numrin e raportimit',
+    searchPlaceholder: 'Problemi, rruga ose numri i raportimit (p.sh. gropë, Rruga Rinia, EL-2026-00042)',
+    search: {
+      track: 'Ndiq raportimin {n}', caseHint: 'Shkruani numrin e plotë, p.sh. EL-2026-00042.', report: 'Raporto një problem',
+      open: 'Raportime të hapura që përputhen', openHint: 'Nëse problemi juaj është këtu, hapeni dhe shtypni “Edhe unë e kam këtë problem”, në vend që ta raportoni përsëri.',
+      searching: 'Po kërkohet…',
+    },
     noMatch: 'Nuk e gjeni? Raportoni si “Tjetër” →',
     reportButton: 'Raporto një problem',
     trackButton: 'Ndiq raportimin',
@@ -145,7 +150,8 @@ const sq = {
     rejectionReason: 'Arsyeja', closingNote: 'Shënim nga Bashkia',
     before: 'Para', after: 'Pas', history: 'Historiku',
     category: 'Kategoria', opened: 'Hapur më', updated: 'Përditësuar', resolvedOn: 'Zgjidhur më', sector: 'Sektori',
-    location: 'Vendndodhja', others: 'Të tjerë', supporters: { one: '1 qytetar raportoi të njëjtin problem', other: '{n} qytetarë raportuan të njëjtin problem' },
+    location: 'Vendndodhja', others: 'Të tjerë',
+    sameProblem: 'Edhe unë e kam këtë problem', sameProblemHint: 'Kështu Bashkia sheh sa qytetarë prek ky problem, pa raportime të dyfishta.', sameProblemDone: 'Faleminderit! U shtua mbështetja juaj.', supporters: { one: '1 qytetar raportoi të njëjtin problem', other: '{n} qytetarë raportuan të njëjtin problem' },
   },
   map: {
     title: 'Harta e raportimeve', status: 'Statusi', open: 'Të hapura', closed: 'Të zgjidhura', all: 'Të gjitha',

@@ -176,6 +176,8 @@ export const caseNumber = z
   .regex(/^[A-Z]{1,6}-\d{4}-\d{5,}$/);
 
 export const nearbySchema = z.strictObject({ requestTypeId: id, latitude, longitude });
+/** Home page search: a street, an area or a problem ("gropë Rinia"). */
+export const placeSearchSchema = z.strictObject({ q: requiredText(3, 100) });
 export const followSchema = z.strictObject({ caseNumber, email: optionalEmail });
 export const feedbackSchema = z.strictObject({
   token: z.string().min(16).max(128),

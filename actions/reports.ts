@@ -24,7 +24,7 @@ import * as reports from '@/lib/server/services/report';
 import * as transfers from '@/lib/server/services/transfer';
 import { extractFromText } from '@/lib/server/services/triage';
 import {
-  assignSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoVisibilitySchema,
+  assignSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoVisibilitySchema, placeSearchSchema,
   prioritySchema, rejectSchema, reportUpdateSchema, resolveSchema, staffReportSchema, statusChangeSchema, testFlagSchema,
   transferDecisionSchema, transferRequestSchema,
 } from '@/lib/validation/report';
@@ -49,6 +49,14 @@ export async function createReportAction(input: unknown) {
 
 export async function findNearbyAction(input: unknown) {
   return run(async () => publicReports.findNearbyOpen(parseInput(nearbySchema, input)));
+}
+
+/** Home page search: open reports on a street or in an area, so residents see what is already reported. */
+export async function searchOpenReportsAction(input: unknown) {
+  return run(async () => {
+    await enforceRateLimit('search', await clientIp());
+    return publicReports.searchOpenByPlace(parseInput(placeSearchSchema, input).q);
+  });
 }
 
 export async function followReportAction(input: unknown) {

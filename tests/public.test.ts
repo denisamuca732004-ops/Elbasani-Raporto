@@ -6,7 +6,7 @@ import { getCatalog } from '@/lib/server/services/catalog';
 import { getPublicSettings } from '@/lib/server/services/settings';
 import {
   createCitizenReport, findNearbyOpen, followReport, getFeedbackInfo, getPublicCase, getPublicPhoto, listRecent, mapPoints,
-  submitCitizenFeedback,
+  searchOpenByPlace, submitCitizenFeedback,
 } from '@/lib/server/services/publicReport';
 import { changeStatus, getReport, resolveReport } from '@/lib/server/services/report';
 import { publicStats } from '@/lib/server/services/stats';
@@ -292,5 +292,27 @@ describe('privacy of the public page', () => {
     assert.equal(pub.description, 'Gropë e madhe. Më telefononi në [telefon] ose shkruani te [email]. Data 28.10.2026.');
     const staffView = await getReport(admin, report.id);
     assert.match(staffView.description ?? '', /069 123 4567/);
+  });
+});
+
+describe('home page search: open reports on a street', () => {
+  test('finds open public reports by street, area or type, ignoring ë/ç and case; never by description', async () => {
+    const verified = await submitReport({ address: 'Sheshi Skënderbej 4', description: 'Gropë e madhe, telefononi 069 555 1234' });
+    await changeStatus(admin, verified.report.id, { status: 'VERIFIED', publicNote: true });
+    const unverified = await submitReport({ address: 'Sheshi Skënderbej 9' });
+    if (unverified.report.status === 'VERIFIED') await changeStatus(admin, unverified.report.id, { status: 'NEEDS_REVIEW', publicNote: false });
+    const closed = await submitReport({ address: 'Sheshi Skënderbej 1' });
+    await changeStatus(admin, closed.report.id, { status: 'CLOSED', note: 'U rregullua.', publicNote: true });
+
+    const found = (q: string) => searchOpenByPlace(q).then((list) => list.map((c) => c.caseNumber));
+    assert.deepEqual(await found('skenderbej'), [verified.result.caseNumber], 'without ë, any case; only the open, verified one');
+    assert.deepEqual(await found('SKËNDERBEJ'), [verified.result.caseNumber]);
+    assert.deepEqual(await found('gropë skenderbej'), [verified.result.caseNumber], 'type + street');
+    assert.deepEqual(await found('ndriçim skenderbej'), [], 'every word must match');
+    assert.deepEqual(await found('069 555'), [], 'the description (and any phone in it) is not searched');
+    assert.deepEqual(await found('%%'), [], 'LIKE wildcards are plain text');
+    const card = (await searchOpenByPlace('skenderbej'))[0]!;
+    assert.equal(card.address, 'Sheshi Skënderbej 4');
+    assert.equal('contactEmail' in card, false);
   });
 });

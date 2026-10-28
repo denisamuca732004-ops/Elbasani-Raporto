@@ -11,7 +11,7 @@ import type { MapPoint, PublicCard, PublicCase } from '@/lib/shared/types';
 import { citizenReportShape, type FeedbackInput, type MapQuery, type RecentQuery } from '@/lib/validation/report';
 import { check } from '@/lib/validation/zod';
 import type { RequestType } from '@/lib/generated/prisma/client';
-import { db, type Prisma } from '../db';
+import { Prisma, db } from '../db';
 import { config } from '../env';
 import { AppError, conflict, notFound } from '../errors';
 import { queueEmails } from '../mail';
@@ -182,6 +182,48 @@ export async function findNearbyOpen(input: { requestTypeId: number; latitude: n
     .sort((a, b) => a.d - b.d)
     .slice(0, 5)
     .map(({ r, d }) => toPublicCard(r, d));
+}
+
+/** Lower case, without the Albanian ë / ç (and other accents), so "Skenderbej" finds "Skënderbej". */
+export function plainText(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/** The same in SQL (PostgreSQL translate() is built in and does not depend on the database locale). */
+const plainSql = (column: Prisma.Sql) => Prisma.sql`translate(lower(coalesce(${column}, '')), 'ëçéèËÇÉÈ', 'eceeecee')`;
+const likeEscape = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+/**
+ * Home page search: OPEN public reports whose street, area or type match every
+ * word typed ("rinia", "gropë rinia", "Skenderbej"), so a resident sees that a
+ * problem is already reported before reporting it again. Only what is public
+ * anyway is searched (address, area, type) — never the description or contacts.
+ */
+export async function searchOpenByPlace(q: string, limit = 6): Promise<PublicCard[]> {
+  const words = [...new Set(plainText(q).split(/[^a-z0-9]+/).filter((w) => w.length >= 2))].slice(0, 5);
+  if (!words.length) return [];
+  const conditions = words.map((w) => {
+    const pattern = `%${likeEscape(w)}%`;
+    return Prisma.sql`(${plainSql(Prisma.sql`r.address`)} LIKE ${pattern} ESCAPE '\'
+      OR ${plainSql(Prisma.sql`n.name`)} LIKE ${pattern} ESCAPE '\'
+      OR ${plainSql(Prisma.sql`t.name_sq`)} LIKE ${pattern} ESCAPE '\'
+      OR ${plainSql(Prisma.sql`t.name_en`)} LIKE ${pattern} ESCAPE '\')`;
+  });
+  const open = publicStatusFilter('open');
+  const rows = await db.$queryRaw<Array<{ id: string }>>`
+    SELECT r.id FROM reports r
+    JOIN request_types t ON t.id = r.request_type_id
+    LEFT JOIN neighbourhoods n ON n.id = r.neighbourhood_id
+    WHERE r.status::text IN (${Prisma.join(open)}) AND ${Prisma.join(conditions, ' AND ')}
+    ORDER BY r.supporters_count DESC, r.created_at DESC
+    LIMIT ${limit}`;
+  if (!rows.length) return [];
+  const found = await db.report.findMany({ where: { id: { in: rows.map((r) => r.id) } }, include: publicInclude });
+  const byId = new Map(found.map((r) => [r.id, r]));
+  return rows.flatMap((r) => {
+    const report = byId.get(r.id);
+    return report ? [toPublicCard(report)] : [];
+  });
 }
 
 export async function followReport(caseNumber: string, email: string | undefined) {

@@ -2,10 +2,12 @@
 /** "Ndiq kërkesën": find a request by its case number and see its progress. */
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { followReportAction } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { MiniMap } from '@/components/maps';
 import { StatusBadge, TestBadge } from '@/components/ui';
 import { useI18n } from '@/i18n';
+import { ActionFailure, call } from '@/lib/client/action';
 import { formatDate, key, typeName } from '@/lib/client/format';
 import type { PublicCase } from '@/lib/shared/types';
 import { PublicTimeline } from './Cases';
@@ -40,6 +42,37 @@ export function TrackForm({ initial = '', basePath = '/ndiq' }: { initial?: stri
 
 export type CaseLookup = { found: true; data: PublicCase } | { found: false; caseNumber: string; error?: boolean };
 
+/** "I have this problem too": one more resident affected, instead of a duplicate report. */
+function SameProblem({ caseNumber, supporters }: { caseNumber: string; supporters: number }) {
+  const { t } = useI18n();
+  const [done, setDone] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<ActionFailure | null>(null);
+  async function follow() {
+    setBusy(true);
+    setError(null);
+    try {
+      setDone((await call(followReportAction({ caseNumber }))).supporters);
+    } catch (err) {
+      setError(err as ActionFailure);
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (done !== null) {
+    return <div className="alert alert-ok" role="status">{t('track.sameProblemDone')} {t('track.supporters', { n: done })}</div>;
+  }
+  return (
+    <div>
+      <button type="button" className="btn btn-outline" disabled={busy} onClick={follow}>
+        <Icon name="users" size={18} />{busy ? t('common.wait') : t('track.sameProblem')}
+      </button>
+      <p className="hint" style={{ marginTop: 6 }}>{supporters > 0 ? `${t('track.supporters', { n: supporters })}. ` : ''}{t('track.sameProblemHint')}</p>
+      {error && <div className="alert alert-error" role="alert">{error.code === 'NETWORK' ? t('errors.network') : error.message}</div>}
+    </div>
+  );
+}
+
 export function CaseView({ lookup }: { lookup: CaseLookup }) {
   const { t, lang } = useI18n();
   if (!lookup.found) {
@@ -55,6 +88,7 @@ export function CaseView({ lookup }: { lookup: CaseLookup }) {
         <h1 style={{ marginBottom: 4 }}>{typeName(data.type, lang)}</h1>
         <p className="case-number" style={{ fontSize: '1.2rem' }}>{data.caseNumber}</p>
         <p className="muted">{t(`statusHelp.${key(data.publicStatus)}`)}</p>
+        {['RECEIVED', 'OPEN', 'IN_PROGRESS'].includes(data.publicStatus) && <SameProblem key={data.caseNumber} caseNumber={data.caseNumber} supporters={data.supporters} />}
         {data.rejectionReason && <div className="alert alert-error"><strong>{t('track.rejectionReason')}:</strong> {data.rejectionReason}</div>}
         {data.closingNote && <div className="alert alert-ok"><strong>{t('track.closingNote')}:</strong> {data.closingNote}</div>}
         {(data.beforePhotoUrl || data.afterPhotoUrl) && (

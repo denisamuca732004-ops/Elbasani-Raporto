@@ -28,8 +28,13 @@ const en = {
   },
   home: {
     title: 'How can we help?',
-    searchLabel: 'Search for the problem or service',
-    searchPlaceholder: 'e.g. pothole, street light, bin, stray dog…',
+    searchLabel: 'Search for a problem, a street or a report number',
+    searchPlaceholder: 'Problem, street or report number (e.g. pothole, Rruga Rinia, EL-2026-00042)',
+    search: {
+      track: 'Track report {n}', caseHint: 'Type the full number, e.g. EL-2026-00042.', report: 'Report a problem',
+      open: 'Open reports that match', openHint: 'If your problem is here, open it and press “I have this problem too” instead of reporting it again.',
+      searching: 'Searching…',
+    },
     noMatch: 'Can’t find it? Report it as “Other” →',
     reportButton: 'Report a problem',
     trackButton: 'Track a report',
@@ -145,7 +150,8 @@ const en = {
     rejectionReason: 'Reason', closingNote: 'Note from the municipality',
     before: 'Before', after: 'After', history: 'History',
     category: 'Category', opened: 'Opened', updated: 'Updated', resolvedOn: 'Resolved', sector: 'Sector',
-    location: 'Location', others: 'Others', supporters: { one: '1 resident reported the same problem', other: '{n} residents reported the same problem' },
+    location: 'Location', others: 'Others',
+    sameProblem: 'I have this problem too', sameProblemHint: 'This shows the municipality how many residents are affected, without duplicate reports.', sameProblemDone: 'Thank you! Your support was added.', supporters: { one: '1 resident reported the same problem', other: '{n} residents reported the same problem' },
   },
   map: {
     title: 'Map of reports', status: 'Status', open: 'Open', closed: 'Resolved', all: 'All',

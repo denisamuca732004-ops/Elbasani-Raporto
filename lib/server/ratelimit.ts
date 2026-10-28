@@ -16,6 +16,7 @@ const RULES = {
   login: () => ({ limit: config().rateLimit.loginsPer15Min, windowSeconds: 900 }),
   upload: () => ({ limit: config().rateLimit.reportsPerHour * 3, windowSeconds: 3600 }),
   follow: () => ({ limit: 30, windowSeconds: 3600 }),
+  search: () => ({ limit: 120, windowSeconds: 600 }),
   feedback: () => ({ limit: 20, windowSeconds: 3600 }),
   setup: () => ({ limit: 10, windowSeconds: 3600 }),
 } satisfies Record<string, () => Rule>;
