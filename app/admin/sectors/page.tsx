@@ -6,8 +6,7 @@
 import type { Metadata } from 'next';
 import SectorsPage from '@/components/panel/SectorCards';
 import { getT } from '@/i18n/server';
-import { pageAdmin } from '@/lib/server/pageData';
-import { includeTestFromCookie } from '@/lib/server/panel';
+import { PANEL_INCLUDES_DEMO, pageAdmin } from '@/lib/server/pageData';
 import { sectorRows, type SectorRow } from '@/lib/server/services/dashboard';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,7 +18,7 @@ export default async function Sectors() {
   const admin = await pageAdmin('/admin/sectors');
   let rows: SectorRow[] | null = null;
   try {
-    rows = await sectorRows(admin, 'month', await includeTestFromCookie());
+    rows = await sectorRows(admin, 'month', PANEL_INCLUDES_DEMO);
   } catch (err) {
     console.error('[sectors] failed', err);
   }

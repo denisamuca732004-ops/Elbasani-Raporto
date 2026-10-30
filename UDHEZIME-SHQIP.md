@@ -111,12 +111,14 @@ Llogaritë krijohen me këtë radhë:
    * Në hyrjen e parë, personi detyrohet ta ndryshojë.
 
 Për prezantim: *Administrimi → Të dhëna demo → Krijo të dhëna shembull*. Krijohen 60 raportime
-të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me një klik.
+të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me një klik. Paneli i
+shfaq gjithmonë (nuk ka më çelës "Shfaq të dhënat demo"). Fshijini para përdorimit zyrtar.
 
 ## Paneli i administratorit
 
 - **Menuja** ka vetëm punën e përditshme: Paneli, **Departamentet**, Kërkesat për rishikim, dhe
-  te *Administrimi*: Zonat, Emailet, Integrimi, Të dhëna demo. Sektorët nuk renditen më në menu:
+  te *Administrimi*: Zonat, Emailet, Integrimi, Të dhëna demo. Logoja lart të çon te faqja
+  kryesore publike. Sektorët nuk renditen më në menu:
   *Departamentet* (`/admin/sectors`) hap kartat e tyre në të djathtë, dhe çdo kartë hap
   raportimet e atij sektori (me lidhjen “← Departamentet” për t'u kthyer).
 - **Jo në menu**, por faqet punojnë me adresën e tyre: Sektorët (`/admin/departments`),

@@ -293,7 +293,7 @@ const sq = {
   },
   panel: {
     adminTitle: 'Paneli i Administratorit', sectorTitle: 'Paneli i Sektorit', menu: 'Menyja e panelit', logout: 'Dil',
-    publicSite: 'Faqja publike', includeTest: 'Shfaq të dhënat demo', demoShown: 'Po shfaqen edhe të dhënat demo (shënuar “Demo”).',
+    publicSite: 'Faqja publike',
     openShort: 'të hapura', highShort: 'me prioritet të lartë', pendingShort: 'në pritje',
     overdue: 'Me vonesë', transferPending: 'Në rishikim', highOpen: '{n} me prioritet të lartë',
     nav: {
@@ -532,9 +532,9 @@ const sq = {
     },
     demo: {
       sampleTitle: 'Të dhëna shembull',
-      sampleText: 'Krijon 60 raportime të shënuara “Demo” të shpërndara në javë, muaj dhe vit, me prioritete të ndryshme dhe 2 kërkesa për rishikim. Nuk llogariten në statistikat publike.',
+      sampleText: 'Krijon 60 raportime shembull për prezantime dhe trajnime, të shpërndara në javë, muaj dhe vit, me prioritete të ndryshme dhe 2 kërkesa për rishikim. Në panel shënohen “Demo” dhe nuk llogariten në statistikat publike. Fshijini para përdorimit zyrtar.',
       load: 'Krijo të dhëna shembull', delete: 'Fshi të gjitha raportimet demo', confirmDelete: 'Të fshihen të gjitha raportimet demo?',
-      loaded: 'U krijuan {n} raportime demo dhe {t} kërkesa për rishikim. “Shfaq të dhënat demo” u aktivizua.', deleted: { one: 'U fshi 1 raportim demo.', other: 'U fshinë {n} raportime demo.' },
+      loaded: 'U krijuan {n} raportime demo dhe {t} kërkesa për rishikim. Shfaqen në panel me shenjën “Demo”.', deleted: { one: 'U fshi 1 raportim demo.', other: 'U fshinë {n} raportime demo.' },
       dailyTitle: 'Detyra ditore',
       dailyText: 'Mbyll raportimet e zgjidhura pa përgjigje nga qytetari dhe u dërgon sektorëve listën e raportimeve me vonesë. Në server ekzekutohet automatikisht çdo ditë.',
       runDaily: 'Ekzekuto tani', dailyDone: 'Raportime të mbyllura: {closed}. Emaile të dërguara: {sent}.',

@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import Dashboard, { type OnboardingInfo } from '@/components/panel/Dashboard';
 import { getT } from '@/i18n/server';
-import { flatParams, pageStaff } from '@/lib/server/pageData';
-import { includeTestFromCookie } from '@/lib/server/panel';
+import { PANEL_INCLUDES_DEMO, flatParams, pageStaff } from '@/lib/server/pageData';
 import { listDepartments } from '@/lib/server/services/admin';
 import { getDashboard, type DashboardResult } from '@/lib/server/services/dashboard';
 import { dashboardSchema } from '@/lib/validation/report';
@@ -16,7 +15,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const principal = await pageStaff('/admin');
   const params = flatParams(await searchParams);
   const parsed = dashboardSchema.safeParse({ period: params.period, departmentId: principal.role === 'ADMIN' ? params.departmentId : undefined });
-  const query = { ...(parsed.success ? parsed.data : dashboardSchema.parse({})), includeTest: await includeTestFromCookie() };
+  const query = { ...(parsed.success ? parsed.data : dashboardSchema.parse({})), includeTest: PANEL_INCLUDES_DEMO };
 
   let data: DashboardResult | null = null;
   try {

@@ -439,12 +439,10 @@ pre.code { background: #10200F; color: #D8F5D8; padding: 14px; border-radius: va
 .nav-badge.alert { background: #F5B400; color: #1B2A1B; }
 .nav-badge.high { background: var(--danger); }
 .sidebar-footer { padding: 14px 20px 20px; border-top: 1px solid rgba(255,255,255,0.12); display: flex; flex-direction: column; gap: 10px; }
-.sidebar-footer .check { color: #fff; }
 .sidebar-footer a { color: #fff; display: inline-flex; gap: 6px; align-items: center; }
 .sidebar-backdrop { display: none; }
 .panel-main { padding: 24px 28px 56px; min-width: 0; }
 .panel-main h1 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); margin-bottom: 4px; }
-.demo-banner { display: flex; gap: 8px; align-items: center; background: #EFE9FA; color: #4A3480; border: 1px solid #CFC4EA; border-radius: var(--radius); padding: 8px 12px; margin-bottom: 16px; font-size: 0.9rem; }
 @media (max-width: 960px) {
   .panel-menu-btn { display: inline-flex; }
   .panel-body { grid-template-columns: 1fr; }

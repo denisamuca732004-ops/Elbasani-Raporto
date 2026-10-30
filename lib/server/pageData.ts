@@ -64,6 +64,14 @@ export async function pageStaff(path = '/admin'): Promise<Principal> {
 }
 
 /** For admin-only pages: a department head is sent back to the panel home. */
+/**
+ * The panel always shows the demo reports too, each marked "Demo" (there is no
+ * switch any more). They are never counted in the public statistics, and the
+ * admin deletes them in one click at Administrimi → Të dhëna demo before the
+ * platform is used for real.
+ */
+export const PANEL_INCLUDES_DEMO = true;
+
 export async function pageAdmin(path = '/admin'): Promise<Principal> {
   const principal = await pageStaff(path);
   if (principal.role !== 'ADMIN') redirect('/admin');

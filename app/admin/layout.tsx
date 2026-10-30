@@ -8,8 +8,7 @@ import type { ReactNode } from 'react';
 import PanelShell from '@/components/panel/PanelShell';
 import { CatalogProvider } from '@/components/providers';
 import { getT } from '@/i18n/server';
-import { pageCatalog, pageStaff } from '@/lib/server/pageData';
-import { includeTestFromCookie } from '@/lib/server/panel';
+import { PANEL_INCLUDES_DEMO, pageCatalog, pageStaff } from '@/lib/server/pageData';
 import { sidebarCounts, type SidebarCounts } from '@/lib/server/services/dashboard';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,17 +18,16 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const principal = await pageStaff();
-  const includeTest = await includeTestFromCookie();
   const [catalog, counts] = await Promise.all([
     pageCatalog(),
-    sidebarCounts(principal, includeTest).catch((err: unknown): SidebarCounts | null => {
+    sidebarCounts(principal, PANEL_INCLUDES_DEMO).catch((err: unknown): SidebarCounts | null => {
       console.error('[panel] sidebar counts unavailable', err);
       return null;
     }),
   ]);
   return (
     <CatalogProvider catalog={catalog}>
-      <PanelShell principal={principal} counts={counts} includeTest={includeTest}>{children}</PanelShell>
+      <PanelShell principal={principal} counts={counts}>{children}</PanelShell>
     </CatalogProvider>
   );
 }

@@ -293,7 +293,7 @@ const en = {
   },
   panel: {
     adminTitle: 'Administrator panel', sectorTitle: 'Sector panel', menu: 'Panel menu', logout: 'Log out',
-    publicSite: 'Public website', includeTest: 'Show demo data', demoShown: 'Demo data is shown too (marked “Demo”).',
+    publicSite: 'Public website',
     openShort: 'open', highShort: 'high priority', pendingShort: 'pending',
     overdue: 'Overdue', transferPending: 'Under review', highOpen: '{n} with high priority',
     nav: {
@@ -532,9 +532,9 @@ const en = {
     },
     demo: {
       sampleTitle: 'Sample data',
-      sampleText: 'Creates 60 reports marked “Demo”, spread over the week, month and year, with different priorities and 2 review requests. They are not counted in the public statistics.',
+      sampleText: 'Creates 60 sample reports for presentations and training, spread over the week, month and year, with different priorities and 2 review requests. The panel marks them “Demo” and they are not counted in the public statistics. Delete them before real use.',
       load: 'Create sample data', delete: 'Delete all demo reports', confirmDelete: 'Delete all demo reports?',
-      loaded: '{n} demo reports and {t} review requests were created. “Show demo data” was switched on.', deleted: { one: '1 demo report was deleted.', other: '{n} demo reports were deleted.' },
+      loaded: '{n} demo reports and {t} review requests were created. The panel shows them marked “Demo”.', deleted: { one: '1 demo report was deleted.', other: '{n} demo reports were deleted.' },
       dailyTitle: 'Daily job',
       dailyText: 'Closes resolved reports the resident never answered and sends the sectors the list of overdue reports. On the server it runs automatically every day.',
       runDaily: 'Run now', dailyDone: 'Reports closed: {closed}. Emails sent: {sent}.',

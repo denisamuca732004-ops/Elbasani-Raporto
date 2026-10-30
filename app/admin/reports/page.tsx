@@ -20,8 +20,7 @@
 import type { Metadata } from 'next';
 import ReportList, { type ReportListView } from '@/components/panel/ReportList';
 import { getT } from '@/i18n/server';
-import { flatParams, pageStaff } from '@/lib/server/pageData';
-import { includeTestFromCookie } from '@/lib/server/panel';
+import { PANEL_INCLUDES_DEMO, flatParams, pageStaff } from '@/lib/server/pageData';
 import { listReports, priorityCounts, statusCounts } from '@/lib/server/services/report';
 import { PRIORITIES, type Priority } from '@/lib/shared/domain';
 import { REPORT_SORTS, STATUS_VIEWS, isStatusView, type ReportSort } from '@/lib/shared/reportViews';
@@ -46,7 +45,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Sear
   const sort: ReportSort = (REPORT_SORTS as readonly string[]).includes(params.sort ?? '') ? (params.sort as ReportSort) : 'priority';
   const departmentId = admin && /^\d{1,9}$/.test(params.departmentId ?? '') ? Number(params.departmentId) : null;
   const unrouted = admin && !departmentId && params.unrouted === '1';
-  const includeTest = await includeTestFromCookie();
+  const includeTest = PANEL_INCLUDES_DEMO;
 
   const filters = {
     status: STATUS_VIEWS[view],

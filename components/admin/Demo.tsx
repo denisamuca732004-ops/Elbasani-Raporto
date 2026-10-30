@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { deleteDemoDataAction, loadDemoDataAction, runDailyJobAction } from '@/actions/admin';
-import { setIncludeTestAction } from '@/actions/panel';
 import { ErrorAlert, SuccessAlert } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { ActionFailure, call } from '@/lib/client/action';
@@ -40,14 +39,12 @@ export default function Demo() {
         <div className="row">
           <button type="button" className="btn" disabled={Boolean(busy)} onClick={() => run('load', async () => {
             const r = await call(loadDemoDataAction());
-            await setIncludeTestAction(true);
             return t('admin.demo.loaded', { n: r.created, t: r.pendingTransfers });
           })}>{busy === 'load' ? t('common.wait') : t('admin.demo.load')}</button>
           <button type="button" className="btn btn-outline" disabled={Boolean(busy)} onClick={() => {
             if (!window.confirm(t('admin.demo.confirmDelete'))) return;
             void run('delete', async () => {
               const r = await call(deleteDemoDataAction());
-              await setIncludeTestAction(false);
               return t('admin.demo.deleted', { n: r.deleted });
             });
           }}>{busy === 'delete' ? t('common.wait') : t('admin.demo.delete')}</button>

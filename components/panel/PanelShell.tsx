@@ -7,9 +7,8 @@
  */
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, useTransition, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { logoutAction } from '@/actions/auth';
-import { setIncludeTestAction } from '@/actions/panel';
 import Icon from '@/components/Icon';
 import { LanguageToggle, Logo, useBrandNames } from '@/components/site/SiteFrame';
 import { useI18n } from '@/i18n';
@@ -100,8 +99,8 @@ function navGroups(principal: Principal, counts: SidebarCounts | null, t: (k: st
   ];
 }
 
-export default function PanelShell({ principal, counts, includeTest, children }: {
-  principal: Principal; counts: SidebarCounts | null; includeTest: boolean; children: ReactNode;
+export default function PanelShell({ principal, counts, children }: {
+  principal: Principal; counts: SidebarCounts | null; children: ReactNode;
 }) {
   const { t, lang } = useI18n();
   const names = useBrandNames();
@@ -109,10 +108,6 @@ export default function PanelShell({ principal, counts, includeTest, children }:
   const pathname = usePathname();
   const params = useSearchParams();
   const [open, setOpen] = useState(false);
-  const [switching, startSwitch] = useTransition();
-  // The switch answers at once; the server data follows with the refresh.
-  const [showDemo, setShowDemo] = useState(includeTest);
-  useEffect(() => setShowDemo(includeTest), [includeTest]);
   const admin = principal.role === 'ADMIN';
   const groups = navGroups(principal, counts, t);
   const departmentName = lang === 'en' ? principal.departmentNameEn : principal.departmentNameSq;
@@ -136,13 +131,6 @@ export default function PanelShell({ principal, counts, includeTest, children }:
     router.refresh();
   }
 
-  function toggleDemo(value: boolean) {
-    setShowDemo(value);
-    startSwitch(async () => {
-      await setIncludeTestAction(value);
-      router.refresh();
-    });
-  }
 
   return (
     <div className="panel-shell">
@@ -151,7 +139,8 @@ export default function PanelShell({ principal, counts, includeTest, children }:
         <button type="button" className="menu-btn panel-menu-btn" aria-expanded={open} aria-controls="panel-sidebar" onClick={() => setOpen(!open)}>
           <Icon name={open ? 'close' : 'menu'} size={26} /><span className="sr-only">{t('nav.menu')}</span>
         </button>
-        <Link href="/admin" className="brand">
+        {/* The logo leads to the public home page (the panel itself is one click away under "Paneli"). */}
+        <Link href="/" className="brand" title={t('panel.publicSite')}>
           <Logo small />
           <span className="brand-name">
             {admin ? t('panel.adminTitle') : t('panel.sectorTitle')}
@@ -177,16 +166,11 @@ export default function PanelShell({ principal, counts, includeTest, children }:
             ))}
           </nav>
           <div className="sidebar-footer">
-            <label className="check small">
-              <input type="checkbox" checked={showDemo} disabled={switching} onChange={(e) => toggleDemo(e.target.checked)} />
-              <span>{t('panel.includeTest')}</span>
-            </label>
             <a href="/" target="_blank" rel="noreferrer" className="small"><Icon name="external" size={14} /> {t('panel.publicSite')}</a>
           </div>
         </aside>
         {open && <button type="button" className="sidebar-backdrop" aria-label={t('common.close')} onClick={() => setOpen(false)} />}
         <main className="panel-main" id="panel-main">
-          {includeTest && <div className="demo-banner" role="status"><Icon name="sparkle" size={16} />{t('panel.demoShown')}</div>}
           {children}
         </main>
       </div>
