@@ -32,7 +32,7 @@ const sq = {
     searchPlaceholder: 'Pyetje, problem, rrugë, nr. raportimi',
     search: {
       track: 'Hap raportimin {n}', caseHint: 'Shkruani numrin e plotë, p.sh. EL-2026-00042.', report: 'Raporto një problem',
-      open: 'Raportime të hapura që përputhen', openHint: 'Nëse problemi juaj është këtu, hapeni dhe shtypni “Edhe unë e kam këtë problem”, në vend që ta raportoni përsëri.',
+      open: 'Raportime të hapura që përputhen', openHint: 'Nëse problemi juaj është këtu, nuk ka nevojë ta raportoni përsëri: hapeni dhe ndiqni ecurinë.',
       searching: 'Po kërkohet…',
       answers: 'Përgjigje', faq: 'Pyetje të shpeshta', more: 'Shiko të gjitha pyetjet ({n})',
       faqHint: 'Ose shkruani pyetjen, problemin, rrugën ose numrin e raportimit.',
@@ -218,7 +218,7 @@ const sq = {
     before: 'Para', after: 'Pas', history: 'Historiku',
     category: 'Kategoria', opened: 'Hapur më', updated: 'Përditësuar', resolvedOn: 'Zgjidhur më', sector: 'Sektori',
     location: 'Vendndodhja', others: 'Të tjerë',
-    sameProblem: 'Edhe unë e kam këtë problem', sameProblemHint: 'Kështu Bashkia sheh sa qytetarë prek ky problem, pa raportime të dyfishta.', sameProblemDone: 'Faleminderit! U shtua mbështetja juaj.', sameProblemAlready: 'E keni shënuar që e keni edhe ju këtë problem.', supporters: { one: '1 qytetar raportoi të njëjtin problem', other: '{n} qytetarë raportuan të njëjtin problem' },
+    supporters: { one: '1 qytetar raportoi të njëjtin problem', other: '{n} qytetarë raportuan të njëjtin problem' },
   },
   map: {
     title: 'Harta e raportimeve', status: 'Statusi', open: 'Të hapura', closed: 'Të zgjidhura', all: 'Të gjitha',

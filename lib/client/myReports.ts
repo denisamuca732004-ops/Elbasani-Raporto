@@ -31,6 +31,5 @@ function add(key: string, caseNumber: string): void {
 export const rememberMine = (caseNumber: string) => add(MINE, caseNumber);
 export const isMine = (caseNumber: string) => read(MINE).includes(caseNumber);
 
-/** This device already said "I have this problem too". */
+/** This device said "yes, the same problem" in the report form. */
 export const rememberSupported = (caseNumber: string) => add(SUPPORTED, caseNumber);
-export const hasSupported = (caseNumber: string) => read(SUPPORTED).includes(caseNumber);

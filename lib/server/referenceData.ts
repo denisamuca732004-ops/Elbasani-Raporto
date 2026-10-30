@@ -284,8 +284,8 @@ export const GUIDE_ENTRIES: Array<{
     code: 'already_reported', sortOrder: 110, action: 'MAP',
     questionSq: 'Problemi është raportuar tashmë. Çfarë bëj?',
     questionEn: 'The problem is already reported. What do I do?',
-    answerSq: 'Shkruani rrugën në këtë kuti ose shikoni hartën. Nëse e gjeni problemin, hapeni dhe shtypni “Edhe unë e kam këtë problem”. Kështu Bashkia sheh sa qytetarë prek, pa raportime të dyfishta.',
-    answerEn: 'Type the street in this box or look at the map. If you find the problem, open it and press “I have this problem too”. This way the Municipality sees how many residents it affects, without duplicate reports.',
+    answerSq: 'Shkruani rrugën në këtë kuti ose shikoni hartën. Nëse e gjeni problemin, nuk ka nevojë ta raportoni përsëri: hapeni dhe ndiqni ecurinë e tij.',
+    answerEn: 'Type the street in this box or look at the map. If you find the problem, there is no need to report it again: open it and follow its progress.',
     keywords: 'tashmë, njëjti, njëjtin, dyfishtë, dublikatë, mbështes, edhe unë, dikush tjetër, already, same, duplicate, someone else, support',
   },
   {

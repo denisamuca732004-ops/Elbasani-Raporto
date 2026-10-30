@@ -60,6 +60,8 @@ describe('the default guide', () => {
     for (const g of guide) {
       assert.notEqual(g.action, 'TRACK', g.questionSq);
       assert.doesNotMatch(`${g.answerSq} ${g.answerEn}`, /Ndiq raportimin|Track a report/);
+      // Nor to the "I have this problem too" button, which the report page no longer has.
+      assert.doesNotMatch(`${g.answerSq} ${g.answerEn}`, /Edhe unë e kam|I have this problem too/);
     }
   });
 });

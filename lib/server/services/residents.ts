@@ -146,13 +146,6 @@ export async function listMyReports(resident: Resident): Promise<PublicCard[]> {
   return rows.map((r) => toPublicCard(r));
 }
 
-/** Was this report made by this resident? (So they are not asked "do you have this problem too?".) */
-export async function isMyReport(resident: Resident | null, caseNumber: string): Promise<boolean> {
-  if (!resident) return false;
-  const row = await db.report.findUnique({ where: { caseNumber }, select: { citizenId: true } });
-  return row?.citizenId === resident.id;
-}
-
 export async function updateResidentProfile(resident: Resident, input: ResidentProfileInput): Promise<void> {
   await db.user.update({
     where: { id: resident.id },

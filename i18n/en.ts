@@ -32,7 +32,7 @@ const en = {
     searchPlaceholder: 'Question, problem, street, report no.',
     search: {
       track: 'Open report {n}', caseHint: 'Type the full number, e.g. EL-2026-00042.', report: 'Report a problem',
-      open: 'Open reports that match', openHint: 'If your problem is here, open it and press “I have this problem too” instead of reporting it again.',
+      open: 'Open reports that match', openHint: 'If your problem is here, there is no need to report it again: open it and follow its progress.',
       searching: 'Searching…',
       answers: 'Answers', faq: 'Common questions', more: 'See all questions ({n})',
       faqHint: 'Or type your question, the problem, the street or the report number.',
@@ -218,7 +218,7 @@ const en = {
     before: 'Before', after: 'After', history: 'History',
     category: 'Category', opened: 'Opened', updated: 'Updated', resolvedOn: 'Resolved', sector: 'Sector',
     location: 'Location', others: 'Others',
-    sameProblem: 'I have this problem too', sameProblemHint: 'This shows the municipality how many residents are affected, without duplicate reports.', sameProblemDone: 'Thank you! Your support was added.', sameProblemAlready: 'You have marked that you have this problem too.', supporters: { one: '1 resident reported the same problem', other: '{n} residents reported the same problem' },
+    supporters: { one: '1 resident reported the same problem', other: '{n} residents reported the same problem' },
   },
   map: {
     title: 'Map of reports', status: 'Status', open: 'Open', closed: 'Resolved', all: 'All',

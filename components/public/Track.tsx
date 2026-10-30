@@ -2,18 +2,17 @@
 /**
  * "Ndiq raportimin". /ndiq: a box for the case number. /ndiq/EL-2026-00042:
  * that report only (the number is already on the page, so no search box,
- * unless the number was not found).
+ * unless the number was not found). The page only shows the report: no
+ * "I have this problem too" button (a resident about to report the same
+ * problem is offered that in the report form, where it avoids a duplicate).
  */
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type FormEvent } from 'react';
-import { followReportAction } from '@/actions/reports';
+import { useState, type FormEvent } from 'react';
 import Icon from '@/components/Icon';
 import { MiniMap } from '@/components/maps';
 import { StatusBadge, TestBadge } from '@/components/ui';
 import { useI18n } from '@/i18n';
-import { ActionFailure, call } from '@/lib/client/action';
 import { formatDate, key, typeName } from '@/lib/client/format';
-import { hasSupported, isMine, rememberSupported } from '@/lib/client/myReports';
 import type { PublicCase } from '@/lib/shared/types';
 import { PublicTimeline } from './Cases';
 
@@ -47,52 +46,7 @@ export function TrackForm({ initial = '', basePath = '/ndiq' }: { initial?: stri
 
 export type CaseLookup = { found: true; data: PublicCase } | { found: false; caseNumber: string; error?: boolean };
 
-/**
- * "I have this problem too": for OTHER residents who find a verified, open
- * report (on the map or by searching their street), instead of reporting it
- * again. Never shown to the person who made the report on this device, and
- * only once per device.
- */
-function SameProblem({ caseNumber, supporters, mine }: { caseNumber: string; supporters: number; mine: boolean }) {
-  const { t } = useI18n();
-  const [done, setDone] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<ActionFailure | null>(null);
-  // Decided after loading, from what this device remembers (the server cannot know who made a report).
-  const [state, setState] = useState<'unknown' | 'mine' | 'supported' | 'other'>('unknown');
-  useEffect(() => {
-    setState(mine || isMine(caseNumber) ? 'mine' : hasSupported(caseNumber) ? 'supported' : 'other');
-  }, [caseNumber, mine]);
-  async function follow() {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await call(followReportAction({ caseNumber }));
-      rememberSupported(caseNumber);
-      setDone(res.supporters);
-    } catch (err) {
-      setError(err as ActionFailure);
-    } finally {
-      setBusy(false);
-    }
-  }
-  if (done !== null) {
-    return <div className="alert alert-ok" role="status">{t('track.sameProblemDone')} {t('track.supporters', { n: done })}</div>;
-  }
-  if (state === 'unknown' || state === 'mine') return null;
-  if (state === 'supported') return <p className="hint"><Icon name="check" size={14} /> {t('track.sameProblemAlready')}</p>;
-  return (
-    <div>
-      <button type="button" className="btn btn-outline" disabled={busy} onClick={follow}>
-        <Icon name="users" size={18} />{busy ? t('common.wait') : t('track.sameProblem')}
-      </button>
-      <p className="hint" style={{ marginTop: 6 }}>{supporters > 0 ? `${t('track.supporters', { n: supporters })}. ` : ''}{t('track.sameProblemHint')}</p>
-      {error && <div className="alert alert-error" role="alert">{error.code === 'NETWORK' ? t('errors.network') : error.message}</div>}
-    </div>
-  );
-}
-
-export function CaseView({ lookup, mine = false }: { lookup: CaseLookup; mine?: boolean }) {
+export function CaseView({ lookup }: { lookup: CaseLookup }) {
   const { t, lang } = useI18n();
   if (!lookup.found) {
     return lookup.error
@@ -107,8 +61,6 @@ export function CaseView({ lookup, mine = false }: { lookup: CaseLookup; mine?: 
         <h1 style={{ marginBottom: 4 }}>{typeName(data.type, lang)}</h1>
         <p className="case-number" style={{ fontSize: '1.2rem' }}>{data.caseNumber}</p>
         <p className="muted">{t(`statusHelp.${key(data.publicStatus)}`)}</p>
-        {/* Open reports, also just received ones (they are on the map). Never for their author (see SameProblem). */}
-        {['RECEIVED', 'OPEN', 'IN_PROGRESS'].includes(data.publicStatus) && <SameProblem key={data.caseNumber} caseNumber={data.caseNumber} supporters={data.supporters} mine={mine} />}
         {data.rejectionReason && <div className="alert alert-error"><strong>{t('track.rejectionReason')}:</strong> {data.rejectionReason}</div>}
         {data.closingNote && <div className="alert alert-ok"><strong>{t('track.closingNote')}:</strong> {data.closingNote}</div>}
         {(data.beforePhotoUrl || data.afterPhotoUrl) && (
@@ -144,7 +96,7 @@ export function CaseView({ lookup, mine = false }: { lookup: CaseLookup; mine?: 
   );
 }
 
-export default function Track({ lookup, mine = false }: { lookup?: CaseLookup; mine?: boolean }) {
+export default function Track({ lookup }: { lookup?: CaseLookup }) {
   const { t } = useI18n();
   const caseNumber = lookup ? (lookup.found ? lookup.data.caseNumber : lookup.caseNumber) : '';
   return (
@@ -155,7 +107,7 @@ export default function Track({ lookup, mine = false }: { lookup?: CaseLookup; m
         {/* The search box only where a number is still needed: no number yet, or one that was not found. */}
         {(!lookup || !lookup.found) && <TrackForm initial={caseNumber} key={caseNumber} />}
         {lookup && !lookup.found && <hr className="divider" />}
-        {lookup && <CaseView lookup={lookup} mine={mine} />}
+        {lookup && <CaseView lookup={lookup} />}
       </div>
     </div>
   );

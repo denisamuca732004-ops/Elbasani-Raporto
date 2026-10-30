@@ -9,7 +9,7 @@ import { staffSessionExpired, STAFF_SESSION_SECONDS } from '@/auth.config';
 import { loadPrincipal } from '@/lib/server/services/auth';
 import { createCitizenReport } from '@/lib/server/services/publicReport';
 import {
-  deleteResidentAccount, googleSignInVerdict, isMyReport, listMyReports, loadResident, registerResident, setResidentPassword,
+  deleteResidentAccount, googleSignInVerdict, listMyReports, loadResident, registerResident, setResidentPassword,
   signInWithGoogle, StaffAccountError, updateResidentProfile, verifyResidentCredentials, type Resident,
 } from '@/lib/server/services/residents';
 import { listUsers, resetPassword } from '@/lib/server/services/users';
@@ -124,9 +124,6 @@ describe('my reports', () => {
     assert.deepEqual(mine.map((r) => r.caseNumber), [res.caseNumber]);
     assert.equal(mine[0]!.publicStatus, 'RECEIVED');
     assert.equal((await listMyReports(other)).length, 0);
-    assert.equal(await isMyReport(me, res.caseNumber), true);
-    assert.equal(await isMyReport(other, res.caseNumber), false);
-    assert.equal(await isMyReport(null, res.caseNumber), false);
     // Anonymous stays anonymous for the staff: no contact on the report.
     const report = await db.report.findUniqueOrThrow({ where: { caseNumber: res.caseNumber } });
     assert.equal(report.contactName, null);
