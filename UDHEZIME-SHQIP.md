@@ -72,7 +72,7 @@ Statuset janë ato të v2: `PENDING`, `NEEDS_REVIEW`, `VERIFIED`, `ASSIGNED`, `I
 
 ## Kutia e kërkimit si udhëzues ("Pyesni ose kërkoni")
 
-Kutia e kërkimit në faqen kryesore u përgjigjet edhe pyetjeve.
+Kutia e kërkimit është lart djathtas në menu, në çdo faqe (në telefon, nën logon). U përgjigjet edhe pyetjeve.
 
 - **Çfarë merr qytetari:**
   * *"si raportoj"* ose *"sa zgjat"*: një përgjigje e shkurtër me buton;
@@ -84,7 +84,7 @@ Kutia e kërkimit në faqen kryesore u përgjigjet edhe pyetjeve.
 - **Si i ndryshon Bashkia:** *Administrimi → Udhëzuesi*. Aty mund të:
   * shtojë, ndryshojë ose fshehë pyetje, pa programues;
   * provojë kërkimin ashtu si qytetari.
-- **Ku shfaqen:** 4 pyetjet e para dalin si butona nën kutinë e kërkimit. Të gjitha pyetjet janë te faqja **Ndihmë** (`/ndihme`).
+- **Ku shfaqen:** vetëm te kutia e kërkimit, kur qytetari shkruan. Menuja nuk ka më “Ndiq raportimin” dhe “Ndihmë”: numri i raportimit shkruhet te kjo kuti. Lidhjet e vjetra vazhdojnë të punojnë (`/ndiq/EL-…` hap raportimin, `/ndihme` çon te faqja kryesore).
 - **Pa AI:** kërkimi bëhet në telefonin e qytetarit. Është falas dhe i menjëhershëm, dhe nuk shpik kurrë përgjigje.
 - **Siguria:** butoni nën përgjigje zgjidhet nga një listë e mbyllur (raporto, ndiq, harta, statistikat, privatësia, telefono 112). Administratori nuk mund të vendosë lidhje të jashtme.
 

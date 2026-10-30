@@ -183,7 +183,7 @@ export const ZONES: Array<{ code: string; name: string; localities: string[] }> 
 ];
 
 /**
- * The guide of the search box ("Ask or search") and of the Help page. A
+ * The guide of the search box ("Ask or search") at the top of the menu. A
  * starting set: the admin edits, hides or adds questions in
  * Administrimi → Udhëzuesi, and the seed never overwrites those changes.
  * Answers are plain text; a line break starts a new line.
@@ -209,7 +209,7 @@ export const GUIDE_ENTRIES: Array<{
     keywords: 'raportoj, raportim, raporto, dërgoj, ankesë, ankohem, denoncoj, sinjalizoj, report, complaint, submit',
   },
   {
-    code: 'how_long', sortOrder: 20, action: 'TRACK',
+    code: 'how_long', sortOrder: 20, action: 'NONE',
     questionSq: 'Sa kohë zgjat zgjidhja?',
     questionEn: 'How long does it take?',
     answerSq: 'Çdo lloj problemi ka afatin e vet, zakonisht nga 1 deri në 14 ditë. Problemet e rrezikshme, si një pus i hapur ose një kabllo e zhveshur, trajtohen me përparësi. Ecurinë e shihni me numrin e raportimit.',
@@ -241,15 +241,15 @@ export const GUIDE_ENTRIES: Array<{
     keywords: 'llogari, regjistrim, regjistrohem, fjalëkalim, profil, falas, paguaj, pagesë, kushton, account, register, sign up, password, login, free, pay, cost',
   },
   {
-    code: 'track', sortOrder: 60, action: 'TRACK',
+    code: 'track', sortOrder: 60, action: 'NONE',
     questionSq: 'Si e ndjek raportimin tim?',
     questionEn: 'How do I follow my report?',
-    answerSq: 'Shkruani numrin e raportimit (p.sh. EL-2026-00042) në këtë kuti ose te “Ndiq raportimin”. Aty shihni statusin, sektorin dhe historikun. Nëse keni lënë email, ju njoftojmë në çdo hap.',
-    answerEn: 'Type the report number (e.g. EL-2026-00042) in this box or under “Track a report”. There you see the status, the department and the history. If you left an email, we notify you at every step.',
+    answerSq: 'Shkruani numrin e raportimit (p.sh. EL-2026-00042) në kutinë e kërkimit, lart në menu. Hapet raportimi me statusin, sektorin dhe historikun. Nëse keni lënë email, ju njoftojmë në çdo hap.',
+    answerEn: 'Type the report number (e.g. EL-2026-00042) in the search box at the top of the menu. The report opens with its status, the department and the history. If you left an email, we notify you at every step.',
     keywords: 'ndjek, ndiq, ndjekje, ecuria, ecurinë, gjendja, statusi, gjurmoj, njoftim, track, follow, progress, status, notification',
   },
   {
-    code: 'statuses', sortOrder: 70, action: 'TRACK',
+    code: 'statuses', sortOrder: 70, action: 'NONE',
     questionSq: 'Çfarë do të thotë secili status?',
     questionEn: 'What does each status mean?',
     answerSq: 'Marrë: raportimi u regjistrua dhe po kontrollohet.\nHapur: u verifikua dhe e ka marrë sektori përgjegjës.\nNë punë: ekipi po punon për zgjidhjen.\nZgjidhur: Bashkia thotë se u rregullua; mund ta konfirmoni ose ta rihapni.\nMbyllur: përfundoi.\nRefuzuar: nuk mund të trajtohet; arsyeja shkruhet te raportimi.',

@@ -187,14 +187,14 @@ The admin edits lagje and villages in *Administrimi → Zonat*.
 
 ## Search guide ("Ask or search")
 
-The home search box answers questions as well as finding reports.
+The search box sits at the right of the menu bar on every page (on phones, under the logo). It answers questions as well as finding reports. The menu has no "Track a report" or "Help" item: a report number is typed in this box.
 
 - **Where the answers live.** In the database (`guide_entries`), in Albanian and English. The seed adds 17 starting questions, including the emergency numbers (112, 127, 128, 129). The admin edits them in *Administrimi → Udhëzuesi*: add, edit, order, hide, and try the search as a resident would. Running the seed again never overwrites those changes.
 - **How matching works.** [`lib/shared/guide.ts`](lib/shared/guide.ts) runs in the browser: no AI, no request, instant. It ignores accents and common words ("si", "a", "një"), and accepts different word endings ("gropa" / "gropë").
   - Emergencies always come first, already open.
   - When the text names a problem ("si raportoj një gropë"), the report type comes before the answers.
 - **Buttons under answers.** Each answer has one button from a fixed list: report, track, map, statistics, privacy, call 112, or none. The admin cannot type a link, and answers are plain text, never HTML.
-- **Help page.** The first four questions are buttons under the search box. Every question is on the Help page `/ndihme`.
+- **Where answers show.** Only in the search box, while typing. `/ndihme` (the old Help page) redirects to the home page; `/ndiq` and `/ndiq/EL-…` still work for old links and emails. Migration `20261030120000_search_in_menu` removes the "Track" button from the starting answers, unless the admin changed them.
 - **AI later (phase 2).** An AI assistant could answer free questions using only these answers, after the Municipality approves it and with `AI_API_KEY` in Vercel.
 
 ## Deploy on Vercel

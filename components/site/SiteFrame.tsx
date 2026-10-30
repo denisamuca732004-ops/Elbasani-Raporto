@@ -1,5 +1,8 @@
 'use client';
-/** Public site frame: green header like elbasani.gov.al, dark green footer, offline bar. */
+/**
+ * Public site frame: green header like elbasani.gov.al (menu on the left, the
+ * search box on the right, on every page), dark green footer, offline bar.
+ */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -7,6 +10,8 @@ import Icon from '@/components/Icon';
 import { useSettings, useViewer } from '@/components/providers';
 import { useI18n } from '@/i18n';
 import { flushQueue, pendingCount } from '@/lib/client/offlineQueue';
+import type { GuideItem } from '@/lib/shared/guide';
+import SiteSearch from './SiteSearch';
 
 export function Logo({ small }: { small?: boolean }) {
   const { branding } = useSettings();
@@ -75,7 +80,7 @@ function AccountLink() {
   return <Link href="/llogaria/hyr" className="account-link"><Icon name="user" size={16} /><span>{t('nav.signIn')}</span></Link>;
 }
 
-export function SiteHeader() {
+export function SiteHeader({ guide = [] }: { guide?: GuideItem[] }) {
   const { t } = useI18n();
   const { branding } = useSettings();
   const [open, setOpen] = useState(false);
@@ -83,10 +88,8 @@ export function SiteHeader() {
   useEffect(() => setOpen(false), [pathname]);
   const links: Array<[string, string]> = [
     ['/raporto', t('nav.report')],
-    ['/ndiq', t('nav.track')],
     ['/harta', t('nav.map')],
     ['/statistika', t('nav.stats')],
-    ['/ndihme', t('nav.help')],
   ];
   return (
     <header className="site-header">
@@ -104,10 +107,13 @@ export function SiteHeader() {
         </div>
       </div>
       <nav id="main-nav" className={`main-nav${open ? ' open' : ''}`} aria-label={t('nav.menu')}>
-        <ul className="container">
-          {links.map(([to, label]) => <li key={to}><NavLink href={to}>{label}</NavLink></li>)}
-          {open && <li><NavLink href="/hyrje">{t('nav.staff')}</NavLink></li>}
-        </ul>
+        <div className="container nav-row">
+          <ul className="nav-links">
+            {links.map(([to, label]) => <li key={to}><NavLink href={to}>{label}</NavLink></li>)}
+            {open && <li><NavLink href="/hyrje">{t('nav.staff')}</NavLink></li>}
+          </ul>
+          <SiteSearch guide={guide} />
+        </div>
       </nav>
     </header>
   );
@@ -128,7 +134,6 @@ export function SiteFooter() {
             <h4>{t('footer.services')}</h4>
             <ul>
               <li><Link href="/raporto">{t('nav.report')}</Link></li>
-              <li><Link href="/ndiq">{t('nav.track')}</Link></li>
               <li><Link href="/harta">{t('nav.map')}</Link></li>
               <li><Link href="/statistika">{t('nav.stats')}</Link></li>
             </ul>
@@ -136,7 +141,6 @@ export function SiteFooter() {
           <div>
             <h4>{t('footer.info')}</h4>
             <ul>
-              <li><Link href="/ndihme">{t('nav.help')}</Link></li>
               <li><Link href="/privatesia">{t('nav.privacy')}</Link></li>
               <li><Link href="/hyrje">{t('nav.staff')}</Link></li>
               <li><a href="https://elbasani.gov.al" target="_blank" rel="noreferrer">elbasani.gov.al</a></li>
@@ -152,12 +156,13 @@ export function SiteFooter() {
   );
 }
 
-export default function SiteFrame({ children }: { children: ReactNode }) {
+/** guide: the questions the search box answers (empty on the "page not found" page: it still finds report numbers, problems and streets). */
+export default function SiteFrame({ children, guide }: { children: ReactNode; guide?: GuideItem[] }) {
   const { t } = useI18n();
   return (
     <>
       <a href="#main" className="sr-only">{t('common.skip')}</a>
-      <SiteHeader />
+      <SiteHeader guide={guide} />
       <OfflineBar />
       <main id="main">{children}</main>
       <SiteFooter />

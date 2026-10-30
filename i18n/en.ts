@@ -13,7 +13,7 @@ const en = {
   },
   time: { now: 'just now', minutes: '{n} min ago', hours: { one: '1 hour ago', other: '{n} hours ago' }, days: { one: '1 day ago', other: '{n} days ago' } },
   nav: {
-    report: 'Report', track: 'Track a report', map: 'Map', stats: 'Statistics', privacy: 'Privacy', help: 'Help',
+    report: 'Report', track: 'Track a report', map: 'Map', stats: 'Statistics', privacy: 'Privacy',
     staff: 'Staff login', menu: 'Menu', language: 'Change language', signIn: 'Sign in', panel: 'Panel',
   },
   footer: {
@@ -27,20 +27,16 @@ const en = {
     sent: 'Your reports were sent: {list}',
   },
   home: {
-    title: 'How can we help?',
     searchLabel: 'Ask or search: a question, the problem, the street or the report number',
-    searchPlaceholder: 'Ask or search (e.g. how to report, pothole, Rruga Rinia, EL-2026-00042)',
+    searchPlaceholder: 'Question, problem, street, report no.',
     search: {
-      track: 'Track report {n}', caseHint: 'Type the full number, e.g. EL-2026-00042.', report: 'Report a problem',
+      track: 'Open report {n}', caseHint: 'Type the full number, e.g. EL-2026-00042.', report: 'Report a problem',
       open: 'Open reports that match', openHint: 'If your problem is here, open it and press “I have this problem too” instead of reporting it again.',
       searching: 'Searching…',
-      answers: 'Answers', allQuestions: 'All questions',
+      answers: 'Answers',
     },
     noMatch: 'Can’t find it? Report it as “Other” →',
-    noMatchHelp: 'See common questions →',
-    faqTitle: 'Common questions:',
     reportButton: 'Report a problem',
-    trackButton: 'Track a report',
     categories: 'Choose a category',
     recent: 'Recent reports',
     seeMap: 'See the map',
@@ -88,9 +84,6 @@ const en = {
     savedToAccount: 'The report is also saved in “My reports”.',
   },
   guide: {
-    title: 'Help: common questions',
-    intro: 'Short answers about using Elbasani Raporton. You can also type these questions in the search box on the home page.',
-    empty: 'No questions yet.',
     actions: {
       none: 'No button', report: 'Report a problem', track: 'Track a report', map: 'See the map', stats: 'See the statistics',
       privacy: 'Read about privacy', call_112: 'Call 112',
@@ -189,7 +182,7 @@ const en = {
     doneText: 'Keep this number to track your report:',
     doneEmail: 'We will write to {email} at every step.',
     doneNoEmail: 'Keep the number or take a screenshot to track the report.',
-    trackIt: 'Track the report', another: 'Report something else',
+    trackIt: 'View the report', another: 'Report something else',
     queuedTitle: 'Saved on your phone',
     queuedText: 'You are offline. The report will be sent automatically as soon as you reconnect and you will get the report number.',
     errors: {
@@ -492,19 +485,17 @@ const en = {
     },
     guide: {
       title: 'Search guide',
-      intro: 'The questions and answers residents get when they type in the search box, and on the “Help” page. Write short, accurate answers. Inactive questions are not shown.',
+      intro: 'The questions and answers residents get when they type in the search box, at the top right of the menu. Write short, accurate answers. Inactive questions are not shown.',
       add: 'Add a question', create: 'Add the question', created: 'The question was added.', saved: 'The question was saved.',
       questionSq: 'Question (Albanian)', questionEn: 'Question (English)', answerSq: 'Answer (Albanian)', answerEn: 'Answer (English)',
       questionRule: 'At least 5 characters.', answerRule: 'From 10 to 1500 characters.',
       answerHint: 'Plain text. Every new line is shown as a new line.',
       keywords: 'Keywords', keywordsHint: 'Words a resident may type, separated by commas, in Albanian and English (e.g. zgjat, afat, ditë, how long). The words of the question are searched too.',
       action: 'Button under the answer', emergency: 'Emergency', emergencyHint: 'Shown first, in a red box, already open.',
-      sortOrder: 'Order', sortHint: 'Lower numbers come first. The first 4 questions that are not emergencies are shown as buttons under the search box.',
-      chip: 'Button on the home page',
+      sortOrder: 'Order', sortHint: 'When several questions match, lower numbers come first.',
       test: 'Try the search', testHint: 'Type like a resident and see which answers come up (active questions only).',
       testPlaceholder: 'e.g. how long', testNone: 'No answer. Add keywords to the question that should come up.',
       activated: 'The question was activated.', deactivated: 'The question was deactivated and is no longer shown to residents.',
-      viewPublic: 'See the “Help” page',
     },
     appearance: {
       appName: 'Platform name', municipalityName: 'Municipality name', logoUrl: 'Logo (URL)',

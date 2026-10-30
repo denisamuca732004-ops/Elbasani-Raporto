@@ -1,9 +1,9 @@
 'use client';
 /**
  * Admin: the search guide. The questions and answers residents get while
- * typing in the home search box, and on the Help page. The admin adds,
- * edits, orders and hides them, and can try the search exactly as a
- * resident would (same matching code as the home page).
+ * typing in the search box at the top of the menu. The admin adds, edits,
+ * orders and hides them, and can try the search exactly as a resident
+ * would (same matching code as the search box).
  */
 import { useMemo, useState, type FormEvent } from 'react';
 import { createGuideEntryAction, updateGuideEntryAction } from '@/actions/admin';
@@ -129,8 +129,6 @@ export default function Guide({ items }: { items: GuideAdminRow[] }) {
   const { busy, error, notice, run } = useAdminAction();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
-  // The same rule as the home page: the first 4 active questions that are not emergencies.
-  const chips = new Set(items.filter((i) => i.active && !i.emergency).slice(0, 4).map((i) => i.id));
   const nextOrder = String(Math.min(9999, Math.max(0, ...items.map((i) => i.sortOrder)) + 10));
 
   return (
@@ -141,7 +139,6 @@ export default function Guide({ items }: { items: GuideAdminRow[] }) {
           <p className="muted" style={{ margin: 0 }}>{t('admin.guide.intro')}</p>
         </div>
         <div className="row">
-          <a href="/ndihme" target="_blank" rel="noreferrer" className="btn btn-outline"><Icon name="external" size={16} />{t('admin.guide.viewPublic')}</a>
           {!adding && <button type="button" className="btn" onClick={() => { setAdding(true); setEditing(null); }}><Icon name="plus" size={16} />{t('admin.guide.add')}</button>}
         </div>
       </div>
@@ -179,7 +176,6 @@ export default function Guide({ items }: { items: GuideAdminRow[] }) {
                 </div>
                 <div className="row">
                   {item.emergency && <span className="badge badge-overdue">{t('admin.guide.emergency')}</span>}
-                  {chips.has(item.id) && <span className="badge status-open">{t('admin.guide.chip')}</span>}
                   {!item.active && <span className="badge badge-muted">{t('admin.inactive')}</span>}
                   <button type="button" className="btn btn-sm btn-outline" onClick={() => { setEditing(item.id); setAdding(false); }}><Icon name="edit" size={14} />{t('common.edit')}</button>
                   <button

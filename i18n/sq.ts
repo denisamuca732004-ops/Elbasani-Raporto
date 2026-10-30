@@ -13,7 +13,7 @@ const sq = {
   },
   time: { now: 'tani', minutes: 'para {n} min', hours: { one: 'para 1 ore', other: 'para {n} orësh' }, days: { one: 'para 1 dite', other: 'para {n} ditësh' } },
   nav: {
-    report: 'Raporto', track: 'Ndiq raportimin', map: 'Harta', stats: 'Statistikat', privacy: 'Privatësia', help: 'Ndihmë',
+    report: 'Raporto', track: 'Ndiq raportimin', map: 'Harta', stats: 'Statistikat', privacy: 'Privatësia',
     staff: 'Hyrja për stafin', menu: 'Menyja', language: 'Ndrysho gjuhën', signIn: 'Hyr', panel: 'Paneli',
   },
   footer: {
@@ -27,20 +27,16 @@ const sq = {
     sent: 'Raportimet tuaja u dërguan: {list}',
   },
   home: {
-    title: 'Si mund t’ju ndihmojmë?',
     searchLabel: 'Pyesni ose kërkoni: një pyetje, problemin, rrugën ose numrin e raportimit',
-    searchPlaceholder: 'Pyesni ose kërkoni (p.sh. si raportoj, gropë, Rruga Rinia, EL-2026-00042)',
+    searchPlaceholder: 'Pyetje, problem, rrugë, nr. raportimi',
     search: {
-      track: 'Ndiq raportimin {n}', caseHint: 'Shkruani numrin e plotë, p.sh. EL-2026-00042.', report: 'Raporto një problem',
+      track: 'Hap raportimin {n}', caseHint: 'Shkruani numrin e plotë, p.sh. EL-2026-00042.', report: 'Raporto një problem',
       open: 'Raportime të hapura që përputhen', openHint: 'Nëse problemi juaj është këtu, hapeni dhe shtypni “Edhe unë e kam këtë problem”, në vend që ta raportoni përsëri.',
       searching: 'Po kërkohet…',
-      answers: 'Përgjigje', allQuestions: 'Të gjitha pyetjet',
+      answers: 'Përgjigje',
     },
     noMatch: 'Nuk e gjeni? Raportoni si “Tjetër” →',
-    noMatchHelp: 'Shikoni pyetjet e shpeshta →',
-    faqTitle: 'Pyetje të shpeshta:',
     reportButton: 'Raporto një problem',
-    trackButton: 'Ndiq raportimin',
     categories: 'Zgjidhni kategorinë',
     recent: 'Raportimet e fundit',
     seeMap: 'Shiko hartën',
@@ -88,9 +84,6 @@ const sq = {
     savedToAccount: 'Raportimi ruhet edhe te “Raportimet e mia”.',
   },
   guide: {
-    title: 'Ndihmë: pyetje të shpeshta',
-    intro: 'Përgjigje të shkurtra për përdorimin e Elbasani Raporton. Këto pyetje mund t’i shkruani edhe në kutinë e kërkimit në faqen kryesore.',
-    empty: 'Ende nuk ka pyetje.',
     actions: {
       none: 'Pa buton', report: 'Raporto një problem', track: 'Ndiq raportimin', map: 'Shiko hartën', stats: 'Shiko statistikat',
       privacy: 'Lexo për privatësinë', call_112: 'Telefono 112',
@@ -189,7 +182,7 @@ const sq = {
     doneText: 'Ruajeni këtë numër për ta ndjekur raportimin:',
     doneEmail: 'Do t’ju shkruajmë në {email} në çdo hap.',
     doneNoEmail: 'Ruajeni numrin ose bëni një screenshot për ta ndjekur raportimin.',
-    trackIt: 'Ndiq raportimin', another: 'Raporto diçka tjetër',
+    trackIt: 'Shiko raportimin', another: 'Raporto diçka tjetër',
     queuedTitle: 'U ruajt në telefon',
     queuedText: 'Jeni pa internet. Raportimi do të dërgohet automatikisht sapo të lidheni dhe do të merrni numrin e raportimit.',
     errors: {
@@ -492,19 +485,17 @@ const sq = {
     },
     guide: {
       title: 'Udhëzuesi i kërkimit',
-      intro: 'Pyetjet dhe përgjigjet që i shfaqen qytetarit kur shkruan në kutinë e kërkimit, dhe te faqja “Ndihmë”. Shkruani përgjigje të shkurtra dhe të sakta. Pyetjet joaktive nuk shfaqen.',
+      intro: 'Pyetjet dhe përgjigjet që i shfaqen qytetarit kur shkruan në kutinë e kërkimit, lart djathtas në menu. Shkruani përgjigje të shkurtra dhe të sakta. Pyetjet joaktive nuk shfaqen.',
       add: 'Shto pyetje', create: 'Shto pyetjen', created: 'Pyetja u shtua.', saved: 'Pyetja u ruajt.',
       questionSq: 'Pyetja (shqip)', questionEn: 'Pyetja (anglisht)', answerSq: 'Përgjigja (shqip)', answerEn: 'Përgjigja (anglisht)',
       questionRule: 'Të paktën 5 shkronja.', answerRule: 'Nga 10 deri në 1500 shkronja.',
       answerHint: 'Tekst i thjeshtë. Çdo rresht i ri shfaqet si rresht i ri.',
       keywords: 'Fjalë kyçe', keywordsHint: 'Fjalët që mund të shkruajë qytetari, të ndara me presje, në shqip dhe anglisht (p.sh. zgjat, afat, ditë, how long). Fjalët e pyetjes kërkohen vetë.',
       action: 'Butoni nën përgjigje', emergency: 'Emergjencë', emergencyHint: 'Shfaqet e para, në kuti të kuqe dhe e hapur.',
-      sortOrder: 'Radha', sortHint: 'Numri më i vogël shfaqet më parë. 4 pyetjet e para që nuk janë emergjenca shfaqen si butona nën kutinë e kërkimit.',
-      chip: 'Buton në faqen kryesore',
+      sortOrder: 'Radha', sortHint: 'Kur disa pyetje përputhen, numri më i vogël shfaqet më parë.',
       test: 'Provo kërkimin', testHint: 'Shkruani si qytetari dhe shikoni cilat përgjigje dalin (vetëm pyetjet aktive).',
       testPlaceholder: 'p.sh. sa zgjat', testNone: 'Asnjë përgjigje. Shtoni fjalë kyçe te pyetja që duhet të dalë.',
       activated: 'Pyetja u aktivizua.', deactivated: 'Pyetja u çaktivizua dhe nuk shfaqet më për qytetarët.',
-      viewPublic: 'Shiko faqen “Ndihmë”',
     },
     appearance: {
       appName: 'Emri i platformës', municipalityName: 'Emri i bashkisë', logoUrl: 'Logo (URL)',
