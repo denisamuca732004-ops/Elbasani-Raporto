@@ -52,7 +52,8 @@ Kontrolli bëhet në tre nivele, dhe të tri duhet të kalojnë:
   * **Në hartën publike** çdo raportim del si pikë me ngjyrën e statusit, që kur merret ("Marrë", gri).
     - Fotoja dhe përshkrimi shfaqen vetëm pasi verifikohet.
     - Raportimet e refuzuara nuk shfaqen.
-    - Raportimet me adresë pa pikë dalin në një listë poshtë hartës. Administratori ua vendos pikën te "Ndrysho detajet", dhe zona ndryshon vetë sipas pikës.
+    - Raportimet me adresë pa pikë dalin edhe ato në hartë, në një **pikë të përafërt**: te fshati ose lagjja, kur dihen koordinatat e tij, përndryshe në mes të zonës. Kjo pikë vizatohet me rreth me vija dhe shënohet "e përafërt".
+    - Administratori u vendos pikën e saktë te "Ndrysho detajet", dhe zona ndryshon vetë sipas pikës.
   * Listat e lagjeve dhe fshatrave janë marrë nga dokumentet e Bashkisë (2021, 2023). Administratori i ndryshon te *Administrimi → Zonat*.
   * Mollasi u hoq nga zonat, sepse i përket Bashkisë Cërrik.
   * Serveri i kontrollon sërish të gjitha. Nëse mungon diçka, e kthen qytetarin te hapi përkatës.
@@ -147,7 +148,7 @@ të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me 
 
 ```bash
 npm run typecheck     # TypeScript
-npm test              # 135 teste me PostgreSQL të vërtetë
+npm test              # 138 teste me PostgreSQL të vërtetë
 npm run check:i18n    # çdo tekst ekziston në shqip dhe anglisht
 npm run build         # ndërtimi për prodhim
 ```

@@ -9,6 +9,11 @@
 import type { GuideAction, Priority, RequestKind } from '@/lib/shared/domain';
 import type { AppSettings } from '@/lib/shared/types';
 import type { PrismaClient } from '@/lib/generated/prisma/client';
+import { approximatePoint, mentions, zoneCenter } from '@/lib/shared/zones';
+import localityPoints from './data/locality-points.json';
+
+/** zone code → lagje / village name → [latitude, longitude] (lib/server/data/locality-points.json). */
+const LOCALITY_POINTS = (localityPoints as { zones: Record<string, Record<string, [number, number]>> }).zones;
 
 export const DEPARTMENTS = [
   { code: 'public_services', nameSq: 'Sektori i Shërbimeve Publike', nameEn: 'Public Services Sector', description: 'Mbetjet, pastrimi, gjelbërimi dhe parqet.' },
@@ -381,4 +386,44 @@ export async function seedReferenceData(db: PrismaClient): Promise<void> {
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
     await db.setting.upsert({ where: { key }, create: { key, value }, update: {} });
   }
+
+  // Coordinates of the lagje and villages (OpenStreetMap), only where none are set yet.
+  for (const [code, places] of Object.entries(LOCALITY_POINTS)) {
+    for (const [name, [latitude, longitude]] of Object.entries(places)) {
+      await db.locality.updateMany({ where: { name, latitude: null, neighbourhood: { code } }, data: { latitude, longitude } });
+    }
+  }
+
+  await placeApproximateReports(db);
+}
+
+/**
+ * Reports typed by hand without a pin get an approximate point on the map:
+ * the lagje / village named in their address if its coordinates are known,
+ * else the middle of their zone. Runs with every seed (every deployment):
+ * reports placed approximately before move to their village once its
+ * coordinates are known. Points set by a person (GPS, tap, admin) are never touched.
+ */
+export async function placeApproximateReports(db: PrismaClient): Promise<number> {
+  const rows = await db.report.findMany({
+    where: { neighbourhoodId: { not: null }, OR: [{ latitude: null }, { longitude: null }, { locationApproximate: true }] },
+    select: {
+      id: true, address: true, latitude: true, longitude: true,
+      neighbourhood: { select: { name: true, code: true, localities: { where: { latitude: { not: null } }, select: { name: true, latitude: true, longitude: true } } } },
+    },
+  });
+  let moved = 0;
+  for (const r of rows) {
+    const zone = r.neighbourhood;
+    if (!zone) continue;
+    // The longest name first: "Polis i Vogël" before "Polis".
+    const place = [...zone.localities].sort((a, b) => b.name.length - a.name.length).find((l) => mentions(r.address ?? '', l.name));
+    const base = place ? { latitude: place.latitude!, longitude: place.longitude! } : zone.code ? zoneCenter(zone.code) : null;
+    if (!base) continue;
+    const point = approximatePoint(base, r.address || zone.name);
+    if (point.latitude === r.latitude && point.longitude === r.longitude) continue;
+    await db.report.update({ where: { id: r.id }, data: { latitude: point.latitude, longitude: point.longitude, locationApproximate: true } });
+    moved += 1;
+  }
+  return moved;
 }

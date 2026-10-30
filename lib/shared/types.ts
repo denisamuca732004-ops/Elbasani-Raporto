@@ -40,6 +40,8 @@ export interface PublicCase {
   address: string | null;
   latitude: number | null;
   longitude: number | null;
+  /** The point was worked out from a typed address (lagje / village / zone), not given on the map. */
+  locationApproximate: boolean;
   neighbourhood: string | null;
   departmentSq: string | null;
   departmentEn: string | null;
@@ -82,6 +84,8 @@ export interface MapPoint {
   typeNameEn: string | null;
   isTest: boolean;
   createdAt: string;
+  /** Worked out from a typed address: drawn as an approximate point. */
+  approximate: boolean;
 }
 
 /* ─── Staff ─── */
@@ -160,6 +164,8 @@ export interface ReportDetail extends ReportListItem {
   description: string | null;
   latitude: number | null;
   longitude: number | null;
+  /** The point was worked out from a typed address (lagje / village / zone), not given on the map. */
+  locationApproximate: boolean;
   neighbourhoodId: number | null;
   departmentId: number | null;
   requestTypeId: number;

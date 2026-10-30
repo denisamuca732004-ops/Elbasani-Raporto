@@ -18,7 +18,7 @@ import { AppError, conflict, notFound } from '../errors';
 import { queueEmails } from '../mail';
 import * as tpl from '../mailTemplates';
 import { hashToken } from '../tokens';
-import { CITY_ZONE_CODE, otherZonePlace } from '@/lib/shared/zones';
+import { CITY_ZONE_CODE, approximatePoint, otherZonePlace, zoneCenter } from '@/lib/shared/zones';
 import { boundingBox, distanceMeters, insideMunicipality, roundCoord, zoneOfPoint } from './geo';
 import { isPubliclyVerified, publicInclude, toPublicCard, toPublicCase } from './mapper';
 import { departmentRecipients } from './notification';
@@ -69,7 +69,11 @@ const cleanMultiline = (s: unknown): string => (typeof s === 'string' ? s.trim()
 const phoneDigits = (s: string): number => s.replace(/\D/g, '').length;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-interface ResolvedLocation { latitude: number | null; longitude: number | null; neighbourhoodId: number | null; address: string | null }
+interface ResolvedLocation {
+  latitude: number | null; longitude: number | null; neighbourhoodId: number | null; address: string | null;
+  /** The point was worked out from the typed address, not given on the map. */
+  approximate?: boolean;
+}
 
 /**
  * The place of a resident's report, in one of two ways (see LOCATION_MODES):
@@ -90,13 +94,13 @@ async function resolveLocation(data: CitizenReport, problems: ReportProblem[]): 
 
   const zones = await db.neighbourhood.findMany({
     where: { active: true },
-    select: { id: true, name: true, code: true, localities: { where: { active: true }, select: { id: true, name: true } } },
+    select: { id: true, name: true, code: true, localities: { where: { active: true }, select: { id: true, name: true, latitude: true, longitude: true } } },
   });
   const zone = data.neighbourhoodId ? zones.find((z) => z.id === data.neighbourhoodId) : undefined;
   if (!data.neighbourhoodId) problems.push(problem('neighbourhoodId', 'required'));
   else if (!zone) problems.push(problem('neighbourhoodId', 'unknown'));
 
-  let locality: { id: number; name: string } | undefined;
+  let locality: { id: number; name: string; latitude: number | null; longitude: number | null } | undefined;
   if (zone && zone.localities.length > 0) {
     locality = data.localityId ? zone.localities.find((l) => l.id === data.localityId) : undefined;
     if (!data.localityId) problems.push(problem('localityId', 'required'));
@@ -127,7 +131,14 @@ async function resolveLocation(data: CitizenReport, problems: ReportProblem[]): 
       } else pin = { latitude: data.latitude, longitude: data.longitude };
     }
   }
-  return { latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null, neighbourhoodId: zone?.id ?? null, address: address || null };
+  if (pin) return { latitude: pin.latitude, longitude: pin.longitude, neighbourhoodId: zone?.id ?? null, address: address || null };
+
+  // No pin: an approximate point, so the report is still on the map (the village / lagje, else the middle of the zone).
+  const base = locality?.latitude != null && locality.longitude != null
+    ? { latitude: locality.latitude, longitude: locality.longitude }
+    : zone?.code ? zoneCenter(zone.code) : null;
+  const approx = base ? approximatePoint(base, address || zone?.name || '') : null;
+  return { latitude: approx?.latitude ?? null, longitude: approx?.longitude ?? null, neighbourhoodId: zone?.id ?? null, address: address || null, approximate: Boolean(approx) };
 }
 
 type CitizenReport = z.output<typeof citizenReportShape>;
@@ -207,6 +218,7 @@ export async function createCitizenReport(raw: unknown, options: { citizenId?: s
       latitude: place.latitude,
       longitude: place.longitude,
       neighbourhoodId: place.neighbourhoodId,
+      locationApproximate: place.approximate ?? false,
       anonymous,
       contactName: anonymous ? null : clean(data.contactName),
       contactEmail: email || null,
@@ -242,6 +254,7 @@ export async function findNearbyOpen(input: { requestTypeId: number; latitude: n
     where: {
       categoryId: type.categoryId,
       status: { in: [...OPEN_STATUSES] },
+      locationApproximate: false, // an approximate point (typed address) is no proof of being "nearby"
       latitude: { gte: box.minLat, lte: box.maxLat },
       longitude: { gte: box.minLng, lte: box.maxLng },
     },
@@ -381,7 +394,7 @@ export async function mapPoints(query: MapQuery): Promise<MapPoint[]> {
       ...(query.category ? { category: { code: query.category } } : {}),
     },
     select: {
-      caseNumber: true, status: true, latitude: true, longitude: true, createdAt: true, isTest: true,
+      caseNumber: true, status: true, latitude: true, longitude: true, locationApproximate: true, createdAt: true, isTest: true,
       requestType: { select: { nameSq: true, nameEn: true } },
       category: { select: { code: true, icon: true } },
     },
@@ -399,6 +412,7 @@ export async function mapPoints(query: MapQuery): Promise<MapPoint[]> {
     typeNameEn: r.requestType.nameEn,
     isTest: r.isTest,
     createdAt: r.createdAt.toISOString(),
+    approximate: r.locationApproximate,
   }));
 }
 

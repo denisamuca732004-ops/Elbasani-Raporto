@@ -242,6 +242,9 @@ model Locality {
   neighbourhoodId Int           @map("neighbourhood_id")
   neighbourhood   Neighbourhood @relation(fields: [neighbourhoodId], references: [id], onDelete: Cascade)
   name            String        @db.VarChar(160)
+  /// Where the lagje or village is (from OpenStreetMap), to place reports typed by hand on the map.
+  latitude        Float?
+  longitude       Float?
   sortOrder       Int           @default(0) @map("sort_order")
   active          Boolean       @default(true)
   createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -279,6 +282,9 @@ model Report {
   address             String?       @db.VarChar(300)
   latitude            Float?
   longitude           Float?
+  /// The point was not given on the map but worked out from the typed address (the lagje or
+  /// village, else the middle of the zone). Shown as approximate; staff can set the exact pin.
+  locationApproximate Boolean       @default(false) @map("location_approximate")
   anonymous           Boolean       @default(false)
   contactName         String?       @map("contact_name") @db.VarChar(160)
   contactEmail        String?       @map("contact_email") @db.VarChar(200)

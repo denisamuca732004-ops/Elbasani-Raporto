@@ -8,12 +8,13 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import * as adminService from '@/lib/server/services/admin';
 import { getCatalog } from '@/lib/server/services/catalog';
-import { createCitizenReport, mapPoints, unplacedReports } from '@/lib/server/services/publicReport';
-import { createStaffReport } from '@/lib/server/services/report';
+import { placeApproximateReports } from '@/lib/server/referenceData';
+import { createCitizenReport, findNearbyOpen, getPublicCase, mapPoints, unplacedReports } from '@/lib/server/services/publicReport';
+import { createStaffReport, updateReport } from '@/lib/server/services/report';
 import type { Principal } from '@/lib/shared/types';
-import { BORDER_TOLERANCE_M, ZONE_CODES, otherZonePlace, zoneCodeAt } from '@/lib/shared/zones';
+import { BORDER_TOLERANCE_M, ZONE_CODES, otherZonePlace, zoneCenter, zoneCodeAt } from '@/lib/shared/zones';
 import { localityPatchSchema, localitySchema } from '@/lib/validation/admin';
-import { mapSchema, staffReportSchema } from '@/lib/validation/report';
+import { mapSchema, reportUpdateSchema, staffReportSchema } from '@/lib/validation/report';
 import { adminSession, citizenData, db, drainJobs, ELBASAN, rejects, setupTestDb, staffSession, teardown, typeId } from './helpers';
 
 let admin: Principal;
@@ -119,8 +120,9 @@ describe('way 2: typing the address', () => {
       neighbourhoodId: await zoneId('elbasan'), localityId: await placeId('elbasan', 'Qemal Stafa'), address: 'Rruga Qemal Stafa 12',
     }));
     assert.equal((await db.report.findUniqueOrThrow({ where: { caseNumber: city.caseNumber } })).address, 'Rruga Qemal Stafa 12, Lagjja Qemal Stafa');
-    assert.equal(report.latitude, null);
-    assert.equal(report.longitude, null);
+    // No pin given: an approximate point inside the zone, marked as approximate.
+    assert.equal(report.locationApproximate, true);
+    assert.equal(zoneCodeAt(report.latitude!, report.longitude!), 'gjinar');
   });
 
   test('a lagje of the city cannot go with a village zone (the case from the pilot)', async () => {
@@ -156,13 +158,22 @@ describe('way 2: typing the address', () => {
 });
 
 describe('on the public map', () => {
-  test('a report typed by hand without a pin is listed under the map; with a pin inside its zone it is on the map', async () => {
+  test('a report typed by hand is on the map too: at its village when known, else in its zone, marked approximate', async () => {
     const zone = await zoneId('gjinar');
     const place = await placeId('gjinar', 'Valesh');
-    const noPin = await createCitizenReport(await byHand({ neighbourhoodId: zone, localityId: place, address: 'te shkolla' }));
     const query = mapSchema.parse({ status: 'open' });
-    assert.ok((await unplacedReports(query)).some((r) => r.caseNumber === noPin.caseNumber));
-    assert.ok(!(await mapPoints(query)).some((p) => p.caseNumber === noPin.caseNumber));
+    const inZone = await createCitizenReport(await byHand({ neighbourhoodId: zone, localityId: place, address: 'te shkolla' }));
+    let point = (await mapPoints(query)).find((p) => p.caseNumber === inZone.caseNumber);
+    assert.equal(point?.approximate, true);
+    assert.equal(zoneCodeAt(point.latitude, point.longitude), 'gjinar');
+    assert.ok(!(await unplacedReports(query)).some((r) => r.caseNumber === inZone.caseNumber));
+
+    // Once the village has coordinates, new reports go to the village (within ~70 m).
+    await db.locality.update({ where: { id: place }, data: { latitude: 41.0420, longitude: 20.1650 } });
+    const atVillage = await createCitizenReport(await byHand({ neighbourhoodId: zone, localityId: place, address: 'te ura e vjetër' }));
+    point = (await mapPoints(query)).find((p) => p.caseNumber === atVillage.caseNumber);
+    assert.ok(point && Math.abs(point.latitude - 41.042) < 0.001 && Math.abs(point.longitude - 20.165) < 0.001, JSON.stringify(point));
+    assert.equal(point.approximate, true);
 
     const withPin = await createCitizenReport(await byHand({ neighbourhoodId: zone, localityId: place, address: 'te ura', ...GJINAR }));
     const report = await db.report.findUniqueOrThrow({ where: { caseNumber: withPin.caseNumber } });
@@ -183,9 +194,46 @@ describe('on the public map', () => {
     const res = await createCitizenReport(await byHand({
       neighbourhoodId: await zoneId('gracen'), localityId: await placeId('gracen', 'Bodin'), address: 'thirrni 069 555 1234 ose ana@example.com',
     }));
-    const card = (await unplacedReports(mapSchema.parse({ status: 'open' }))).find((r) => r.caseNumber === res.caseNumber)!;
+    const card = await getPublicCase(res.caseNumber);
     assert.doesNotMatch(card.address ?? '', /555|ana@/);
     assert.match(card.address ?? '', /\[telefon\].*\[email\]/);
+  });
+});
+
+describe('approximate points', () => {
+  test('are never taken as "the same problem nearby", and become exact when the admin places the pin', async () => {
+    const zone = await zoneId('tregan');
+    const res = await createCitizenReport(await byHand({ neighbourhoodId: zone, localityId: await placeId('tregan', 'Tudan'), address: 'pranë xhamisë' }));
+    const report = await db.report.findUniqueOrThrow({ where: { caseNumber: res.caseNumber } });
+    assert.equal(report.locationApproximate, true);
+    const nearby = await findNearbyOpen({ requestTypeId: report.requestTypeId, latitude: report.latitude!, longitude: report.longitude! });
+    assert.ok(!nearby.some((r) => r.caseNumber === res.caseNumber));
+    const exact = { latitude: INSIDE.tregan![0] + 0.001, longitude: INSIDE.tregan![1] };
+    await updateReport(admin, report.id, reportUpdateSchema.parse(exact));
+    const after = await db.report.findUniqueOrThrow({ where: { id: report.id } });
+    assert.equal(after.locationApproximate, false);
+    assert.equal(after.latitude, exact.latitude);
+  });
+
+  test('reports saved earlier without any point get one at the next deployment (seed), and only those', async () => {
+    const res = await createCitizenReport(await byHand({ neighbourhoodId: await zoneId('zavaline'), localityId: await placeId('zavaline', 'Seltë'), address: 'te kroi' }));
+    await db.report.update({ where: { caseNumber: res.caseNumber }, data: { latitude: null, longitude: null, locationApproximate: false } });
+    const gps = await createCitizenReport(await citizenData({ ...GJINAR }));
+    const gpsBefore = await db.report.findUniqueOrThrow({ where: { caseNumber: gps.caseNumber } });
+    await placeApproximateReports(db);
+    const placed = await db.report.findUniqueOrThrow({ where: { caseNumber: res.caseNumber } });
+    assert.equal(placed.locationApproximate, true);
+    assert.equal(zoneCodeAt(placed.latitude!, placed.longitude!), 'zavaline');
+    const gpsAfter = await db.report.findUniqueOrThrow({ where: { caseNumber: gps.caseNumber } });
+    assert.deepEqual([gpsAfter.latitude, gpsAfter.longitude, gpsAfter.locationApproximate], [gpsBefore.latitude, gpsBefore.longitude, false]);
+    assert.equal(await placeApproximateReports(db), 0, 'the same point every time: nothing moves on the next run');
+  });
+
+  test('every zone centre is inside its zone (the fallback point)', () => {
+    for (const code of ZONE_CODES) {
+      const c = zoneCenter(code)!;
+      assert.equal(zoneCodeAt(c.latitude, c.longitude), code, code);
+    }
   });
 });
 

@@ -22,6 +22,8 @@ export interface NewReport {
   address: string | null;
   latitude: number | null;
   longitude: number | null;
+  /** The point was worked out from a typed address. */
+  locationApproximate?: boolean;
   neighbourhoodId: number | null;
   anonymous: boolean;
   contactName: string | null;
@@ -66,6 +68,7 @@ export async function persistNewReport(input: NewReport): Promise<{ report: { id
           categoryId: input.type.categoryId,
           departmentId,
           neighbourhoodId: input.neighbourhoodId,
+          locationApproximate: input.locationApproximate ?? false,
           kind: input.type.kind,
           status: 'PENDING',
           priority: input.priority ?? input.type.defaultPriority,

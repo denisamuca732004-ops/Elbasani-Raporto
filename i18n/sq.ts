@@ -228,7 +228,10 @@ const sq = {
     title: 'Harta e raportimeve', status: 'Statusi', open: 'Të hapura', closed: 'Të zgjidhura', all: 'Të gjitha',
     category: 'Kategoria', allCategories: 'Të gjitha kategoritë', count: { one: '1 raportim në hartë', other: '{n} raportime në hartë' },
     unplacedTitle: 'Raportime me adresë, pa pikë në hartë ({n})',
-    unplacedText: 'U dërguan me adresë të shkruar. Dalin në hartë sapo stafi i Bashkisë t’i vendosë pikën.',
+    unplacedText: 'U dërguan me adresë në një zonë pa kufi në hartë. Dalin në hartë sapo stafi i Bashkisë t’i vendosë pikën.',
+    approximate: 'Vendndodhje e përafërt',
+    approximateNote: '≈ Vendndodhje e përafërt (nga adresa e shkruar)',
+    approximateCase: 'Pika është e përafërt: raportimi u dërgua me adresë të shkruar, jo me pikë në hartë.',
   },
   stats: {
     title: 'Statistikat', intro: 'Sa raportime merr Bashkia dhe sa shpejt i zgjidh. Të dhënat përditësohen në kohë reale.',
@@ -392,6 +395,7 @@ const sq = {
       title: 'Refuzo', reason: 'Arsyeja e refuzimit', hint: 'Qytetari e sheh këtë arsye.', submit: 'Refuzo raportimin',
       confirm: 'Ta refuzoni këtë raportim? Qytetari do ta shohë arsyen.', done: 'Raportimi u refuzua.',
     },
+    approximate: 'Pika është e përafërt (nga adresa e shkruar). Vendoseni saktë te “Ndrysho detajet”.',
     edit: {
       pin: 'Pika në hartë', pinHint: 'Prekni hartën ose zhvendosni pikën. Zona ndryshon vetë sipas pikës. Me pikë, raportimi del në hartën publike.',
       title: 'Ndrysho detajet', open: 'Ndrysho llojin, sektorin, zonën…', type: 'Lloji i raportimit',

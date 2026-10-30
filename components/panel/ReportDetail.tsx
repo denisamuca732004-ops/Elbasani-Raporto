@@ -244,6 +244,7 @@ export default function ReportDetail({ principal, report: initial, assignable, b
               {report.citizenRating && (<><dt>{t('detail.rating')}</dt><dd>{report.citizenRating} / 5{report.citizenComment ? ` – “${report.citizenComment}”` : ''}</dd></>)}
             </dl>
             {report.latitude !== null && <div style={{ marginTop: 12 }}><MiniMap latitude={report.latitude} longitude={report.longitude} /></div>}
+            {report.locationApproximate && <div className="alert alert-warn" style={{ marginTop: 8 }}>{t('detail.approximate')}</div>}
           </Card>
 
           <Card title={t('detail.photos')} icon="camera">

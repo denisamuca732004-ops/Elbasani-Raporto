@@ -420,6 +420,7 @@ export async function updateReport(user: Principal, id: string, input: ReportUpd
     }
     record('latitude', input.latitude);
     record('longitude', input.longitude);
+    record('locationApproximate', false); // a person placed it: exact now
   }
   const departmentChanges = targetDepartment !== undefined && targetDepartment !== report.departmentId;
   if (!Object.keys(changes).length && !departmentChanges) return buildDetail(user, id);

@@ -107,6 +107,33 @@ export interface ZonePlaces {
   localities: Array<{ id: number; name: string }>;
 }
 
+/** Does the text name this place (whole words, accents and case ignored)? "qemal stafa, Polis Vale" names "Polis Vale". */
+export function mentions(text: string, name: string): boolean {
+  const key = plain(name);
+  return key.trim().length > 0 && plain(text).includes(key);
+}
+
+/**
+ * The point of a report typed by hand without a pin: its lagje or village if
+ * known, else the middle of its zone, moved by a small fixed offset (20–60 m,
+ * from the address) so that reports from the same village do not cover each
+ * other exactly. Always the same point for the same address.
+ */
+export function approximatePoint(base: { latitude: number; longitude: number }, key: string): { latitude: number; longitude: number } {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i += 1) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const u = h >>> 0;
+  const angle = ((u % 3600) / 10) * (Math.PI / 180);
+  const r = 0.0002 + ((u >>> 12) % 400) / 1_000_000; // degrees of latitude, about 20–60 m
+  return {
+    latitude: Math.round((base.latitude + r * Math.sin(angle)) * 1e6) / 1e6,
+    longitude: Math.round((base.longitude + (r * Math.cos(angle)) / Math.cos((base.latitude * Math.PI) / 180)) * 1e6) / 1e6,
+  };
+}
+
 /** The zone of the city; its lagje carry names of people and dates ("Skënderbej", "5 Maji"). */
 export const CITY_ZONE_CODE = 'elbasan';
 

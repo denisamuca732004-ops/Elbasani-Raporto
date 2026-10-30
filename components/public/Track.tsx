@@ -138,6 +138,7 @@ export function CaseView({ lookup, mine = false }: { lookup: CaseLookup; mine?: 
           </dl>
         </div>
         <MiniMap latitude={data.latitude} longitude={data.longitude} />
+        {data.locationApproximate && <p className="hint" style={{ marginTop: 0 }}>{t('map.approximateCase')}</p>}
       </aside>
     </article>
   );

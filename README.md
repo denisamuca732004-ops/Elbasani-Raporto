@@ -102,7 +102,7 @@ Without Vercel Blob, Upstash Redis or QStash, the app uses local fallbacks: a di
 
 ```bash
 npm run typecheck     # TypeScript, strict
-npm test              # 135 tests against a real PostgreSQL (raporton_next_test)
+npm test              # 138 tests against a real PostgreSQL (raporton_next_test)
 npm run check:i18n    # every text exists in Albanian and English, including every enum value
 npm run build         # production build
 ```
@@ -170,7 +170,12 @@ A resident gives the place one of two ways. The server refuses anything else.
 **On the public map** every report shows as a point coloured by its status, from the moment it is received ("Marrë", grey).
 - Until a person verifies a report, its photo and description stay hidden. Phone numbers and emails typed in an address are masked.
 - Rejected reports are never shown.
-- Reports typed by hand without a pin are listed under the map. The admin can place or move a report's pin when editing it, and the zone follows the pin.
+- **Reports typed by hand without a pin are on the map too, at an approximate point.**
+  - The point is their lagje or village (`lib/server/data/locality-points.json`, built from an OpenStreetMap export with `scripts/build-locality-points.py`), else the middle of their zone.
+  - It is drawn with a dashed ring, and the popup and the report page say it is approximate.
+  - Every deployment (the seed) places reports that still have no point, and moves approximate ones to their village once its coordinates are known. Points set by a person are never moved.
+  - Approximate points are never used for "the same problem nearby".
+  - The admin can place the exact pin when editing a report, and the zone follows the pin.
    - Street names themselves are not checked yet: that needs the Municipality's street register.
 
 **Sources:**

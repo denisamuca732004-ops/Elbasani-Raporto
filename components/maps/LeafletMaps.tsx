@@ -130,12 +130,16 @@ export function CasesMap({ points, tall = true, linkPrefix = '/ndiq' }: CasesMap
             key={p.caseNumber}
             center={[p.latitude, p.longitude]}
             radius={8}
-            pathOptions={{ color: '#fff', weight: 2, fillColor: STATUS_COLORS[key(p.publicStatus)] ?? '#777', fillOpacity: 0.95 }}
+            // An approximate point (address typed by hand) has a dashed dark ring and a lighter fill.
+            pathOptions={p.approximate
+              ? { color: '#1B2A1B', weight: 2, dashArray: '3 3', fillColor: STATUS_COLORS[key(p.publicStatus)] ?? '#777', fillOpacity: 0.55 }
+              : { color: '#fff', weight: 2, fillColor: STATUS_COLORS[key(p.publicStatus)] ?? '#777', fillOpacity: 0.95 }}
           >
             <Popup>
               <strong className="case-number">{p.caseNumber}</strong><br />
               {lang === 'en' ? p.typeNameEn : p.typeNameSq}<br />
               <span className="small">{t(`status.${key(p.publicStatus)}`)} · {formatDate(p.createdAt, lang)}</span><br />
+              {p.approximate && <><span className="small muted">{t('map.approximateNote')}</span><br /></>}
               <Link href={`${linkPrefix}/${p.caseNumber}`}>{t('common.details')} →</Link>
             </Popup>
           </CircleMarker>

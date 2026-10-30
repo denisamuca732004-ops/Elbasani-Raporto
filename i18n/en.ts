@@ -228,7 +228,10 @@ const en = {
     title: 'Map of reports', status: 'Status', open: 'Open', closed: 'Resolved', all: 'All',
     category: 'Category', allCategories: 'All categories', count: { one: '1 report on the map', other: '{n} reports on the map' },
     unplacedTitle: 'Reports with an address, without a pin on the map ({n})',
-    unplacedText: 'They were sent with a typed address. They appear on the map as soon as municipal staff place their pin.',
+    unplacedText: 'They were sent with an address in an area without a border on the map. They appear on the map as soon as municipal staff place their pin.',
+    approximate: 'Approximate location',
+    approximateNote: '≈ Approximate location (from the typed address)',
+    approximateCase: 'The pin is approximate: the report was sent with a typed address, not a pin on the map.',
   },
   stats: {
     title: 'Statistics', intro: 'How many reports the municipality receives and how fast it resolves them. Updated in real time.',
@@ -392,6 +395,7 @@ const en = {
       title: 'Reject', reason: 'Rejection reason', hint: 'The resident sees this reason.', submit: 'Reject the report',
       confirm: 'Reject this report? The resident will see the reason.', done: 'The report was rejected.',
     },
+    approximate: 'The pin is approximate (from the typed address). Place it exactly in “Edit details”.',
     edit: {
       pin: 'Pin on the map', pinHint: 'Tap the map or drag the pin. The area follows the pin. With a pin, the report appears on the public map.',
       title: 'Edit details', open: 'Change the type, sector, area…', type: 'Report type',

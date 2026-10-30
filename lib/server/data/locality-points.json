@@ -1,0 +1,4 @@
+{
+  "source": "OpenStreetMap place nodes (© OpenStreetMap contributors, ODbL 1.0), matched to the lagje and villages of each zone by scripts/build-locality-points.py. Empty until the export is imported.",
+  "zones": {}
+}

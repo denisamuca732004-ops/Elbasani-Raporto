@@ -580,3 +580,6 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .or-line { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--muted); font-family: var(--font-head); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
 .or-line::before, .or-line::after { content: ''; flex: 1; border-top: 1px solid var(--line); }
 .danger-zone { border-color: #E8B4B4; }
+
+/* Map legend: an approximate point (address typed by hand) */
+.legend .legend-approx { background: #C9C9C9 !important; border: 2px dashed #1B2A1B; border-radius: 50%; box-sizing: border-box; }
