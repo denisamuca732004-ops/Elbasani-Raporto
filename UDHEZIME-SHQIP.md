@@ -115,12 +115,14 @@ të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me 
 
 ## Paneli i administratorit
 
-- **Menuja** ka vetëm punën e përditshme: Paneli, raportimet (të gjitha dhe një lidhje për çdo
-  sektor), Kërkesat për rishikim, dhe te *Administrimi*: Zonat, Emailet, Integrimi, Të dhëna demo.
+- **Menuja** ka vetëm punën e përditshme: Paneli, **Departamentet**, Kërkesat për rishikim, dhe
+  te *Administrimi*: Zonat, Emailet, Integrimi, Të dhëna demo. Sektorët nuk renditen më në menu:
+  *Departamentet* (`/admin/sectors`) hap kartat e tyre në të djathtë, dhe çdo kartë hap
+  raportimet e atij sektori (me lidhjen “← Departamentet” për t'u kthyer).
 - **Jo në menu**, por faqet punojnë me adresën e tyre: Sektorët (`/admin/departments`),
   Përdoruesit (`/admin/users`), Llojet e raportimeve (`/admin/report-types`), Udhëzuesi
   (`/admin/guide`), Pamja (`/admin/appearance`) dhe Raportim i ri nga stafi (`/admin/reports/new`).
-- **Paneli** nis me një kartë për çdo sektor: sa raportime ka, sa janë të hapura, sa me
+- **Paneli** dhe **Departamentet** tregojnë një kartë për çdo sektor: sa raportime ka, sa janë të hapura, sa me
   prioritet të lartë dhe sa me vonesë. Klikimi hap raportimet e sektorit; skedat e statusit
   (Të hapura, Për verifikim, Në punë, Zgjidhur, Mbyllur/refuzuar, Të gjitha) tregojnë numrin
   për secilin. Çdo raportim hapet dhe administratori e ndryshon (statusi, prioriteti, sektori,

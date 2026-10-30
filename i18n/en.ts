@@ -296,6 +296,7 @@ const en = {
     openShort: 'open', highShort: 'high priority', pendingShort: 'pending',
     overdue: 'Overdue', transferPending: 'Under review', highOpen: '{n} with high priority',
     nav: {
+      departments: 'Departments',
       dashboard: 'Dashboard', reports: 'Reports', allReports: 'All reports', unrouted: 'No sector',
       reviews: 'Review requests', newReport: 'New report', administration: 'Administration',
       sectors: 'Sectors', users: 'Users', catalogue: 'Report types', areas: 'Areas', appearance: 'Appearance',
@@ -303,6 +304,7 @@ const en = {
       sectorReports: 'Sector reports', sectorReviews: 'Review requests', guide: 'Search guide',
     },
   },
+  sectors: { emptyTitle: 'No sectors yet.', emptyText: 'Add the municipality’s sectors on the sectors page (/admin/departments).' },
   dashboard: {
     period: 'Period', periods: { week: 'Week', month: 'Month', year: 'Year' },
     sector: 'Sector', allSectors: 'All sectors', wholeMunicipality: 'The whole municipality',

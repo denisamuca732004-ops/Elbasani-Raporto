@@ -1,7 +1,7 @@
 /** Dashboard: statistics for a week (7 days), a month (30 days) and a year (12 months), in Tirana time. */
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
-import { getDashboard } from '@/lib/server/services/dashboard';
+import { getDashboard, sectorRows } from '@/lib/server/services/dashboard';
 import { changeStatus } from '@/lib/server/services/report';
 import type { Principal } from '@/lib/shared/types';
 import { dashboardSchema } from '@/lib/validation/report';
@@ -120,6 +120,13 @@ describe('dashboard periods', () => {
     const own = await dashboard({ period: 'year', departmentId: waterId }, infra);
     assert.equal(own.department?.code, 'infrastructure');
     assert.equal(own.totals.openNow, reports.slice(1).filter((r) => r.department === 'infrastructure').length);
+  });
+
+  test('"Departamentet": the sector cards are the same as on the dashboard, and only for the admin', async () => {
+    const cards = await sectorRows(admin, 'month');
+    const d = await dashboard({ period: 'month' });
+    assert.deepEqual(cards, d.byDepartment);
+    assert.deepEqual(await sectorRows(infra, 'month'), [], 'a department head never gets the other sectors');
   });
 
   test('invalid periods are refused by validation', () => {

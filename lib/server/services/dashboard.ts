@@ -32,6 +32,69 @@ const OPEN_SQL = Prisma.raw(`(${OPEN_STATUSES.map((s) => `'${s}'`).join(',')})`)
 const num = (v: unknown, digits = 1): number | null => (v === null || v === undefined ? null : Number(Number(v).toFixed(digits)));
 const int = (v: unknown): number => Number(v ?? 0);
 
+/** Start and end of the current and the previous period, computed in Tirana time (CTEs b and w). */
+function windowCteFor(period: DashboardPeriod): Prisma.Sql {
+  const spec = PERIODS[period];
+  const tz = config().rules.timezone;
+  return Prisma.sql`
+    b AS (
+      SELECT date_trunc(${spec.unit}::text, now() AT TIME ZONE ${tz}::text) - (${spec.count}::int - 1) * CAST(${spec.step}::text AS interval) AS from_local,
+             date_trunc(${spec.unit}::text, now() AT TIME ZONE ${tz}::text) + CAST(${spec.step}::text AS interval) AS to_local
+    ),
+    w AS (
+      SELECT (b.from_local AT TIME ZONE ${tz}::text) AS t0,
+             (b.to_local AT TIME ZONE ${tz}::text) AS t1,
+             ((b.from_local - ${spec.count}::int * CAST(${spec.step}::text AS interval)) AT TIME ZONE ${tz}::text) AS p0
+      FROM b
+    )`;
+}
+
+export type SectorRow = {
+  id: number | null; code: string | null; nameSq: string | null; nameEn: string | null;
+  /** total: every report of the sector, any status, any date (the number on its card). */
+  total: number; received: number; resolved: number; open: number; overdue: number; openHigh: number;
+};
+
+/**
+ * One row per sector (active, or with open reports), plus one for the reports
+ * without a sector when there are any: the admin's sector cards. Admin only.
+ */
+export async function sectorRows(user: Principal, period: DashboardPeriod, includeTest = false): Promise<SectorRow[]> {
+  if (!isAdmin(user)) return [];
+  const windowCte = windowCteFor(period);
+  const testFilter = includeTest ? Prisma.empty : Prisma.sql`AND r.is_test = false`;
+  const inPeriod = (column: Prisma.Sql) => Prisma.sql`${column} >= w.t0 AND ${column} < w.t1`;
+  const rows = await db.$queryRaw<Array<Record<string, unknown>>>`
+    WITH ${windowCte},
+    agg AS (
+      SELECT r.department_id,
+        count(*)::int AS total,
+        count(*) FILTER (WHERE ${inPeriod(Prisma.raw('r.created_at'))})::int AS received,
+        count(*) FILTER (WHERE ${inPeriod(Prisma.raw('r.resolved_at'))})::int AS resolved,
+        count(*) FILTER (WHERE r.status IN ${OPEN_SQL})::int AS open,
+        count(*) FILTER (WHERE r.status IN ${OPEN_SQL} AND r.due_at < now())::int AS overdue,
+        count(*) FILTER (WHERE r.status IN ${OPEN_SQL} AND r.priority = 'HIGH')::int AS open_high
+      FROM reports r CROSS JOIN w
+      WHERE TRUE ${testFilter}
+      GROUP BY r.department_id
+    )
+    SELECT d.id, d.code, d.name_sq AS "nameSq", d.name_en AS "nameEn", coalesce(agg.total, 0)::int AS total,
+           coalesce(agg.received, 0)::int AS received, coalesce(agg.resolved, 0)::int AS resolved,
+           coalesce(agg.open, 0)::int AS open, coalesce(agg.overdue, 0)::int AS overdue, coalesce(agg.open_high, 0)::int AS open_high
+    FROM departments d LEFT JOIN agg ON agg.department_id = d.id
+    WHERE d.active = true OR coalesce(agg.open, 0) > 0
+    UNION ALL
+    SELECT NULL, NULL, NULL, NULL, total, received, resolved, open, overdue, open_high FROM agg WHERE agg.department_id IS NULL
+    ORDER BY open DESC, received DESC, "nameSq" NULLS LAST`;
+  return rows.map((r) => ({
+    id: r.id === null || r.id === undefined ? null : Number(r.id),
+    code: (r.code as string | null) ?? null,
+    nameSq: (r.nameSq as string | null) ?? null,
+    nameEn: (r.nameEn as string | null) ?? null,
+    total: int(r.total), received: int(r.received), resolved: int(r.resolved), open: int(r.open), overdue: int(r.overdue), openHigh: int(r.open_high),
+  }));
+}
+
 export interface DashboardResult {
   period: DashboardPeriod;
   unit: 'day' | 'month';
@@ -50,11 +113,7 @@ export interface DashboardResult {
   byStatus: Array<{ status: Status; count: number }>;
   byCategory: Array<{ code: string; nameSq: string; nameEn: string; received: number; resolved: number }>;
   byNeighbourhood: Array<{ name: string; received: number }>;
-  byDepartment: Array<{
-    id: number | null; code: string | null; nameSq: string | null; nameEn: string | null;
-    /** total: every report of the sector, any status, any date (the number on its card). */
-    total: number; received: number; resolved: number; open: number; overdue: number; openHigh: number;
-  }> | null;
+  byDepartment: SectorRow[] | null;
   pendingTransfers: number;
 }
 
@@ -65,19 +124,7 @@ export async function getDashboard(user: Principal, query: DashboardQuery): Prom
   const admin = isAdmin(user);
   const departmentId: number | null = admin ? (query.departmentId ?? null) : (user.departmentId ?? -1);
   const tz = config().rules.timezone;
-
-  /** Start and end of the current and the previous period, computed in Tirana time. */
-  const windowCte = Prisma.sql`
-    b AS (
-      SELECT date_trunc(${spec.unit}::text, now() AT TIME ZONE ${tz}::text) - (${spec.count}::int - 1) * CAST(${spec.step}::text AS interval) AS from_local,
-             date_trunc(${spec.unit}::text, now() AT TIME ZONE ${tz}::text) + CAST(${spec.step}::text AS interval) AS to_local
-    ),
-    w AS (
-      SELECT (b.from_local AT TIME ZONE ${tz}::text) AS t0,
-             (b.to_local AT TIME ZONE ${tz}::text) AS t1,
-             ((b.from_local - ${spec.count}::int * CAST(${spec.step}::text AS interval)) AT TIME ZONE ${tz}::text) AS p0
-      FROM b
-    )`;
+  const windowCte = windowCteFor(period);
   const testFilter = includeTest ? Prisma.empty : Prisma.sql`AND r.is_test = false`;
   const departmentFilter = departmentId !== null ? Prisma.sql`AND r.department_id = ${departmentId}::int` : Prisma.empty;
   const base = Prisma.sql`${testFilter} ${departmentFilter}`;
@@ -151,38 +198,7 @@ export async function getDashboard(user: Principal, query: DashboardQuery): Prom
     db.$queryRaw<Array<{ t0: Date; t1: Date; p0: Date }>>`WITH ${windowCte} SELECT t0, t1, p0 FROM w`,
   ]);
 
-  let byDepartment: DashboardResult['byDepartment'] = null;
-  if (admin && departmentId === null) {
-    const rows = await db.$queryRaw<Array<Record<string, unknown>>>`
-      WITH ${windowCte},
-      agg AS (
-        SELECT r.department_id,
-          count(*)::int AS total,
-          count(*) FILTER (WHERE ${inPeriod(created)})::int AS received,
-          count(*) FILTER (WHERE ${inPeriod(resolvedAt)})::int AS resolved,
-          count(*) FILTER (WHERE r.status IN ${OPEN_SQL})::int AS open,
-          count(*) FILTER (WHERE r.status IN ${OPEN_SQL} AND r.due_at < now())::int AS overdue,
-          count(*) FILTER (WHERE r.status IN ${OPEN_SQL} AND r.priority = 'HIGH')::int AS open_high
-        FROM reports r CROSS JOIN w
-        WHERE TRUE ${testFilter}
-        GROUP BY r.department_id
-      )
-      SELECT d.id, d.code, d.name_sq AS "nameSq", d.name_en AS "nameEn", coalesce(agg.total, 0)::int AS total,
-             coalesce(agg.received, 0)::int AS received, coalesce(agg.resolved, 0)::int AS resolved,
-             coalesce(agg.open, 0)::int AS open, coalesce(agg.overdue, 0)::int AS overdue, coalesce(agg.open_high, 0)::int AS open_high
-      FROM departments d LEFT JOIN agg ON agg.department_id = d.id
-      WHERE d.active = true OR coalesce(agg.open, 0) > 0
-      UNION ALL
-      SELECT NULL, NULL, NULL, NULL, total, received, resolved, open, overdue, open_high FROM agg WHERE agg.department_id IS NULL
-      ORDER BY open DESC, received DESC, "nameSq" NULLS LAST`;
-    byDepartment = rows.map((r) => ({
-      id: r.id === null || r.id === undefined ? null : Number(r.id),
-      code: (r.code as string | null) ?? null,
-      nameSq: (r.nameSq as string | null) ?? null,
-      nameEn: (r.nameEn as string | null) ?? null,
-      total: int(r.total), received: int(r.received), resolved: int(r.resolved), open: int(r.open), overdue: int(r.overdue), openHigh: int(r.open_high),
-    }));
-  }
+  const byDepartment = admin && departmentId === null ? await sectorRows(user, period, includeTest) : null;
 
   const t = totalsRows[0] ?? {};
   const win = windowRows[0]!;

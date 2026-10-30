@@ -19,6 +19,8 @@ import type { Principal } from '@/lib/shared/types';
 
 interface NavItemProps {
   href: string; icon: string; label: string; exact?: boolean; badge?: number; badgeTone?: string; badgeLabel?: string; high?: number;
+  /** Other pages that belong to this item (it stays highlighted there), e.g. a sector's reports under "Departamentet". */
+  also?: string[];
 }
 
 function Badge({ value, tone, label }: { value?: number; tone?: string; label?: string }) {
@@ -35,14 +37,13 @@ function useIsActive(href: string, exact?: boolean): boolean {
   if (!pathMatches) return false;
   const wanted = [...url.searchParams.entries()];
   if (wanted.length) return wanted.every(([k, v]) => params.get(k) === v);
-  // The plain "all reports" link is not active while a department is filtered from the menu.
-  if (url.pathname === '/admin/reports' && (params.get('departmentId') || params.get('unrouted'))) return false;
   return true;
 }
 
-function NavItem({ href, icon, label, exact, badge, badgeTone, badgeLabel, high }: NavItemProps) {
+function NavItem({ href, icon, label, exact, badge, badgeTone, badgeLabel, high, also }: NavItemProps) {
   const { t } = useI18n();
-  const active = useIsActive(href, exact);
+  const pathname = usePathname();
+  const active = useIsActive(href, exact) || Boolean(also?.some((p) => pathname === p || pathname.startsWith(`${p}/`)));
   return (
     <li>
       <Link href={href} title={label} className={active ? 'active' : undefined} aria-current={active ? 'page' : undefined}>
@@ -59,22 +60,16 @@ function NavItem({ href, icon, label, exact, badge, badgeTone, badgeLabel, high 
   );
 }
 
-function navGroups(principal: Principal, counts: SidebarCounts | null, t: (k: string) => string, lang: string) {
+function navGroups(principal: Principal, counts: SidebarCounts | null, t: (k: string) => string) {
   if (principal.role === 'ADMIN') {
     return [
       { items: [{ href: '/admin', icon: 'dashboard', label: t('panel.nav.dashboard'), exact: true }] },
       {
+        // One item for the sectors: it opens their cards on the right (/admin/sectors), and each
+        // card opens that sector's reports. The badges are the open reports of the whole municipality.
         title: t('panel.nav.reports'),
         items: [
-          { href: '/admin/reports', icon: 'inbox', label: t('panel.nav.allReports'), badge: counts?.openTotal, high: counts?.highTotal },
-          ...(counts?.departments ?? []).map((d) => ({
-            href: `/admin/reports?departmentId=${d.id}`, icon: 'layers', label: lang === 'en' ? d.nameEn : d.nameSq, badge: d.open, high: d.high,
-          })),
-          ...(counts?.unrouted ? [{ href: '/admin/reports?unrouted=1', icon: 'alert', label: t('panel.nav.unrouted'), badge: counts.unrouted, badgeTone: 'alert' }] : []),
-        ],
-      },
-      {
-        items: [
+          { href: '/admin/sectors', icon: 'layers', label: t('panel.nav.departments'), badge: counts?.openTotal, high: counts?.highTotal, also: ['/admin/reports'] },
           { href: '/admin/transfers', icon: 'transfer', label: t('panel.nav.reviews'), badge: counts?.pendingTransfers, badgeTone: 'alert', badgeLabel: t('panel.pendingShort') },
         ],
       },
@@ -120,7 +115,7 @@ export default function PanelShell({ principal, counts, includeTest, children }:
   const [showDemo, setShowDemo] = useState(includeTest);
   useEffect(() => setShowDemo(includeTest), [includeTest]);
   const admin = principal.role === 'ADMIN';
-  const groups = navGroups(principal, counts, t, lang);
+  const groups = navGroups(principal, counts, t);
   const departmentName = lang === 'en' ? principal.departmentNameEn : principal.departmentNameSq;
 
   useEffect(() => setOpen(false), [pathname, params]);

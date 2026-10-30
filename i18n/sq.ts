@@ -296,6 +296,7 @@ const sq = {
     openShort: 'të hapura', highShort: 'me prioritet të lartë', pendingShort: 'në pritje',
     overdue: 'Me vonesë', transferPending: 'Në rishikim', highOpen: '{n} me prioritet të lartë',
     nav: {
+      departments: 'Departamentet',
       dashboard: 'Paneli', reports: 'Raportimet', allReports: 'Të gjitha raportimet', unrouted: 'Pa sektor',
       reviews: 'Kërkesat për rishikim', newReport: 'Raportim i ri', administration: 'Administrimi',
       sectors: 'Sektorët', users: 'Përdoruesit', catalogue: 'Llojet e raportimeve', areas: 'Zonat', appearance: 'Pamja',
@@ -303,6 +304,7 @@ const sq = {
       sectorReports: 'Raportimet e sektorit', sectorReviews: 'Kërkesat për rishikim', guide: 'Udhëzuesi',
     },
   },
+  sectors: { emptyTitle: 'Ende nuk ka sektorë.', emptyText: 'Shtoni sektorët e Bashkisë te faqja e sektorëve (/admin/departments).' },
   dashboard: {
     period: 'Periudha', periods: { week: 'Java', month: 'Muaji', year: 'Viti' },
     sector: 'Sektori', allSectors: 'Të gjithë sektorët', wholeMunicipality: 'E gjithë Bashkia',

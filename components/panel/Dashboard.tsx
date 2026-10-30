@@ -13,6 +13,7 @@ import TrendChart from '@/components/charts/TrendChart';
 import Icon from '@/components/Icon';
 import { useCatalog } from '@/components/providers';
 import { BarList, KpiTile, Segmented } from '@/components/ui';
+import { SectorCards } from './SectorCards';
 import { useI18n } from '@/i18n';
 import { departmentName, formatDate, key } from '@/lib/client/format';
 import { storage } from '@/lib/client/storage';
@@ -47,39 +48,6 @@ function Onboarding({ info }: { info: OnboardingInfo }) {
         </li>
       </ol>
     </section>
-  );
-}
-
-type SectorRow = NonNullable<DashboardResult['byDepartment']>[number];
-
-/**
- * One sector on the admin's dashboard: its name and how many reports it has.
- * Opens its reports with every status, where the tabs show how many are in
- * each status (to verify, in progress, resolved…) and each report can be edited.
- */
-function SectorCard({ sector, periodLabel }: { sector: SectorRow; periodLabel: string }) {
-  const { t, lang } = useI18n();
-  const unrouted = sector.id === null;
-  const href = unrouted ? '/admin/reports?unrouted=1' : `/admin/reports?departmentId=${sector.id}&status=all`;
-  return (
-    <Link href={href} className={`sector-card${unrouted ? ' unrouted' : ''}`}>
-      <span className="sector-name">
-        <Icon name={unrouted ? 'alert' : 'layers'} size={18} />
-        {unrouted ? t('panel.nav.unrouted') : (lang === 'en' ? sector.nameEn : sector.nameSq)}
-      </span>
-      <span className="sector-total">
-        <strong>{unrouted ? sector.open : sector.total}</strong> {t(unrouted ? 'dashboard.sectorWaiting' : 'dashboard.sectorReports', { n: unrouted ? sector.open : sector.total })}
-      </span>
-      {!unrouted && (
-        <span className="sector-meta">
-          <span>{t('dashboard.sectorOpen', { n: sector.open })}</span>
-          {sector.openHigh > 0 && <span className="priority priority-high"><Icon name="arrowUp" size={12} strokeWidth={3} />{sector.openHigh}<span className="sr-only"> {t('dashboard.highOpen')}</span></span>}
-          {sector.overdue > 0 && <span className="badge badge-overdue">{t('dashboard.sectorOverdue', { n: sector.overdue })}</span>}
-        </span>
-      )}
-      {!unrouted && <span className="small muted">{t('dashboard.sectorPeriod', { period: periodLabel, received: sector.received, resolved: sector.resolved })}</span>}
-      <span className="sector-go">{t('dashboard.sectorOpenList')}<Icon name="chevronRight" size={16} /></span>
-    </Link>
   );
 }
 
@@ -162,11 +130,7 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
             <section aria-labelledby="dash-sectors">
               <h2 className="section-label" id="dash-sectors">{t('dashboard.sectorsTitle')}</h2>
               <p className="hint" style={{ marginTop: 0 }}>{t('dashboard.sectorsHint')}</p>
-              <div className="sector-grid">
-                {data.byDepartment.filter((s) => s.id !== null || s.open > 0).map((s) => (
-                  <SectorCard key={s.id ?? 'none'} sector={s} periodLabel={periodLabel} />
-                ))}
-              </div>
+              <SectorCards rows={data.byDepartment} period={period} />
             </section>
           )}
 

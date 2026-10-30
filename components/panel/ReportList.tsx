@@ -74,6 +74,9 @@ export default function ReportList({ principal, view, data, counts, statusCounts
 
   return (
     <div className="stack">
+      {admin && (view.scope === 'department' || view.scope === 'unrouted') && (
+        <Link href="/admin/sectors" className="back-link"><Icon name="arrowLeft" size={16} />{t('panel.nav.departments')}</Link>
+      )}
       <div className="page-head">
         <div>
           <h1>{title}</h1>
