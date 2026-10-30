@@ -125,7 +125,7 @@ type CitizenReport = z.output<typeof citizenReportShape>;
  * type → location (a point on the map, or zone + lagje/village + street) → photo → description → contact (or anonymous).
  * All problems are returned together, each with the wizard step it belongs to.
  */
-export async function createCitizenReport(raw: unknown) {
+export async function createCitizenReport(raw: unknown, options: { citizenId?: string | null } = {}) {
   const problems: ReportProblem[] = [];
   const parsed = check(citizenReportShape, raw);
   if (!parsed.ok) {
@@ -200,6 +200,7 @@ export async function createCitizenReport(raw: unknown) {
       contactEmail: email || null,
       contactPhone: phone || null,
       createdById: null,
+      citizenId: options.citizenId ?? null,
       clientRef: data.clientRef?.trim() || null,
       photoKey: data.photoKey,
     });

@@ -14,7 +14,7 @@ export const CACHE_KEYS = {
   settings: 'settings:v1',
   guide: 'guide:active:v1',
   publicStats: 'stats:public:v1',
-  userState: (userId: string) => `user:${userId}:state:v1`,
+  userState: (userId: string) => `user:${userId}:state:v2`, // v2: hasPassword / hasGoogle
 } as const;
 
 let redis: Redis | null | undefined;

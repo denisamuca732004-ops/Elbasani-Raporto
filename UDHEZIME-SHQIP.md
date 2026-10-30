@@ -26,9 +26,14 @@ Ky version është ndërtuar me **Next.js 16** (App Router) dhe **TypeScript**, 
 |---|---|---|
 | `ADMIN` | Administratori kryesor | Gjithçka: të gjitha raportimet, sektorët, llogaritë, llojet, zonat, pamjen, email-et, demon |
 | `MUNICIPALITY_STAFF` | Përgjegjësi i një sektori | Vetëm raportimet e sektorit të vet dhe kërkesat që ka dërguar ai sektor |
-| `USER` | (rezervë për të ardhmen) | Nuk ka akses në panel |
+| `USER` | Qytetari me llogari (opsionale) | Vetëm “Llogaria ime” dhe raportimet e veta; nuk ka akses në panel |
 
-Qytetari nuk ka nevojë për llogari.
+Qytetari nuk ka nevojë për llogari, por mund të krijojë një nëse do:
+* **me Google** ("Vazhdo me Google"), ose **me email dhe fjalëkalim**, te `/llogaria/hyr`;
+* me llogari, raportimet e tij dalin te **“Raportimet e mia”** nga çdo pajisje, dhe kontakti plotësohet vetë;
+* stafi nuk e sheh se cila llogari bëri një raportim: raportimet anonime mbeten anonime;
+* qytetari e fshin vetë llogarinë kur të dojë;
+* Google nuk hyn kurrë në llogaritë e stafit, dhe faqja “Përdoruesit” e administratorit tregon vetëm stafin.
 
 Kontrolli bëhet në tre nivele, dhe të tri duhet të kalojnë:
 1. **proxy-ja** kontrollon cookie-n;
@@ -138,7 +143,7 @@ të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me 
 
 ```bash
 npm run typecheck     # TypeScript
-npm test              # 120 teste me PostgreSQL të vërtetë
+npm test              # 132 teste me PostgreSQL të vërtetë
 npm run check:i18n    # çdo tekst ekziston në shqip dhe anglisht
 npm run build         # ndërtimi për prodhim
 ```

@@ -1,8 +1,9 @@
 /**
- * Accounts and sign-in. Residents never need an account: there is no public
- * sign-up. The very first admin is created once, only with the ADMIN_EMAIL
- * configured on the server; every other account is created by the admin with
- * a temporary password that must be changed at the first sign-in.
+ * Accounts and sign-in of the STAFF. (Residents may have an optional account of
+ * their own, with Google or email + password: services/residents.ts.) The very
+ * first admin is created once, only with the ADMIN_EMAIL configured on the
+ * server; every other staff account is created by the admin with a temporary
+ * password that must be changed at the first sign-in.
  *
  * Sessions are Auth.js JWTs in an encrypted, HTTP-only cookie. Each token
  * carries the user's sessionVersion; changing or resetting the password, or
@@ -90,6 +91,8 @@ interface UserState {
   departmentNameSq: string | null;
   departmentNameEn: string | null;
   mustChangePassword: boolean;
+  hasPassword: boolean;
+  hasGoogle: boolean;
 }
 
 async function userState(id: string): Promise<UserState | null> {
@@ -107,9 +110,14 @@ async function userState(id: string): Promise<UserState | null> {
       departmentNameSq: user.department?.nameSq ?? null,
       departmentNameEn: user.department?.nameEn ?? null,
       mustChangePassword: user.mustChangePassword,
+      hasPassword: user.passwordHash !== null,
+      hasGoogle: user.googleId !== null,
     };
   });
 }
+
+/** For residents' sessions (services/residents.ts). */
+export const readUserState = userState;
 
 /** After any change to an account: the next request reads it fresh from the database. */
 export const forgetUserState = (id: string) => invalidate(CACHE_KEYS.userState(id));
@@ -138,7 +146,7 @@ export async function loadPrincipal(userId: string, tokenSessionVersion: number)
 
 export async function changePassword(user: Principal, input: ChangePasswordInput): Promise<void> {
   const row = await db.user.findUnique({ where: { id: user.id } });
-  if (!row || !(await bcrypt.compare(input.currentPassword, row.passwordHash))) {
+  if (!row?.passwordHash || !(await bcrypt.compare(input.currentPassword, row.passwordHash))) {
     throw badRequest('Fjalëkalimi aktual është i gabuar.', [{ field: 'currentPassword', code: 'wrong_password', message: 'Fjalëkalimi aktual është i gabuar.' }]);
   }
   if (input.newPassword === input.currentPassword) {

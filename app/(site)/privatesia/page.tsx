@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PrivacyPage() {
   const { t } = await getT();
-  const sections = ['what', 'why', 'public', 'photos', 'ai', 'keep', 'rights'];
+  const sections = ['what', 'why', 'public', 'photos', 'ai', 'account', 'keep', 'rights'];
   return (
     <div className="page">
       <div className="container" style={{ maxWidth: 820 }}>

@@ -19,6 +19,7 @@ const RULES = {
   search: () => ({ limit: 120, windowSeconds: 600 }),
   feedback: () => ({ limit: 20, windowSeconds: 3600 }),
   setup: () => ({ limit: 10, windowSeconds: 3600 }),
+  register: () => ({ limit: 10, windowSeconds: 3600 }),
 } satisfies Record<string, () => Rule>;
 export type RateRule = keyof typeof RULES;
 

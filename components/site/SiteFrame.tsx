@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import Icon from '@/components/Icon';
-import { useSettings } from '@/components/providers';
+import { useSettings, useViewer } from '@/components/providers';
 import { useI18n } from '@/i18n';
 import { flushQueue, pendingCount } from '@/lib/client/offlineQueue';
 
@@ -63,6 +63,18 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
   return <Link href={href} className={active ? 'active' : undefined} aria-current={active ? 'page' : undefined}>{children}</Link>;
 }
 
+/** Signed in: the resident's first name (their account) or "Panel" for staff. Otherwise "Sign in". */
+function AccountLink() {
+  const { t } = useI18n();
+  const viewer = useViewer();
+  if (viewer?.kind === 'staff') return <Link href="/admin" className="account-link"><Icon name="dashboard" size={16} /><span>{t('nav.panel')}</span></Link>;
+  if (viewer?.kind === 'resident') {
+    const first = viewer.name.split(' ')[0] || viewer.name;
+    return <Link href="/llogaria" className="account-link" title={viewer.email}><Icon name="user" size={16} /><span>{first}</span></Link>;
+  }
+  return <Link href="/llogaria/hyr" className="account-link"><Icon name="user" size={16} /><span>{t('nav.signIn')}</span></Link>;
+}
+
 export function SiteHeader() {
   const { t } = useI18n();
   const { branding } = useSettings();
@@ -84,7 +96,7 @@ export function SiteHeader() {
           <span className="brand-name">{branding.appName}<span className="brand-sub">{branding.municipalityName}</span></span>
         </Link>
         <div className="header-actions">
-          <Link href="/hyrje" className="staff-link">{t('nav.staff')}</Link>
+          <AccountLink />
           <LanguageToggle />
           <button type="button" className="menu-btn" aria-expanded={open} aria-controls="main-nav" onClick={() => setOpen(!open)}>
             <Icon name={open ? 'close' : 'menu'} size={28} /><span className="sr-only">{t('nav.menu')}</span>

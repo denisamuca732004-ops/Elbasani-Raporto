@@ -10,6 +10,18 @@ export const profileSchema = z
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: 'Nuk ka asnjë ndryshim.' });
 
+/** A resident's own account (optional: reporting never needs one). */
+export const registerSchema = z.strictObject({ name: singleLine(2, 160), email, password });
+export const residentProfileSchema = z
+  .strictObject({ name: singleLine(2, 160), phone: phone.nullable() })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: 'Nuk ka asnjë ndryshim.' });
+/** Change the password, or set the first one for an account made with Google (then no current password). */
+export const setPasswordSchema = z.strictObject({ currentPassword: z.string().max(128).optional(), newPassword: password });
+
+export type RegisterInput = z.output<typeof registerSchema>;
+export type ResidentProfileInput = z.output<typeof residentProfileSchema>;
+export type SetPasswordInput = z.output<typeof setPasswordSchema>;
 export type SetupInput = z.output<typeof setupSchema>;
 export type LoginInput = z.output<typeof loginSchema>;
 export type ChangePasswordInput = z.output<typeof changePasswordSchema>;

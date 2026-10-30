@@ -53,7 +53,7 @@ export type CaseLookup = { found: true; data: PublicCase } | { found: false; cas
  * again. Never shown to the person who made the report on this device, and
  * only once per device.
  */
-function SameProblem({ caseNumber, supporters }: { caseNumber: string; supporters: number }) {
+function SameProblem({ caseNumber, supporters, mine }: { caseNumber: string; supporters: number; mine: boolean }) {
   const { t } = useI18n();
   const [done, setDone] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -61,8 +61,8 @@ function SameProblem({ caseNumber, supporters }: { caseNumber: string; supporter
   // Decided after loading, from what this device remembers (the server cannot know who made a report).
   const [state, setState] = useState<'unknown' | 'mine' | 'supported' | 'other'>('unknown');
   useEffect(() => {
-    setState(isMine(caseNumber) ? 'mine' : hasSupported(caseNumber) ? 'supported' : 'other');
-  }, [caseNumber]);
+    setState(mine || isMine(caseNumber) ? 'mine' : hasSupported(caseNumber) ? 'supported' : 'other');
+  }, [caseNumber, mine]);
   async function follow() {
     setBusy(true);
     setError(null);
@@ -92,7 +92,7 @@ function SameProblem({ caseNumber, supporters }: { caseNumber: string; supporter
   );
 }
 
-export function CaseView({ lookup }: { lookup: CaseLookup }) {
+export function CaseView({ lookup, mine = false }: { lookup: CaseLookup; mine?: boolean }) {
   const { t, lang } = useI18n();
   if (!lookup.found) {
     return lookup.error
@@ -108,7 +108,7 @@ export function CaseView({ lookup }: { lookup: CaseLookup }) {
         <p className="case-number" style={{ fontSize: '1.2rem' }}>{data.caseNumber}</p>
         <p className="muted">{t(`statusHelp.${key(data.publicStatus)}`)}</p>
         {/* Only verified, open reports: a just-received report is not public yet, so only its author has the number. */}
-        {['OPEN', 'IN_PROGRESS'].includes(data.publicStatus) && <SameProblem key={data.caseNumber} caseNumber={data.caseNumber} supporters={data.supporters} />}
+        {['OPEN', 'IN_PROGRESS'].includes(data.publicStatus) && <SameProblem key={data.caseNumber} caseNumber={data.caseNumber} supporters={data.supporters} mine={mine} />}
         {data.rejectionReason && <div className="alert alert-error"><strong>{t('track.rejectionReason')}:</strong> {data.rejectionReason}</div>}
         {data.closingNote && <div className="alert alert-ok"><strong>{t('track.closingNote')}:</strong> {data.closingNote}</div>}
         {(data.beforePhotoUrl || data.afterPhotoUrl) && (
@@ -143,7 +143,7 @@ export function CaseView({ lookup }: { lookup: CaseLookup }) {
   );
 }
 
-export default function Track({ lookup }: { lookup?: CaseLookup }) {
+export default function Track({ lookup, mine = false }: { lookup?: CaseLookup; mine?: boolean }) {
   const { t } = useI18n();
   const caseNumber = lookup ? (lookup.found ? lookup.data.caseNumber : lookup.caseNumber) : '';
   return (
@@ -154,7 +154,7 @@ export default function Track({ lookup }: { lookup?: CaseLookup }) {
         {/* The search box only where a number is still needed: no number yet, or one that was not found. */}
         {(!lookup || !lookup.found) && <TrackForm initial={caseNumber} key={caseNumber} />}
         {lookup && !lookup.found && <hr className="divider" />}
-        {lookup && <CaseView lookup={lookup} />}
+        {lookup && <CaseView lookup={lookup} mine={mine} />}
       </div>
     </div>
   );

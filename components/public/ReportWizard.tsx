@@ -17,7 +17,7 @@ import { createReportAction, findNearbyAction, followReportAction } from '@/acti
 import Icon from '@/components/Icon';
 import { LocationPicker } from '@/components/maps';
 import PhotoInput from '@/components/PhotoInput';
-import { useCatalog, useSettings } from '@/components/providers';
+import { useCatalog, useSettings, useViewer } from '@/components/providers';
 import { CategoryIcon, ErrorAlert, Field } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { ActionFailure, call } from '@/lib/client/action';
@@ -42,6 +42,9 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const { t, lang } = useI18n();
   const { catalog, typeById, categoryByCode } = useCatalog();
   const { rules } = useSettings();
+  // Signed in with a resident account: the contact is filled in and the report also goes to "my reports".
+  const viewer = useViewer();
+  const resident = !embedded && viewer?.kind === 'resident' ? viewer : null;
   const trackBase = embedded ? '/embed/ndiq' : '/ndiq';
   const initialTypeValid = initialType && typeById(initialType) ? initialType : null;
   const [step, setStep] = useState(initialTypeValid ? 1 : 0);
@@ -56,7 +59,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [description, setDescription] = useState('');
   const [contactMode, setContactMode] = useState<'contact' | 'anonymous' | null>(null); // null until the resident chooses
-  const [contact, setContact] = useState({ name: '', email: '', phone: '' });
+  const [contact, setContact] = useState({ name: resident?.name ?? '', email: resident?.email ?? '', phone: resident?.phone ?? '' });
   const [showErrors, setShowErrors] = useState(false);
   const [serverErrors, setServerErrors] = useState<Errors>({});
   const [duplicates, setDuplicates] = useState<PublicCard[]>([]);
@@ -280,6 +283,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             <p className="small muted">{email ? t('report.doneEmail', { email }) : t('report.doneNoEmail')}</p>
             <div className="row" style={{ justifyContent: 'center' }}>
               <Link className="btn" href={`${trackBase}/${result.caseNumber}`}>{t('report.trackIt')}</Link>
+              {resident && <Link className="btn btn-outline" href="/llogaria">{t('resident.myReports')}</Link>}
               <button type="button" className="btn btn-outline" onClick={() => window.location.assign(embedded ? '/embed' : '/raporto')}>{t('report.another')}</button>
             </div>
           </>
@@ -445,6 +449,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             </label>
             {visibleError('anonymous') && <div className="field-error" role="alert"><Icon name="alert" size={14} />{visibleError('anonymous')}</div>}
           </fieldset>
+          {resident && <p className="hint"><Icon name="user" size={14} /> {t('resident.savedToAccount')}</p>}
           {contactMode === 'contact' && (
             <>
               <p className="hint">{t('report.contactRule')}</p>

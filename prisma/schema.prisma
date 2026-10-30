@@ -116,7 +116,12 @@ model User {
   email              String      @unique @db.VarChar(200)
   name               String      @db.VarChar(160)
   phone              String?     @db.VarChar(40)
-  passwordHash       String      @map("password_hash") @db.VarChar(200)
+  /// Empty for a resident who only signs in with Google. Staff always have one (CHECK constraint).
+  passwordHash       String?     @map("password_hash") @db.VarChar(200)
+  /// The Google account ("sub") of a resident who signs in with Google.
+  googleId           String?     @unique @map("google_id") @db.VarChar(64)
+  /// When the email was confirmed (by Google). Empty for an email + password sign-up.
+  emailVerifiedAt    DateTime?   @map("email_verified_at") @db.Timestamptz(3)
   role               Role        @default(USER)
   /// Required for MUNICIPALITY_STAFF, empty for the other roles (CHECK constraint).
   departmentId       Int?        @map("department_id")
@@ -132,6 +137,8 @@ model User {
 
   assignedReports    Report[]             @relation("ReportAssignee")
   createdReports     Report[]             @relation("ReportCreator")
+  /// Reports a resident made while signed in ("Raportimet e mia"). Never shown to staff.
+  citizenReports     Report[]             @relation("ReportCitizen")
   events             ReportEvent[]
   requestedTransfers DepartmentTransfer[] @relation("TransferRequester")
   decidedTransfers   DepartmentTransfer[] @relation("TransferDecider")
@@ -281,6 +288,10 @@ model Report {
   assignedTo          User?         @relation("ReportAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdById         String?       @map("created_by_id") @db.Uuid
   createdBy           User?         @relation("ReportCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  /// The resident account that made the report (only for "my reports"; staff never see it,
+  /// so an anonymous report stays anonymous). Cleared when the account is deleted.
+  citizenId           String?       @map("citizen_id") @db.Uuid
+  citizen             User?         @relation("ReportCitizen", fields: [citizenId], references: [id], onDelete: SetNull)
   aiStatus            AiStatus      @default(PENDING) @map("ai_status")
   aiSummary           String?       @map("ai_summary") @db.VarChar(300)
   aiConfidence        Int?          @map("ai_confidence")
@@ -324,6 +335,7 @@ model Report {
   @@index([resolvedAt])
   @@index([latitude, longitude])
   @@index([isTest])
+  @@index([citizenId, createdAt])
   @@map("reports")
 }
 

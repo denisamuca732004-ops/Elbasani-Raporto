@@ -72,7 +72,8 @@ const emailTaken = () => conflict('Ekziston tashmë një llogari me këtë email
 
 export async function listUsers(admin: Principal): Promise<UserDto[]> {
   assertAdmin(admin);
-  const users = await db.user.findMany({ include: withDepartment, orderBy: [{ role: 'desc' }, { name: 'asc' }] });
+  // Panel accounts only: residents' own accounts are private and are not managed here.
+  const users = await db.user.findMany({ where: { role: { in: ['MUNICIPALITY_STAFF', 'ADMIN'] } }, include: withDepartment, orderBy: [{ role: 'desc' }, { name: 'asc' }] });
   return users.map(toDto);
 }
 
@@ -184,6 +185,8 @@ export async function resetPassword(admin: Principal, id: string): Promise<{ use
   assertAdmin(admin);
   if (id === admin.id) throw badRequest('Për llogarinë tuaj përdorni "Ndrysho fjalëkalimin".');
   const user = await reload(id);
+  // A resident's own account is never given a password by the Municipality.
+  if (user.role === 'USER') throw badRequest('Kjo llogari nuk ka akses në panel.');
   const password = temporaryPassword();
   await db.user.update({
     where: { id },

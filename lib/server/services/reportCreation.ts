@@ -28,6 +28,8 @@ export interface NewReport {
   contactEmail: string | null;
   contactPhone: string | null;
   createdById: string | null;
+  /** The signed-in resident's own account ("my reports"); never shown to staff. */
+  citizenId?: string | null;
   clientRef: string | null;
   /** Key of the temporary upload (actions/upload.ts). */
   photoKey: string | null;
@@ -78,6 +80,7 @@ export async function persistNewReport(input: NewReport): Promise<{ report: { id
           contactPhone: input.contactPhone,
           wantsUpdates: Boolean(input.contactEmail),
           createdById: input.createdById,
+          citizenId: input.citizenId ?? null,
           aiStatus: 'PENDING',
           dueAt: new Date(Date.now() + input.type.slaDays * DAY_MS),
           clientRef: input.clientRef,

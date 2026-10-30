@@ -8,12 +8,12 @@ import 'server-only';
 import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
 import { DEFAULT_SERVICE_AREA, LIMITS } from '@/lib/shared/domain';
-import type { Catalog, Principal, PublicSettings } from '@/lib/shared/types';
+import type { Catalog, Principal, PublicSettings, Viewer } from '@/lib/shared/types';
 import { config } from './env';
 import { DEFAULT_SETTINGS } from './referenceData';
 import { getCatalog } from './services/catalog';
 import { getPublicSettings } from './services/settings';
-import { getPrincipal } from './session';
+import { getPrincipal, getResident } from './session';
 
 export async function pageSettings(): Promise<PublicSettings> {
   // Every page is rendered per request (never while building), so the database is only touched at run time.
@@ -40,6 +40,19 @@ export async function pageCatalog(): Promise<Catalog> {
     console.error('[page] catalogue unavailable', err);
     return { categories: [], neighbourhoods: [], departments: [] };
   }
+}
+
+/** Who is signed in, for the header and the report form of the public site. Never fails the page. */
+export async function siteViewer(): Promise<Viewer> {
+  try {
+    const resident = await getResident();
+    if (resident) return { kind: 'resident', name: resident.name, email: resident.email, phone: resident.phone };
+    const staff = await getPrincipal();
+    if (staff) return { kind: 'staff', name: staff.name };
+  } catch (err) {
+    console.error('[page] session unavailable', err);
+  }
+  return null;
 }
 
 /** For /admin pages: signed in with a panel role and a permanent password. */

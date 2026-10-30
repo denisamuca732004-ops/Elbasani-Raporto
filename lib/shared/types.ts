@@ -206,6 +206,12 @@ export interface Catalog {
   departments: Array<{ id: number; code: string; nameSq: string; nameEn: string; description: string | null }>;
 }
 
+/** Who is looking at the public site: a resident with their own account, a staff member, or nobody signed in. */
+export type Viewer =
+  | { kind: 'resident'; name: string; email: string; phone: string | null }
+  | { kind: 'staff'; name: string }
+  | null;
+
 export interface Branding { municipalityName: string; appName: string; logoUrl: string; headerColor: string; footerColor: string; buttonColor: string }
 export interface AppSettings { branding: Branding; embed: { allowedOrigins: string[] } }
 export interface PublicSettings extends AppSettings {

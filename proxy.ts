@@ -15,6 +15,7 @@
  *  3. /embed pages may only be shown inside the sites the admin allowed.
  */
 import { getToken } from 'next-auth/jwt';
+import { staffSessionExpired } from './auth.config';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const PANEL_ROLES = new Set(['MUNICIPALITY_STAFF', 'ADMIN']);
@@ -52,7 +53,8 @@ function contentSecurityPolicy(nonce: string, frameAncestors: string, secure: bo
     "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
+    // The "Continue with Google" form ends in a redirect to Google's sign-in page.
+    "form-action 'self' https://accounts.google.com",
     `frame-ancestors ${frameAncestors}`,
     ...(secure ? ['upgrade-insecure-requests'] : []),
   ].join('; ');
@@ -66,7 +68,9 @@ async function sessionRole(request: NextRequest): Promise<{ signedIn: boolean; r
     // On HTTPS Auth.js names the cookie "__Secure-authjs.session-token"; locally (http) "authjs.session-token".
     const secureCookie = request.cookies.has('__Secure-authjs.session-token');
     const token = await getToken({ req: request, secret, secureCookie });
-    return { signedIn: Boolean(token?.uid), role: typeof token?.role === 'string' ? token.role : null };
+    // A staff session ends 12 hours after signing in, although the cookie may live longer (residents' 30 days).
+    if (!token?.uid || staffSessionExpired(typeof token.lt === 'number' ? token.lt : null)) return { signedIn: false, role: null };
+    return { signedIn: true, role: typeof token.role === 'string' ? token.role : null };
   } catch {
     return { signedIn: false, role: null };
   }
@@ -109,7 +113,7 @@ export default async function proxy(request: NextRequest) {
   response.headers.set('Permissions-Policy', 'camera=(self), geolocation=(self), microphone=()');
   if (!embed) response.headers.set('X-Frame-Options', 'DENY');
   if (secure && !isDev) response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
-  if (pathname.startsWith('/admin') || pathname.startsWith('/hyrje')) response.headers.set('Cache-Control', 'no-store');
+  if (pathname.startsWith('/admin') || pathname.startsWith('/hyrje') || pathname.startsWith('/llogaria')) response.headers.set('Cache-Control', 'no-store');
   return response;
 }
 

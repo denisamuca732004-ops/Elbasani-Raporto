@@ -10,7 +10,7 @@ controls everything. The interface is the green v2 design, unchanged.
 | Framework | Next.js 16 (App Router, Server Components, Server Actions, Route Handlers), React 19, TypeScript (strict) |
 | Database | **PostgreSQL** through **Prisma 7** (`@prisma/adapter-pg`), strict foreign keys and `CHECK` constraints |
 | Auth | Auth.js v5: email + password, encrypted JWT session (JWE) in an HTTP-only cookie |
-| Roles | `USER`, `MUNICIPALITY_STAFF` (department head), `ADMIN` |
+| Roles | `USER` (a resident's own, optional account), `MUNICIPALITY_STAFF` (department head), `ADMIN` |
 | Photos | Vercel Blob, private, one-file client upload tokens, re-encoded on the server (EXIF/GPS removed) |
 | Cache and rate limits | Upstash Redis (in-memory fallback for development and tests) |
 | Background jobs | Upstash QStash (signed callbacks), or Next.js `after()` when QStash is not configured |
@@ -102,7 +102,7 @@ Without Vercel Blob, Upstash Redis or QStash, the app uses local fallbacks: a di
 
 ```bash
 npm run typecheck     # TypeScript, strict
-npm test              # 120 tests against a real PostgreSQL (raporton_next_test)
+npm test              # 132 tests against a real PostgreSQL (raporton_next_test)
 npm run check:i18n    # every text exists in Albanian and English, including every enum value
 npm run build         # production build
 ```
@@ -123,7 +123,36 @@ The tests cover:
 - the dashboard periods in Tirana time;
 - admin PATCH semantics;
 - the search guide (what residents get for typical questions, emergencies first, admin edits, seed never overwrites them);
-- the location (zone borders, GPS without an address, zone ↔ lagje/village always matching, phone reports and demo data in the right zone).
+- the location (zone borders, GPS without an address, zone ↔ lagje/village always matching, phone reports and demo data in the right zone);
+- residents' accounts (sign-up, Google linking rules, staff kept apart, my reports, account deletion, session limits).
+
+## Residents' accounts (optional)
+
+Reporting never needs an account. A resident who wants one signs up and signs in at `/llogaria/hyr`, in one of two ways:
+- **"Vazhdo me Google".** Needs `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`; without them the button is hidden.
+- **Email + password.**
+
+With an account:
+- reports made while signed in appear in **"Raportimet e mia"** (`/llogaria`) on any device;
+- the contact step is filled in.
+
+The account page also has the profile, setting or changing the password, signing out and deleting the account.
+
+Rules (`lib/server/services/residents.ts`):
+- **Kept apart from the panel.**
+  - A resident account (`USER`) never opens the panel.
+  - Google never signs in to a staff account, and staff cannot use the residents' sign-in page.
+  - The admin's "Users" page lists staff only and cannot give a resident a password.
+- **Google proves who owns the email.**
+  - Google sign-in needs an email Google has verified.
+  - If someone registered that email earlier with a password, Google sign-in links the account, removes that password and ends its other sessions. So whoever registered someone else's email loses access.
+- **Anonymous stays anonymous.** `reports.citizen_id` is only used for "my reports". Staff never see which account made a report.
+- **Session lengths.** Residents stay signed in for `RESIDENT_SESSION_DAYS` (30). Staff sessions still end `SESSION_MAX_AGE_HOURS` (12) after signing in, checked in the proxy and on the server.
+
+Google setup: Google Cloud Console → *APIs & Services*.
+- *OAuth consent screen*: app name, support email, and the privacy page `https://<domain>/privatesia`.
+- *Credentials → OAuth client ID*: type *Web application*, authorized redirect URI `https://<domain>/api/auth/callback/google`.
+- Put the two values in Vercel's environment variables and redeploy.
 
 ## Location: GPS or address, zone always right
 
