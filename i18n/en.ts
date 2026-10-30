@@ -16,8 +16,9 @@ const en = {
     report: 'Report', track: 'Track a report', map: 'Map', stats: 'Statistics', privacy: 'Privacy',
     staff: 'Staff login', menu: 'Menu', language: 'Change language', signIn: 'Sign in', panel: 'Panel',
   },
+  meta: { description: 'Report problems in the city and request services from the Municipality of Elbasan. Follow your request until it is resolved.' },
   footer: {
-    about: 'Elbasani Raporton is the official digital channel of the Municipality of Elbasan for reporting problems and requesting services.',
+    about: 'Elbasan Reports is the official digital channel of the Municipality of Elbasan for reporting problems and requesting services.',
     services: 'Services', info: 'Information',
     emergency: 'For emergencies call 112. This platform is not for emergencies.',
   },
@@ -242,7 +243,7 @@ const en = {
   },
   privacy: {
     title: 'Privacy',
-    intro: 'Elbasani Raporton collects only the data needed to handle your report, in line with the Albanian law on personal data protection.',
+    intro: 'Elbasan Reports collects only the data needed to handle your report, in line with the Albanian law on personal data protection.',
     what: { title: 'What we collect', text: 'The type of problem, the location, the photo and the description. For contact: your name and email or phone — or nothing, if you choose to report anonymously.' },
     why: { title: 'Why', text: 'To send the report to the right sector, to update you on progress, and for anonymised statistics about municipal services.' },
     public: { title: 'What is public', text: 'The type, status, approximate address, photo and description once verified. Your contact details are never published.' },
@@ -464,7 +465,7 @@ const en = {
       tempHint: 'The system creates a temporary password that is shown only once. At the first login the person chooses their own password.',
       credentialsTitle: 'Login details', tempPassword: 'Temporary password', loginAt: 'Login',
       credentialsHint: 'This password is shown ONLY now and is not sent by email. Give it to the person directly. They must change it at the first login.',
-      credentialsText: 'Hello {name}, your account on Elbasani Raporton: {url} · Email: {email} · Temporary password: {password} (you will be asked to change it at the first login).',
+      credentialsText: 'Hello {name}, your account on Elbasan Reports: {url} · Email: {email} · Temporary password: {password} (you will be asked to change it at the first login).',
       copyCredentials: 'Copy the details', done: 'Done',
       reset: 'New password', confirmReset: 'Create a new temporary password for {name}? Their current sessions will end.',
       confirmDeactivate: 'Deactivate the account of {name}? The reports assigned to them are released.',
@@ -508,7 +509,8 @@ const en = {
       activated: 'The question was activated.', deactivated: 'The question was deactivated and is no longer shown to residents.',
     },
     appearance: {
-      appName: 'Platform name', municipalityName: 'Municipality name', logoUrl: 'Logo (URL)',
+      appName: 'Platform name (Albanian)', municipalityName: 'Municipality name (Albanian)', logoUrl: 'Logo (URL)',
+      appNameEn: 'Platform name (English)', municipalityNameEn: 'Municipality name (English)',
       logoHint: 'Default: /logo-bashkia-elbasan.svg (the coat of arms of the municipality).',
       headerColor: 'Header colour', footerColor: 'Footer colour', buttonColor: 'Button colour', colorRule: 'Format: #RRGGBB',
       embedOrigins: 'Websites allowed to embed the form (iframe)', embedHint: 'One address per line, e.g. https://elbasani.gov.al',
@@ -521,7 +523,7 @@ const en = {
     },
     integration: {
       title: 'Integration in elbasani.gov.al',
-      intro: 'Just as Boston links 311 with the city website, Elbasani Raporton links with the official website of the municipality. Copy one of the codes below and give it to the municipality’s IT team.',
+      intro: 'Just as Boston links 311 with the city website, Elbasan Reports links with the official website of the municipality. Copy one of the codes below and give it to the municipality’s IT team.',
       option1: '1. The “Report a problem” button', option1Text: 'The simplest: a button on the municipality website that opens the platform.',
       option2: '2. The form inside the page (iframe)', option2Text: 'Residents report and track without leaving elbasani.gov.al.',
       headerNote: 'The municipality site must be in the allowed list (Administration → Appearance). The server applies this list automatically to every page that embeds the form.',

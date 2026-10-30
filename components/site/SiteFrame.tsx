@@ -10,15 +10,24 @@ import Icon from '@/components/Icon';
 import { useSettings, useViewer } from '@/components/providers';
 import { useI18n } from '@/i18n';
 import { flushQueue, pendingCount } from '@/lib/client/offlineQueue';
+import { brandNames } from '@/lib/shared/branding';
 import type { GuideItem } from '@/lib/shared/guide';
 import SiteSearch from './SiteSearch';
 
+/** The platform's and the municipality's names in the language chosen (EN / SQ). */
+export function useBrandNames() {
+  const { branding } = useSettings();
+  const { lang } = useI18n();
+  return brandNames(branding, lang);
+}
+
 export function Logo({ small }: { small?: boolean }) {
   const { branding } = useSettings();
+  const names = useBrandNames();
   return (
     <span className={`logo-badge${small ? ' small' : ''}`}>
       {/* eslint-disable-next-line @next/next/no-img-element -- the logo can be any URL the admin sets */}
-      <img src={branding.logoUrl} alt={branding.municipalityName} />
+      <img src={branding.logoUrl} alt={names.municipality} />
     </span>
   );
 }
@@ -82,7 +91,7 @@ function AccountLink() {
 
 export function SiteHeader({ guide = [] }: { guide?: GuideItem[] }) {
   const { t } = useI18n();
-  const { branding } = useSettings();
+  const names = useBrandNames();
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   useEffect(() => setOpen(false), [pathname]);
@@ -94,9 +103,9 @@ export function SiteHeader({ guide = [] }: { guide?: GuideItem[] }) {
   return (
     <header className="site-header">
       <div className="container header-top">
-        <Link href="/" className="brand" aria-label={branding.appName}>
+        <Link href="/" className="brand" aria-label={names.app}>
           <Logo />
-          <span className="brand-name">{branding.appName}<span className="brand-sub">{branding.municipalityName}</span></span>
+          <span className="brand-name">{names.app}<span className="brand-sub">{names.municipality}</span></span>
         </Link>
         <div className="header-actions">
           <AccountLink />
@@ -121,13 +130,13 @@ export function SiteHeader({ guide = [] }: { guide?: GuideItem[] }) {
 
 export function SiteFooter() {
   const { t } = useI18n();
-  const { branding } = useSettings();
+  const names = useBrandNames();
   return (
     <footer className="site-footer">
       <div className="container">
         <div className="footer-grid">
           <div>
-            <div className="row"><Logo small /><strong className="head" style={{ color: '#fff', margin: 0 }}>{branding.municipalityName}</strong></div>
+            <div className="row"><Logo small /><strong className="head" style={{ color: '#fff', margin: 0 }}>{names.municipality}</strong></div>
             <p className="small" style={{ marginTop: 12 }}>{t('footer.about')}</p>
           </div>
           <div>
@@ -148,7 +157,7 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} {branding.municipalityName}</span>
+          <span>© {new Date().getFullYear()} {names.municipality}</span>
           <span>{t('footer.emergency')}</span>
         </div>
       </div>

@@ -3,19 +3,18 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { Logo } from '@/components/site/SiteFrame';
-import { useSettings } from '@/components/providers';
+import { Logo, useBrandNames } from '@/components/site/SiteFrame';
 import { useI18n } from '@/i18n';
 
 export default function EmbedFrame({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
-  const { branding } = useSettings();
+  const names = useBrandNames();
   const pathname = usePathname();
   const tracking = pathname.startsWith('/embed/ndiq');
   return (
     <div className="embed-body">
       <div className="row-between" style={{ marginBottom: 12 }}>
-        <div className="row"><Logo small /><strong className="head" style={{ margin: 0 }}>{branding.appName}</strong></div>
+        <div className="row"><Logo small /><strong className="head" style={{ margin: 0 }}>{names.app}</strong></div>
         <button type="button" className="btn btn-sm btn-ghost" onClick={() => setLang(lang === 'sq' ? 'en' : 'sq')} aria-label={t('nav.language')}>{lang === 'sq' ? 'EN' : 'SQ'}</button>
       </div>
       <div className="tabs">

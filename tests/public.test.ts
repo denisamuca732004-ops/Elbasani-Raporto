@@ -4,6 +4,7 @@ import { after, before, describe, test } from 'node:test';
 import sharp from 'sharp';
 import { getCatalog } from '@/lib/server/services/catalog';
 import { getPublicSettings } from '@/lib/server/services/settings';
+import { brandNames } from '@/lib/shared/branding';
 import {
   createCitizenReport, findNearbyOpen, followReport, getFeedbackInfo, getPublicCase, getPublicPhoto, listRecent, mapPoints,
   searchOpenByPlace, submitCitizenFeedback,
@@ -52,6 +53,14 @@ describe('catalogue', () => {
     const settings = await getPublicSettings();
     assert.equal(settings.branding.headerColor, '#06B006');
     assert.ok(settings.rules.serviceArea.minLat < ELBASAN.latitude && settings.rules.serviceArea.maxLat > ELBASAN.latitude);
+  });
+
+  test('the names follow the language: Albanian by default, English after "EN"', async () => {
+    const { branding } = await getPublicSettings();
+    assert.deepEqual(brandNames(branding, 'sq'), { app: 'Elbasani Raporton', municipality: 'Bashkia Elbasan' });
+    assert.deepEqual(brandNames(branding, 'en'), { app: 'Elbasan Reports', municipality: 'Municipality of Elbasan' });
+    // An empty English name (older saved settings) shows the Albanian one instead of nothing.
+    assert.equal(brandNames({ ...branding, appNameEn: '' }, 'en').app, 'Elbasani Raporton');
   });
 });
 

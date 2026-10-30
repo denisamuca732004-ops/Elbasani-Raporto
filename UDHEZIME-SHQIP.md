@@ -127,6 +127,9 @@ të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me 
   (Të hapura, Për verifikim, Në punë, Zgjidhur, Mbyllur/refuzuar, Të gjitha) tregojnë numrin
   për secilin. Çdo raportim hapet dhe administratori e ndryshon (statusi, prioriteti, sektori,
   përgjegjësi, të dhënat, vendi në hartë).
+- **Emri i platformës në anglisht:** me “EN” lart ndryshojnë edhe emrat: *Elbasan Reports* dhe
+  *Municipality of Elbasan* (në shqip *Elbasani Raporton* dhe *Bashkia Elbasan*), edhe te titulli
+  i skedës së shfletuesit. Të katër emrat ndryshohen te Pamja (`/admin/appearance`).
 - **Kur raportimi nuk i përket sektorit:** sektori dërgon **kërkesë për rishikim**. Administratori
   e sheh te *Kërkesat për rishikim* dhe e dërgon raportimin te sektori i duhur.
 

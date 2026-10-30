@@ -16,8 +16,9 @@ import type { CSSProperties, ReactNode } from 'react';
 import PwaRegister from '@/components/PwaRegister';
 import { SettingsProvider } from '@/components/providers';
 import { I18nProvider } from '@/i18n';
-import { getLang } from '@/i18n/server';
+import { getLang, getT } from '@/i18n/server';
 import { pageSettings } from '@/lib/server/pageData';
+import { brandNames } from '@/lib/shared/branding';
 import { shade } from '@/lib/shared/color';
 
 /**
@@ -27,13 +28,18 @@ import { shade } from '@/lib/shared/color';
  */
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: { default: 'Elbasani Raporton – Bashkia Elbasan', template: '%s · Elbasani Raporton' },
-  description: 'Raportoni probleme në qytet dhe kërkoni shërbime nga Bashkia Elbasan. Ndiqni kërkesën tuaj deri në zgjidhje.',
-  applicationName: 'Elbasani Raporton',
-  icons: { icon: '/icons/favicon-64.png', apple: '/icons/apple-touch-icon.png' },
-  formatDetection: { telephone: false },
-};
+/** The tab title and description in the visitor's language ("Elbasani Raporton" / "Elbasan Reports"). */
+export async function generateMetadata(): Promise<Metadata> {
+  const [{ lang, t }, { branding }] = await Promise.all([getT(), pageSettings()]);
+  const { app, municipality } = brandNames(branding, lang);
+  return {
+    title: { default: `${app} – ${municipality}`, template: `%s · ${app}` },
+    description: t('meta.description'),
+    applicationName: app,
+    icons: { icon: '/icons/favicon-64.png', apple: '/icons/apple-touch-icon.png' },
+    formatDetection: { telephone: false },
+  };
+}
 
 export async function generateViewport(): Promise<Viewport> {
   const { branding } = await pageSettings();

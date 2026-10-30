@@ -11,8 +11,7 @@ import { useEffect, useState, useTransition, type ReactNode } from 'react';
 import { logoutAction } from '@/actions/auth';
 import { setIncludeTestAction } from '@/actions/panel';
 import Icon from '@/components/Icon';
-import { useSettings } from '@/components/providers';
-import { LanguageToggle, Logo } from '@/components/site/SiteFrame';
+import { LanguageToggle, Logo, useBrandNames } from '@/components/site/SiteFrame';
 import { useI18n } from '@/i18n';
 import type { SidebarCounts } from '@/lib/server/services/dashboard';
 import type { Principal } from '@/lib/shared/types';
@@ -105,7 +104,7 @@ export default function PanelShell({ principal, counts, includeTest, children }:
   principal: Principal; counts: SidebarCounts | null; includeTest: boolean; children: ReactNode;
 }) {
   const { t, lang } = useI18n();
-  const { branding } = useSettings();
+  const names = useBrandNames();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -156,7 +155,7 @@ export default function PanelShell({ principal, counts, includeTest, children }:
           <Logo small />
           <span className="brand-name">
             {admin ? t('panel.adminTitle') : t('panel.sectorTitle')}
-            <span className="brand-sub">{admin ? branding.municipalityName : departmentName}</span>
+            <span className="brand-sub">{admin ? names.municipality : departmentName}</span>
           </span>
         </Link>
         <div className="header-actions">

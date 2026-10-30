@@ -16,6 +16,7 @@ const sq = {
     report: 'Raporto', track: 'Ndiq raportimin', map: 'Harta', stats: 'Statistikat', privacy: 'Privatësia',
     staff: 'Hyrja për stafin', menu: 'Menyja', language: 'Ndrysho gjuhën', signIn: 'Hyr', panel: 'Paneli',
   },
+  meta: { description: 'Raportoni probleme në qytet dhe kërkoni shërbime nga Bashkia Elbasan. Ndiqni kërkesën tuaj deri në zgjidhje.' },
   footer: {
     about: 'Elbasani Raporton është kanali zyrtar digjital i Bashkisë Elbasan për raportimin e problemeve dhe kërkesat për shërbime.',
     services: 'Shërbimet', info: 'Informacion',
@@ -509,6 +510,7 @@ const sq = {
     },
     appearance: {
       appName: 'Emri i platformës', municipalityName: 'Emri i bashkisë', logoUrl: 'Logo (URL)',
+      appNameEn: 'Emri i platformës (anglisht)', municipalityNameEn: 'Emri i bashkisë (anglisht)',
       logoHint: 'Parazgjedhur: /logo-bashkia-elbasan.svg (stema e Bashkisë).',
       headerColor: 'Ngjyra e kokës', footerColor: 'Ngjyra e fundit', buttonColor: 'Ngjyra e butonave', colorRule: 'Formati: #RRGGBB',
       embedOrigins: 'Faqet ku lejohet formulari (iframe)', embedHint: 'Një adresë për rresht, p.sh. https://elbasani.gov.al',

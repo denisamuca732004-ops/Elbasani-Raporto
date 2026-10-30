@@ -334,6 +334,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   branding: {
     municipalityName: 'Bashkia Elbasan',
     appName: 'Elbasani Raporton',
+    municipalityNameEn: 'Municipality of Elbasan',
+    appNameEn: 'Elbasan Reports',
     logoUrl: '/logo-bashkia-elbasan.svg',
     headerColor: '#06B006',
     footerColor: '#0B3D0B',

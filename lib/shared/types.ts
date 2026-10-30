@@ -218,7 +218,11 @@ export type Viewer =
   | { kind: 'staff'; name: string }
   | null;
 
-export interface Branding { municipalityName: string; appName: string; logoUrl: string; headerColor: string; footerColor: string; buttonColor: string }
+/** The names exist in Albanian and English: the site shows the ones of the visitor's language (lib/shared/branding.ts). */
+export interface Branding {
+  municipalityName: string; appName: string; municipalityNameEn: string; appNameEn: string;
+  logoUrl: string; headerColor: string; footerColor: string; buttonColor: string;
+}
 export interface AppSettings { branding: Branding; embed: { allowedOrigins: string[] } }
 export interface PublicSettings extends AppSettings {
   rules: { serviceArea: { minLat: number; minLng: number; maxLat: number; maxLng: number }; minDescription: number; minAddress: number; maxUploadBytes: number };

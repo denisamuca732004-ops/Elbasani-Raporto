@@ -140,6 +140,8 @@ export const settingsSchema = z.strictObject({
     .strictObject({
       municipalityName: singleLine(2, 120),
       appName: singleLine(2, 120),
+      municipalityNameEn: singleLine(2, 120),
+      appNameEn: singleLine(2, 120),
       logoUrl: z.string().trim().max(500).regex(/^(\/[^\s]*|https:\/\/[^\s]+)$/),
       headerColor: hexColor,
       footerColor: hexColor,

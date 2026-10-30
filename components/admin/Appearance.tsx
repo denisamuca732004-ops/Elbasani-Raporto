@@ -35,6 +35,8 @@ export default function Appearance({ settings }: { settings: AppSettings }) {
         <div className="grid-2">
           <Field label={t('admin.appearance.appName')} htmlFor="ap-app"><input id="ap-app" type="text" value={form.appName} maxLength={120} onChange={set('appName')} /></Field>
           <Field label={t('admin.appearance.municipalityName')} htmlFor="ap-mun"><input id="ap-mun" type="text" value={form.municipalityName} maxLength={120} onChange={set('municipalityName')} /></Field>
+          <Field label={t('admin.appearance.appNameEn')} htmlFor="ap-app-en"><input id="ap-app-en" type="text" lang="en" value={form.appNameEn} maxLength={120} onChange={set('appNameEn')} /></Field>
+          <Field label={t('admin.appearance.municipalityNameEn')} htmlFor="ap-mun-en"><input id="ap-mun-en" type="text" lang="en" value={form.municipalityNameEn} maxLength={120} onChange={set('municipalityNameEn')} /></Field>
         </div>
         <Field label={t('admin.appearance.logoUrl')} htmlFor="ap-logo" hint={t('admin.appearance.logoHint')}><input id="ap-logo" type="text" value={form.logoUrl} maxLength={500} onChange={set('logoUrl')} /></Field>
         <div className="grid-3">
