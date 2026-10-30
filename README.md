@@ -187,7 +187,7 @@ The admin edits lagje and villages in *Administrimi → Zonat*.
 
 ## Search guide ("Ask or search")
 
-The search box sits at the right of the menu bar on every page (on phones, under the logo). It answers questions as well as finding reports. The menu has no "Track a report" or "Help" item: a report number is typed in this box.
+The search box sits at the right of the menu bar on every page (on phones, under the logo). It answers questions as well as finding reports. The menu has no "Track a report" or "Help" item: a report is tracked with the "Ndiq raportimin" button on the home page (`/ndiq`) or by typing its number in this box.
 
 - **Where the answers live.** In the database (`guide_entries`), in Albanian and English. The seed adds 17 starting questions, including the emergency numbers (112, 127, 128, 129). The admin edits them in *Administrimi → Udhëzuesi*: add, edit, order, hide, and try the search as a resident would. Running the seed again never overwrites those changes.
 - **How matching works.** [`lib/shared/guide.ts`](lib/shared/guide.ts) runs in the browser: no AI, no request, instant. It ignores accents and common words ("si", "a", "një"), and accepts different word endings ("gropa" / "gropë").

@@ -38,6 +38,7 @@ const sq = {
     },
     noMatch: 'Nuk e gjeni? Raportoni si “Tjetër” →',
     reportButton: 'Raporto një problem',
+    trackButton: 'Ndiq raportimin',
     categories: 'Zgjidhni kategorinë',
     recent: 'Raportimet e fundit',
     seeMap: 'Shiko hartën',

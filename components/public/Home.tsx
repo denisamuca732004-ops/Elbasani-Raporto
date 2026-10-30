@@ -1,9 +1,10 @@
 'use client';
 /**
- * Home page in the style of 311.boston.gov: the "Report a problem" button,
- * the categories, the latest public reports and how it works. Questions,
- * report numbers, problems and streets are searched in the box at the top
- * right of the menu (components/site/SiteSearch.tsx), on every page.
+ * Home page in the style of 311.boston.gov: the "Report a problem" and
+ * "Track a report" buttons, the categories, the latest public reports and
+ * how it works. Questions, report numbers, problems and streets are also
+ * searched in the box at the top right of the menu
+ * (components/site/SiteSearch.tsx), on every page.
  */
 import Link from 'next/link';
 import Icon from '@/components/Icon';
@@ -23,6 +24,7 @@ export default function Home({ recent }: { recent: PublicCard[] | null }) {
         <div className="container">
           <div className="hero-actions">
             <Link href="/raporto" className="btn btn-lg"><Icon name="plus" size={20} />{t('home.reportButton')}</Link>
+            <Link href="/ndiq" className="btn btn-lg btn-outline"><Icon name="search" size={20} />{t('home.trackButton')}</Link>
           </div>
         </div>
       </section>

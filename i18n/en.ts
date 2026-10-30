@@ -38,6 +38,7 @@ const en = {
     },
     noMatch: 'Can’t find it? Report it as “Other” →',
     reportButton: 'Report a problem',
+    trackButton: 'Track a report',
     categories: 'Choose a category',
     recent: 'Recent reports',
     seeMap: 'See the map',

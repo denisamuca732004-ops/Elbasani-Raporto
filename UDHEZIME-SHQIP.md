@@ -84,7 +84,7 @@ Kutia e kërkimit është lart djathtas në menu, në çdo faqe (në telefon, n�
 - **Si i ndryshon Bashkia:** *Administrimi → Udhëzuesi*. Aty mund të:
   * shtojë, ndryshojë ose fshehë pyetje, pa programues;
   * provojë kërkimin ashtu si qytetari.
-- **Ku shfaqen:** te kutia e kërkimit. Kur qytetari e klikon, para se të shkruajë, del lista **Pyetje të shpeshta**: 6 pyetjet e para (sipas *Radhës*), butoni “Shiko të gjitha pyetjet” dhe në fund “Është emergjencë?”. Çdo pyetje hap përgjigjen aty. Te *Administrimi → Udhëzuesi* këto 6 kanë shenjën “Në listën e kërkimit”. Kur qytetari shkruan, dalin përgjigjet që përputhen. Menuja nuk ka më “Ndiq raportimin” dhe “Ndihmë”: numri i raportimit shkruhet te kjo kuti. Lidhjet e vjetra vazhdojnë të punojnë (`/ndiq/EL-…` hap raportimin, `/ndihme` çon te faqja kryesore).
+- **Ku shfaqen:** te kutia e kërkimit. Kur qytetari e klikon, para se të shkruajë, del lista **Pyetje të shpeshta**: 6 pyetjet e para (sipas *Radhës*), butoni “Shiko të gjitha pyetjet” dhe në fund “Është emergjencë?”. Çdo pyetje hap përgjigjen aty. Te *Administrimi → Udhëzuesi* këto 6 kanë shenjën “Në listën e kërkimit”. Kur qytetari shkruan, dalin përgjigjet që përputhen. Menuja nuk ka më “Ndiq raportimin” dhe “Ndihmë”; raportimi ndiqet me butonin “Ndiq raportimin” në faqen kryesore ose duke shkruar numrin te kjo kuti. Lidhjet e vjetra vazhdojnë të punojnë (`/ndiq/EL-…` hap raportimin, `/ndihme` çon te faqja kryesore).
 - **Pa AI:** kërkimi bëhet në telefonin e qytetarit. Është falas dhe i menjëhershëm, dhe nuk shpik kurrë përgjigje.
 - **Siguria:** butoni nën përgjigje zgjidhet nga një listë e mbyllur (raporto, ndiq, harta, statistikat, privatësia, telefono 112). Administratori nuk mund të vendosë lidhje të jashtme.
 
