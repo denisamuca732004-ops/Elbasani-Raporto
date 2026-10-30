@@ -140,6 +140,9 @@ const sq = {
     street: 'Rruga, numri ose pikë reference',
     streetHint: 'P.sh. Rruga Qemal Stafa 12, ose: pranë shkollës.',
     pinOnMap: 'Pika në hartë',
+    addressPin: 'Shto edhe pikën në hartë (opsionale)',
+    addressPinHint: 'Prekni vendin brenda zonës së zgjedhur. Me pikë, raportimi del edhe në hartën publike.',
+    removePin: 'Hiqe pikën',
     useMyLocation: 'Përdor vendndodhjen time',
     locating: 'Po gjej vendndodhjen…',
     mapHint: 'Ose prekni hartën për të vendosur shenjën. Mund ta zhvendosni.',
@@ -199,6 +202,7 @@ const sq = {
       locality: 'Zgjidhni lagjen ose fshatin.',
       street: 'Shkruani rrugën, numrin ose një pikë reference.',
       otherZone: '“{place}” ndodhet në zonën {zone}. Zgjidhni zonën e duhur ose ndryshoni adresën.',
+      pinOtherZone: 'Pika në hartë është në zonën {zone}, jo në {chosen}. Lëvizeni pikën ose ndryshoni zonën.',
       photo: 'Shtoni një foto të problemit.',
       description: 'Përshkruani problemin.',
       descriptionShort: 'Përshkrimi duhet të ketë të paktën {n} shkronja.',
@@ -223,6 +227,8 @@ const sq = {
   map: {
     title: 'Harta e raportimeve', status: 'Statusi', open: 'Të hapura', closed: 'Të zgjidhura', all: 'Të gjitha',
     category: 'Kategoria', allCategories: 'Të gjitha kategoritë', count: { one: '1 raportim në hartë', other: '{n} raportime në hartë' },
+    unplacedTitle: 'Raportime me adresë, pa pikë në hartë ({n})',
+    unplacedText: 'U dërguan me adresë të shkruar. Dalin në hartë sapo stafi i Bashkisë t’i vendosë pikën.',
   },
   stats: {
     title: 'Statistikat', intro: 'Sa raportime merr Bashkia dhe sa shpejt i zgjidh. Të dhënat përditësohen në kohë reale.',
@@ -387,6 +393,7 @@ const sq = {
       confirm: 'Ta refuzoni këtë raportim? Qytetari do ta shohë arsyen.', done: 'Raportimi u refuzua.',
     },
     edit: {
+      pin: 'Pika në hartë', pinHint: 'Prekni hartën ose zhvendosni pikën. Zona ndryshon vetë sipas pikës. Me pikë, raportimi del në hartën publike.',
       title: 'Ndrysho detajet', open: 'Ndrysho llojin, sektorin, zonën…', type: 'Lloji i raportimit',
       typeHint: 'Kur ndryshoni llojin, sektori ndryshon sipas llojit (mund ta zgjidhni edhe vetë).', sector: 'Sektori',
     },

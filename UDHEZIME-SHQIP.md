@@ -48,7 +48,11 @@ Kontrolli bëhet në tre nivele, dhe të tri duhet të kalojnë:
   * Pa foto, pa përshkrim ose pa vendndodhje, raportimi **nuk krijohet**.
   * **Vendndodhja jepet në njërën nga dy mënyrat:**
     1. me **GPS** ose duke prekur hartën: zona gjendet vetë nga kufijtë e 13 njësive administrative, dhe adresa nuk kërkohet;
-    2. **me dorë:** zona → një nga lagjet ose fshatrat e **asaj** zone → rruga. Lagjja ose fshati nuk mund të jetë nga një zonë tjetër.
+    2. **me dorë:** zona → një nga lagjet ose fshatrat e **asaj** zone → rruga. Lagjja ose fshati nuk mund të jetë nga një zonë tjetër. Mund të shtohet edhe një pikë në hartë (opsionale), por brenda zonës së zgjedhur.
+  * **Në hartën publike** çdo raportim del si pikë me ngjyrën e statusit, që kur merret ("Marrë", gri).
+    - Fotoja dhe përshkrimi shfaqen vetëm pasi verifikohet.
+    - Raportimet e refuzuara nuk shfaqen.
+    - Raportimet me adresë pa pikë dalin në një listë poshtë hartës. Administratori ua vendos pikën te "Ndrysho detajet", dhe zona ndryshon vetë sipas pikës.
   * Listat e lagjeve dhe fshatrave janë marrë nga dokumentet e Bashkisë (2021, 2023). Administratori i ndryshon te *Administrimi → Zonat*.
   * Mollasi u hoq nga zonat, sepse i përket Bashkisë Cërrik.
   * Serveri i kontrollon sërish të gjitha. Nëse mungon diçka, e kthen qytetarin te hapi përkatës.
@@ -143,7 +147,7 @@ të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me 
 
 ```bash
 npm run typecheck     # TypeScript
-npm test              # 132 teste me PostgreSQL të vërtetë
+npm test              # 135 teste me PostgreSQL të vërtetë
 npm run check:i18n    # çdo tekst ekziston në shqip dhe anglisht
 npm run build         # ndërtimi për prodhim
 ```

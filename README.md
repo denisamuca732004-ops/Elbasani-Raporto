@@ -102,7 +102,7 @@ Without Vercel Blob, Upstash Redis or QStash, the app uses local fallbacks: a di
 
 ```bash
 npm run typecheck     # TypeScript, strict
-npm test              # 132 tests against a real PostgreSQL (raporton_next_test)
+npm test              # 135 tests against a real PostgreSQL (raporton_next_test)
 npm run check:i18n    # every text exists in Albanian and English, including every enum value
 npm run build         # production build
 ```
@@ -165,6 +165,12 @@ A resident gives the place one of two ways. The server refuses anything else.
 2. **By hand.**
    - Choose the zone, then one of **its** lagje (city) or villages, then type the street, number or landmark. The list only shows the places of that zone, and the server checks it again.
    - A street that names a village or zone of another zone ("fshati Lleshan" with the city chosen) is refused, with the right zone in the message.
+   - An optional pin can be added too, so the report is also on the map. It must be inside the chosen zone.
+
+**On the public map** every report shows as a point coloured by its status, from the moment it is received ("Marrë", grey).
+- Until a person verifies a report, its photo and description stay hidden. Phone numbers and emails typed in an address are masked.
+- Rejected reports are never shown.
+- Reports typed by hand without a pin are listed under the map. The admin can place or move a report's pin when editing it, and the zone follows the pin.
    - Street names themselves are not checked yet: that needs the Municipality's street register.
 
 **Sources:**

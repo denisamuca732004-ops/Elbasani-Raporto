@@ -107,8 +107,8 @@ export function CaseView({ lookup, mine = false }: { lookup: CaseLookup; mine?: 
         <h1 style={{ marginBottom: 4 }}>{typeName(data.type, lang)}</h1>
         <p className="case-number" style={{ fontSize: '1.2rem' }}>{data.caseNumber}</p>
         <p className="muted">{t(`statusHelp.${key(data.publicStatus)}`)}</p>
-        {/* Only verified, open reports: a just-received report is not public yet, so only its author has the number. */}
-        {['OPEN', 'IN_PROGRESS'].includes(data.publicStatus) && <SameProblem key={data.caseNumber} caseNumber={data.caseNumber} supporters={data.supporters} mine={mine} />}
+        {/* Open reports, also just received ones (they are on the map). Never for their author (see SameProblem). */}
+        {['RECEIVED', 'OPEN', 'IN_PROGRESS'].includes(data.publicStatus) && <SameProblem key={data.caseNumber} caseNumber={data.caseNumber} supporters={data.supporters} mine={mine} />}
         {data.rejectionReason && <div className="alert alert-error"><strong>{t('track.rejectionReason')}:</strong> {data.rejectionReason}</div>}
         {data.closingNote && <div className="alert alert-ok"><strong>{t('track.closingNote')}:</strong> {data.closingNote}</div>}
         {(data.beforePhotoUrl || data.afterPhotoUrl) && (

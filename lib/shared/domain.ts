@@ -25,8 +25,13 @@ export type Status = (typeof STATUSES)[number];
 
 export const OPEN_STATUSES: readonly Status[] = ['PENDING', 'NEEDS_REVIEW', 'VERIFIED', 'ASSIGNED', 'IN_PROGRESS'];
 export const FINAL_STATUSES: readonly Status[] = ['CLOSED', 'REJECTED'];
-/** Shown on the public map and feed. Unverified reports stay private. */
-export const PUBLIC_LISTED_STATUSES: readonly Status[] = ['VERIFIED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
+/**
+ * Shown on the public map and lists, with their status. Just-received reports
+ * ("Marrë") are included, so residents see at once what is already reported;
+ * their photo and description stay hidden until a person verifies them.
+ * Rejected reports are never listed.
+ */
+export const PUBLIC_LISTED_STATUSES: readonly Status[] = ['PENDING', 'NEEDS_REVIEW', 'VERIFIED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
 /** The normal workflow of a department head. The admin may set any status except PENDING. */
 export const STATUS_TRANSITIONS: Readonly<Record<Status, readonly Status[]>> = {

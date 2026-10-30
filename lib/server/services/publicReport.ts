@@ -115,7 +115,19 @@ async function resolveLocation(data: CitizenReport, problems: ReportProblem[]): 
     : plainText(locality.name) === plainText(zone.name) ? `fshati ${locality.name}`
     : `fshati ${locality.name}, njësia ${zone.name}`;
   const address = [text, where].filter(Boolean).join(', ').slice(0, LIMITS.maxAddress);
-  return { latitude: null, longitude: null, neighbourhoodId: zone?.id ?? null, address: address || null };
+
+  // An optional pin (so the report is also on the map): inside the Municipality AND inside the chosen zone.
+  let pin: { latitude: number; longitude: number } | null = null;
+  if (data.latitude !== undefined && data.longitude !== undefined) {
+    if (!insideMunicipality(data.latitude, data.longitude)) problems.push(problem('latitude', 'outside_area'));
+    else {
+      const pinZone = await zoneOfPoint(data.latitude, data.longitude);
+      if (zone?.code && pinZone && pinZone.id !== zone.id) {
+        problems.push(problem('latitude', 'other_zone', `Pika në hartë është në zonën ${pinZone.name}, jo në ${zone.name}. Lëvizeni pikën ose ndryshoni zonën.`));
+      } else pin = { latitude: data.latitude, longitude: data.longitude };
+    }
+  }
+  return { latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null, neighbourhoodId: zone?.id ?? null, address: address || null };
 }
 
 type CitizenReport = z.output<typeof citizenReportShape>;
@@ -310,7 +322,7 @@ export async function getPublicCase(caseNumber: string): Promise<PublicCase> {
 }
 
 function publicStatusFilter(status: 'open' | 'closed' | 'all' | undefined): Status[] {
-  if (status === 'open') return ['VERIFIED', 'ASSIGNED', 'IN_PROGRESS'];
+  if (status === 'open') return [...OPEN_STATUSES]; // received, open and in progress
   if (status === 'closed') return ['RESOLVED', 'CLOSED'];
   return [...PUBLIC_LISTED_STATUSES];
 }
@@ -338,6 +350,25 @@ export async function listRecent(query: RecentQuery): Promise<PublicCard[]> {
     .sort((a, b) => a.d - b.d)
     .slice(0, query.limit)
     .map(({ r, d }) => toPublicCard(r, d));
+}
+
+/**
+ * Reports given with a typed address and no point on the map, so they can
+ * still be seen on the map page (as a list under the map), with the same filters.
+ */
+export async function unplacedReports(query: MapQuery, limit = 30): Promise<PublicCard[]> {
+  const rows = await db.report.findMany({
+    where: {
+      status: { in: publicStatusFilter(query.status) },
+      OR: [{ latitude: null }, { longitude: null }],
+      createdAt: { gte: new Date(Date.now() - query.days * 86_400_000) },
+      ...(query.category ? { category: { code: query.category } } : {}),
+    },
+    include: publicInclude,
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+  return rows.map((r) => toPublicCard(r));
 }
 
 export async function mapPoints(query: MapQuery): Promise<MapPoint[]> {

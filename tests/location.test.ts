@@ -8,12 +8,12 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import * as adminService from '@/lib/server/services/admin';
 import { getCatalog } from '@/lib/server/services/catalog';
-import { createCitizenReport } from '@/lib/server/services/publicReport';
+import { createCitizenReport, mapPoints, unplacedReports } from '@/lib/server/services/publicReport';
 import { createStaffReport } from '@/lib/server/services/report';
 import type { Principal } from '@/lib/shared/types';
 import { BORDER_TOLERANCE_M, ZONE_CODES, otherZonePlace, zoneCodeAt } from '@/lib/shared/zones';
 import { localityPatchSchema, localitySchema } from '@/lib/validation/admin';
-import { staffReportSchema } from '@/lib/validation/report';
+import { mapSchema, staffReportSchema } from '@/lib/validation/report';
 import { adminSession, citizenData, db, drainJobs, ELBASAN, rejects, setupTestDb, staffSession, teardown, typeId } from './helpers';
 
 let admin: Principal;
@@ -48,8 +48,9 @@ async function problemsOf(input: unknown) {
 /** A resident who types the address: no point on the map. */
 async function byHand(overrides: Record<string, unknown>) {
   const data = await citizenData({ locationMode: 'address', ...overrides }) as Record<string, unknown>;
-  delete data.latitude;
-  delete data.longitude;
+  // No pin, unless the test gives one (the optional pin of the address mode).
+  if (!('latitude' in overrides)) delete data.latitude;
+  if (!('longitude' in overrides)) delete data.longitude;
   return data;
 }
 
@@ -151,6 +152,40 @@ describe('way 2: typing the address', () => {
     assert.equal(otherZonePlace('Rruga Skënderbej, pranë shkollës 5 Maji', gjinar, catalog.neighbourhoods), null);
     assert.equal(otherZonePlace('Rruga e Elbasanit', gjinar, catalog.neighbourhoods), null);
     assert.deepEqual(otherZonePlace('afër Bradasheshit? jo, në Bradashesh', gjinar, catalog.neighbourhoods), { place: 'Bradashesh', zone: 'Bradashesh' });
+  });
+});
+
+describe('on the public map', () => {
+  test('a report typed by hand without a pin is listed under the map; with a pin inside its zone it is on the map', async () => {
+    const zone = await zoneId('gjinar');
+    const place = await placeId('gjinar', 'Valesh');
+    const noPin = await createCitizenReport(await byHand({ neighbourhoodId: zone, localityId: place, address: 'te shkolla' }));
+    const query = mapSchema.parse({ status: 'open' });
+    assert.ok((await unplacedReports(query)).some((r) => r.caseNumber === noPin.caseNumber));
+    assert.ok(!(await mapPoints(query)).some((p) => p.caseNumber === noPin.caseNumber));
+
+    const withPin = await createCitizenReport(await byHand({ neighbourhoodId: zone, localityId: place, address: 'te ura', ...GJINAR }));
+    const report = await db.report.findUniqueOrThrow({ where: { caseNumber: withPin.caseNumber } });
+    assert.equal(report.latitude, GJINAR.latitude);
+    assert.ok((await mapPoints(query)).some((p) => p.caseNumber === withPin.caseNumber));
+    assert.ok(!(await unplacedReports(query)).some((r) => r.caseNumber === withPin.caseNumber));
+  });
+
+  test('a pin outside the chosen zone is refused, naming the zone where it really is', async () => {
+    const data = await byHand({ neighbourhoodId: await zoneId('elbasan'), localityId: await placeId('elbasan', 'Kala'), address: 'Rruga e Kalasë', ...GJINAR });
+    const err = await rejects(() => createCitizenReport(data));
+    const detail = (err.details as Array<{ field: string; code: string; message: string }>)[0]!;
+    assert.deepEqual([detail.field, detail.code], ['latitude', 'other_zone']);
+    assert.match(detail.message, /Gjinar.*Elbasan/);
+  });
+
+  test('phone numbers and emails typed in an address are hidden on public pages', async () => {
+    const res = await createCitizenReport(await byHand({
+      neighbourhoodId: await zoneId('gracen'), localityId: await placeId('gracen', 'Bodin'), address: 'thirrni 069 555 1234 ose ana@example.com',
+    }));
+    const card = (await unplacedReports(mapSchema.parse({ status: 'open' }))).find((r) => r.caseNumber === res.caseNumber)!;
+    assert.doesNotMatch(card.address ?? '', /555|ana@/);
+    assert.match(card.address ?? '', /\[telefon\].*\[email\]/);
   });
 });
 

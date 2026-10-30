@@ -40,9 +40,11 @@ export interface LocationPickerProps {
   autoLocate?: boolean;
   /** The pin is outside the Municipality (decided by the caller, e.g. from the zone borders). */
   outside?: boolean;
+  /** Where the map opens when there is no pin yet (e.g. the middle of the chosen zone). */
+  center?: LatLng | null;
 }
 
-export function LocationPicker({ value, onChange, error, autoLocate = false, outside }: LocationPickerProps) {
+export function LocationPicker({ value, onChange, error, autoLocate = false, outside, center }: LocationPickerProps) {
   const { t } = useI18n();
   const { rules } = useSettings();
   const [locating, setLocating] = useState(false);
@@ -99,7 +101,10 @@ export function LocationPicker({ value, onChange, error, autoLocate = false, out
       {geoError && <div className="alert alert-warn">{geoError}</div>}
       {value && (outside ?? !insideArea(value, rules.serviceArea)) && <div className="alert alert-error" role="alert">{t('report.outsideArea')}</div>}
       <div className={`map-box${error ? ' has-error' : ''}`}>
-        <MapContainer center={value ? [value.latitude, value.longitude] : ELBASAN_CENTER} zoom={value ? 17 : 14} style={{ height: '100%' }} scrollWheelZoom={false}>
+        <MapContainer
+          center={value ? [value.latitude, value.longitude] : center ? [center.latitude, center.longitude] : ELBASAN_CENTER}
+          zoom={value ? 17 : center ? 13 : 14} style={{ height: '100%' }} scrollWheelZoom={false}
+        >
           <TileLayer url={TILE_URL} attribution={ATTRIBUTION} />
           <ClickToMove onPick={onChange} />
           <Recenter position={centerOn} />

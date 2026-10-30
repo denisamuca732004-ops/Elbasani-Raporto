@@ -79,6 +79,21 @@ export function zoneCodeAt(latitude: number, longitude: number): string | null {
   return nearest?.code ?? null;
 }
 
+/** Roughly the middle of a zone (centroid of its largest part), to centre a map on it. */
+export function zoneCenter(code: string): { latitude: number; longitude: number } | null {
+  const shape = SHAPES.find((z) => z.code === code);
+  const outer = shape?.polygons.map((p) => p[0]!).sort((a, b) => b.length - a.length)[0];
+  if (!outer) return null;
+  let area = 0; let cx = 0; let cy = 0;
+  for (let i = 0; i < outer.length - 1; i += 1) {
+    const [x1, y1] = outer[i] as [number, number];
+    const [x2, y2] = outer[i + 1] as [number, number];
+    const f = x1 * y2 - x2 * y1;
+    area += f; cx += (x1 + x2) * f; cy += (y1 + y2) * f;
+  }
+  return area ? { latitude: cy / (3 * area), longitude: cx / (3 * area) } : null;
+}
+
 /** Lower case, without accents and punctuation: "Kodër Bujaras" → "koder bujaras". */
 const plain = (s: string) => ` ${s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()} `;
 

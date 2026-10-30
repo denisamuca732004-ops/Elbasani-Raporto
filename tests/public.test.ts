@@ -8,7 +8,7 @@ import {
   createCitizenReport, findNearbyOpen, followReport, getFeedbackInfo, getPublicCase, getPublicPhoto, listRecent, mapPoints,
   searchOpenByPlace, submitCitizenFeedback,
 } from '@/lib/server/services/publicReport';
-import { changeStatus, getReport, resolveReport } from '@/lib/server/services/report';
+import { changeStatus, getReport, rejectReport, resolveReport } from '@/lib/server/services/report';
 import { publicStats } from '@/lib/server/services/stats';
 import { runDaily } from '@/lib/server/services/maintenance';
 import { openStoredImage } from '@/lib/server/storage';
@@ -213,15 +213,22 @@ describe('tracking, map and duplicates', () => {
     assert.equal(follow.supporters, 1);
   });
 
-  test('the map and the feed only show verified reports, with rounded coordinates', async () => {
+  test('the map shows a report at once, with its status ("Marrë", then the next ones), rounded; never a rejected one', async () => {
     const { result, report } = await submitReport({ latitude: 41.112345, longitude: 20.082345 });
-    assert.ok(!(await mapPoints(mapSchema.parse({}))).some((p) => p.caseNumber === result.caseNumber));
-    await changeStatus(admin, report.id, { status: 'VERIFIED', publicNote: true });
-    const point = (await mapPoints(mapSchema.parse({}))).find((p) => p.caseNumber === result.caseNumber);
-    assert.ok(point);
+    let point = (await mapPoints(mapSchema.parse({ status: 'open' }))).find((p) => p.caseNumber === result.caseNumber);
+    assert.equal(point?.publicStatus, 'RECEIVED');
     assert.equal(point.latitude, 41.1123);
-    const feed = await listRecent(recentSchema.parse({ status: 'open' }));
-    assert.ok(feed.some((p) => p.caseNumber === result.caseNumber));
+    // Not verified yet: on the map, but without photo and description.
+    const card = (await listRecent(recentSchema.parse({ status: 'open' }))).find((p) => p.caseNumber === result.caseNumber);
+    assert.ok(card);
+    assert.equal(card.photoUrl, null);
+    await changeStatus(admin, report.id, { status: 'VERIFIED', publicNote: true });
+    point = (await mapPoints(mapSchema.parse({ status: 'open' }))).find((p) => p.caseNumber === result.caseNumber);
+    assert.equal(point?.publicStatus, 'OPEN');
+
+    const rejected = await submitReport({ latitude: 41.1124, longitude: 20.0823 });
+    await rejectReport(admin, rejected.report.id, { reason: 'Nuk është problem publik.' });
+    assert.ok(!(await mapPoints(mapSchema.parse({ status: 'all' }))).some((p) => p.caseNumber === rejected.result.caseNumber));
   });
 
   test('public statistics exclude demo reports', async () => {
@@ -304,14 +311,15 @@ describe('home page search: open reports on a street', () => {
     const closed = await submitReport({ address: 'Sheshi Skënderbej 1' });
     await changeStatus(admin, closed.report.id, { status: 'CLOSED', note: 'U rregullua.', publicNote: true });
 
-    const found = (q: string) => searchOpenByPlace(q).then((list) => list.map((c) => c.caseNumber));
-    assert.deepEqual(await found('skenderbej'), [verified.result.caseNumber], 'without ë, any case; only the open, verified one');
-    assert.deepEqual(await found('SKËNDERBEJ'), [verified.result.caseNumber]);
-    assert.deepEqual(await found('gropë skenderbej'), [verified.result.caseNumber], 'type + street');
+    const found = (q: string) => searchOpenByPlace(q).then((list) => list.map((c) => c.caseNumber).sort());
+    const open = [verified.result.caseNumber, unverified.result.caseNumber].sort();
+    assert.deepEqual(await found('skenderbej'), open, 'without ë, any case; the open ones, also the one just received, never the closed one');
+    assert.deepEqual(await found('SKËNDERBEJ'), open);
+    assert.deepEqual(await found('gropë skenderbej'), open, 'type + street');
     assert.deepEqual(await found('ndriçim skenderbej'), [], 'every word must match');
     assert.deepEqual(await found('069 555'), [], 'the description (and any phone in it) is not searched');
     assert.deepEqual(await found('%%'), [], 'LIKE wildcards are plain text');
-    const card = (await searchOpenByPlace('skenderbej'))[0]!;
+    const card = (await searchOpenByPlace('skenderbej')).find((c) => c.caseNumber === verified.result.caseNumber)!;
     assert.equal(card.address, 'Sheshi Skënderbej 4');
     assert.equal('contactEmail' in card, false);
   });

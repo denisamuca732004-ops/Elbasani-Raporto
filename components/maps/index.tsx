@@ -33,7 +33,7 @@ export function MapLegend() {
   const { t } = useI18n();
   return (
     <div className="legend">
-      {['OPEN', 'IN_PROGRESS', 'RESOLVED'].map((s) => (
+      {['RECEIVED', 'OPEN', 'IN_PROGRESS', 'RESOLVED'].map((s) => (
         <span key={s}><i style={{ background: STATUS_COLORS[key(s)], borderRadius: '50%' }} />{t(`status.${key(s)}`)}</span>
       ))}
     </div>

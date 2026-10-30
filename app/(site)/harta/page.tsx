@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import MapPage from '@/components/public/MapPage';
 import { getT } from '@/i18n/server';
 import { flatParams } from '@/lib/server/pageData';
-import { mapPoints } from '@/lib/server/services/publicReport';
-import type { MapPoint } from '@/lib/shared/types';
+import { mapPoints, unplacedReports } from '@/lib/server/services/publicReport';
+import type { MapPoint, PublicCard } from '@/lib/shared/types';
 import { mapSchema } from '@/lib/validation/report';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,11 +16,12 @@ export default async function MapRoute({ searchParams }: { searchParams: Promise
   const parsed = mapSchema.safeParse({ status: params.status ?? 'open', category: params.category });
   const query = parsed.success ? parsed.data : mapSchema.parse({ status: 'open' });
   let points: MapPoint[] | null;
+  let unplaced: PublicCard[] = [];
   try {
-    points = await mapPoints(query);
+    [points, unplaced] = await Promise.all([mapPoints(query), unplacedReports(query)]);
   } catch (err) {
     console.error('[map] points unavailable', err);
     points = null;
   }
-  return <MapPage points={points} status={query.status} category={query.category ?? ''} />;
+  return <MapPage points={points} unplaced={unplaced} status={query.status} category={query.category ?? ''} />;
 }

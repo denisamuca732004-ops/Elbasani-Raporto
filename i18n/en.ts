@@ -140,6 +140,9 @@ const en = {
     street: 'Street, number or landmark',
     streetHint: 'E.g. Rruga Qemal Stafa 12, or: next to the school.',
     pinOnMap: 'Pin on the map',
+    addressPin: 'Also add a pin on the map (optional)',
+    addressPinHint: 'Tap the place inside the chosen area. With a pin, the report also appears on the public map.',
+    removePin: 'Remove the pin',
     useMyLocation: 'Use my location',
     locating: 'Finding your location…',
     mapHint: 'Or tap the map to place the pin. You can drag it.',
@@ -199,6 +202,7 @@ const en = {
       locality: 'Choose the neighbourhood or village.',
       street: 'Write the street, the number or a landmark.',
       otherZone: '“{place}” is in the area {zone}. Choose the right area or change the address.',
+      pinOtherZone: 'The pin is in the area {zone}, not in {chosen}. Move the pin or change the area.',
       photo: 'Add a photo of the problem.',
       description: 'Describe the problem.',
       descriptionShort: 'The description must have at least {n} characters.',
@@ -223,6 +227,8 @@ const en = {
   map: {
     title: 'Map of reports', status: 'Status', open: 'Open', closed: 'Resolved', all: 'All',
     category: 'Category', allCategories: 'All categories', count: { one: '1 report on the map', other: '{n} reports on the map' },
+    unplacedTitle: 'Reports with an address, without a pin on the map ({n})',
+    unplacedText: 'They were sent with a typed address. They appear on the map as soon as municipal staff place their pin.',
   },
   stats: {
     title: 'Statistics', intro: 'How many reports the municipality receives and how fast it resolves them. Updated in real time.',
@@ -387,6 +393,7 @@ const en = {
       confirm: 'Reject this report? The resident will see the reason.', done: 'The report was rejected.',
     },
     edit: {
+      pin: 'Pin on the map', pinHint: 'Tap the map or drag the pin. The area follows the pin. With a pin, the report appears on the public map.',
       title: 'Edit details', open: 'Change the type, sector, area…', type: 'Report type',
       typeHint: 'When you change the type, the sector follows the type (you can also choose it yourself).', sector: 'Sector',
     },

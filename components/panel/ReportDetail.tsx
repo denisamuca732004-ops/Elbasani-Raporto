@@ -17,7 +17,8 @@ import {
   rejectReportAction, requestTransferAction, resolveReportAction, setPhotoVisibilityAction, setTestFlagAction, updateReportAction,
 } from '@/actions/reports';
 import Icon from '@/components/Icon';
-import { MiniMap } from '@/components/maps';
+import { LocationPicker, MiniMap } from '@/components/maps';
+import { zoneCenter, zoneCodeAt } from '@/lib/shared/zones';
 import PhotoInput from '@/components/PhotoInput';
 import { useCatalog } from '@/components/providers';
 import {
@@ -25,7 +26,7 @@ import {
 } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { ActionFailure, call } from '@/lib/client/action';
-import { departmentName, formatDate, key, typeName } from '@/lib/client/format';
+import { departmentName, formatDate, key, typeName, type LatLng } from '@/lib/client/format';
 import { uploadPhoto } from '@/lib/client/upload';
 import { LIMITS, type Priority, type Status } from '@/lib/shared/domain';
 import type { Principal, ReportDetail as Report } from '@/lib/shared/types';
@@ -79,7 +80,9 @@ export default function ReportDetail({ principal, report: initial, assignable, b
   const [transferDepartment, setTransferDepartment] = useState('');
   const [note, setNote] = useState('');
   const [message, setMessage] = useState('');
-  const [edit, setEdit] = useState<{ requestTypeId: string; departmentId: string; neighbourhoodId: string; address: string; description: string } | null>(null);
+  const [edit, setEdit] = useState<{
+    requestTypeId: string; departmentId: string; neighbourhoodId: string; address: string; description: string; pin: LatLng | null;
+  } | null>(null);
 
   // Fresh data from the server (after router.refresh) replaces the local copy.
   useEffect(() => {
@@ -127,6 +130,7 @@ export default function ReportDetail({ principal, report: initial, assignable, b
       neighbourhoodId: report.neighbourhoodId ? String(report.neighbourhoodId) : '',
       address: report.address ?? '',
       description: report.description ?? '',
+      pin: report.latitude !== null && report.longitude !== null ? { latitude: report.latitude, longitude: report.longitude } : null,
     });
   }
 
@@ -140,6 +144,10 @@ export default function ReportDetail({ principal, report: initial, assignable, b
     if (newArea !== report.neighbourhoodId) body.neighbourhoodId = newArea;
     if (edit.address.trim() !== (report.address ?? '')) body.address = edit.address.trim();
     if (edit.description.trim() !== (report.description ?? '')) body.description = edit.description.trim();
+    if (edit.pin && (edit.pin.latitude !== report.latitude || edit.pin.longitude !== report.longitude)) {
+      body.latitude = edit.pin.latitude;
+      body.longitude = edit.pin.longitude;
+    }
     if (!Object.keys(body).length) {
       setEdit(null);
       return;
@@ -532,6 +540,21 @@ export default function ReportDetail({ principal, report: initial, assignable, b
                   <Field label={t('detail.description')} htmlFor="e-desc">
                     <textarea id="e-desc" value={edit.description} maxLength={LIMITS.maxDescription} onChange={(e) => setEdit({ ...edit, description: e.target.value })} />
                   </Field>
+                  {/* The pin: also for a report sent with a typed address, so it appears on the public map. The zone follows the pin. */}
+                  <div className="field">
+                    <span className="label">{t('detail.edit.pin')}</span>
+                    <LocationPicker
+                      value={edit.pin}
+                      center={(() => { const z = catalog.neighbourhoods.find((n) => n.id === Number(edit.neighbourhoodId)); return z?.code ? zoneCenter(z.code) : null; })()}
+                      onChange={(p) => {
+                        const code = zoneCodeAt(p.latitude, p.longitude);
+                        const zone = code ? catalog.neighbourhoods.find((n) => n.code === code) : undefined;
+                        setEdit({ ...edit, pin: p, neighbourhoodId: zone ? String(zone.id) : edit.neighbourhoodId });
+                      }}
+                      outside={Boolean(edit.pin && !zoneCodeAt(edit.pin.latitude, edit.pin.longitude))}
+                    />
+                    <p className="hint">{t('detail.edit.pinHint')}</p>
+                  </div>
                   <div className="row">
                     <button type="button" className="btn" disabled={Boolean(busy)} onClick={saveEdit}>{busy === 'edit' ? t('common.wait') : t('common.save')}</button>
                     <button type="button" className="btn btn-ghost" onClick={() => setEdit(null)}>{t('common.cancel')}</button>

@@ -27,7 +27,7 @@ import { newClientRef, queueReport } from '@/lib/client/offlineQueue';
 import { uploadPhoto } from '@/lib/client/upload';
 import { LIMITS } from '@/lib/shared/domain';
 import type { PublicCard } from '@/lib/shared/types';
-import { otherZonePlace, zoneCodeAt } from '@/lib/shared/zones';
+import { otherZonePlace, zoneCenter, zoneCodeAt } from '@/lib/shared/zones';
 
 const STEPS = ['type', 'location', 'photo', 'details', 'contact', 'review'] as const;
 type StepName = (typeof STEPS)[number];
@@ -56,6 +56,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [neighbourhoodId, setNeighbourhoodId] = useState(''); // address mode
   const [localityId, setLocalityId] = useState('');
   const [street, setStreet] = useState('');
+  const [addressPin, setAddressPin] = useState<LatLng | null>(null); // address mode: optional pin, inside the chosen zone
+  const [showAddressMap, setShowAddressMap] = useState(false);
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [description, setDescription] = useState('');
   const [contactMode, setContactMode] = useState<'contact' | 'anonymous' | null>(null); // null until the resident chooses
@@ -84,6 +86,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   // Address mode: the chosen zone and its own lagje / villages.
   const zone = catalog.neighbourhoods.find((n) => n.id === Number(neighbourhoodId));
   const locality = zone?.localities.find((l) => l.id === Number(localityId));
+  const addressPinZoneCode = addressPin && insideArea(addressPin, rules.serviceArea) ? zoneCodeAt(addressPin.latitude, addressPin.longitude) : null;
+  const addressPinZone = addressPinZoneCode ? catalog.neighbourhoods.find((n) => n.code === addressPinZoneCode) : undefined;
   const category = type?.category ?? (categoryCode ? categoryByCode(categoryCode) ?? null : null);
   const stepName = STEPS[step]!;
 
@@ -122,6 +126,12 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
           const other = otherZonePlace(text, zone.id, catalog.neighbourhoods);
           if (other) e.address = t('report.errors.otherZone', { place: other.place, zone: other.zone });
         }
+        if (addressPin) {
+          if (!addressPinZoneCode) e.latitude = t('report.outsideArea');
+          else if (zone?.code && addressPinZoneCode !== zone.code) {
+            e.latitude = t('report.errors.pinOtherZone', { zone: addressPinZone?.name ?? addressPinZoneCode, chosen: zone.name });
+          }
+        }
       }
     }
     if (name === 'photo' && !photo) e.photo = t('report.errors.photo');
@@ -141,7 +151,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       }
     }
     return e;
-  }, [type, locationMode, location, pinZoneCode, zone, locality, street, catalog.neighbourhoods, photo, description, contactMode, contact, t]);
+  }, [type, locationMode, location, pinZoneCode, zone, locality, street, addressPin, addressPinZoneCode, addressPinZone, catalog.neighbourhoods, photo, description, contactMode, contact, t]);
 
   const currentErrors = useMemo(() => errorsFor(stepName), [errorsFor, stepName]);
   const firstIncompleteStep = useMemo(() => STEPS.findIndex((s) => s !== 'review' && Object.keys(errorsFor(s)).length > 0), [errorsFor]);
@@ -202,7 +212,10 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       locationMode,
       ...(locationMode === 'map' && location
         ? { latitude: location.latitude, longitude: location.longitude, address: reference.trim() }
-        : { neighbourhoodId: Number(neighbourhoodId), ...(locality ? { localityId: locality.id } : {}), address: street.trim() }),
+        : {
+          neighbourhoodId: Number(neighbourhoodId), ...(locality ? { localityId: locality.id } : {}), address: street.trim(),
+          ...(addressPin ? { latitude: addressPin.latitude, longitude: addressPin.longitude } : {}),
+        }),
       description: description.trim(),
       anonymous,
       ...(anonymous ? {} : {
@@ -393,6 +406,21 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               <Field label={t('report.street')} hint={t('report.streetHint')} htmlFor="street" error={visibleError('address')} required>
                 <input id="street" type="text" value={street} maxLength={LIMITS.maxAddress - 40} aria-required="true" onChange={(e) => setStreet(e.target.value)} />
               </Field>
+              {/* Optional: a pin, so the report also appears on the public map. It must be inside the chosen zone. */}
+              {!showAddressMap ? (
+                <button type="button" className="btn btn-sm btn-outline" disabled={!zone} onClick={() => setShowAddressMap(true)}>
+                  <Icon name="pin" size={16} />{t('report.addressPin')}
+                </button>
+              ) : (
+                <div>
+                  <p className="hint" style={{ marginTop: 0 }}>{t('report.addressPinHint')}</p>
+                  <LocationPicker
+                    key={zone?.id ?? 0} value={addressPin} onChange={setAddressPin} error={visibleError('latitude')}
+                    center={zone?.code ? zoneCenter(zone.code) : null} outside={Boolean(addressPin && !addressPinZoneCode)}
+                  />
+                  {addressPin && <button type="button" className="btn btn-sm btn-ghost" onClick={() => setAddressPin(null)}>{t('report.removePin')}</button>}
+                </div>
+              )}
             </div>
           )}
           {duplicates.length > 0 && (
