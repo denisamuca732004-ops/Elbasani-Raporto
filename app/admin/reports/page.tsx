@@ -22,7 +22,7 @@ import ReportList, { type ReportListView } from '@/components/panel/ReportList';
 import { getT } from '@/i18n/server';
 import { flatParams, pageStaff } from '@/lib/server/pageData';
 import { includeTestFromCookie } from '@/lib/server/panel';
-import { listReports, priorityCounts } from '@/lib/server/services/report';
+import { listReports, priorityCounts, statusCounts } from '@/lib/server/services/report';
 import { PRIORITIES, type Priority } from '@/lib/shared/domain';
 import { REPORT_SORTS, STATUS_VIEWS, isStatusView, type ReportSort } from '@/lib/shared/reportViews';
 import type { Paged, ReportListItem } from '@/lib/shared/types';
@@ -64,8 +64,9 @@ export default async function ReportsPage({ searchParams }: { searchParams: Sear
 
   let data: Paged<ReportListItem> | null = null;
   let counts: Awaited<ReturnType<typeof priorityCounts>> | null = null;
+  let byStatus: Awaited<ReturnType<typeof statusCounts>> | null = null;
   try {
-    [data, counts] = await Promise.all([listReports(principal, query), priorityCounts(principal, query)]);
+    [data, counts, byStatus] = await Promise.all([listReports(principal, query), priorityCounts(principal, query), statusCounts(principal, query)]);
   } catch (err) {
     console.error('[reports] list failed', err);
   }
@@ -94,5 +95,5 @@ export default async function ReportsPage({ searchParams }: { searchParams: Sear
     transferPending: Boolean(query.transferPending),
     exportQuery: exportQuery.toString(),
   };
-  return <ReportList principal={principal} view={listView} data={data} counts={counts} />;
+  return <ReportList principal={principal} view={listView} data={data} counts={counts} statusCounts={byStatus} />;
 }

@@ -103,6 +103,9 @@ describe('dashboard periods', () => {
     const infraRow = d.byDepartment!.find((s) => s.code === 'infrastructure')!;
     assert.equal(infraRow.open, open.filter((r) => r.department === 'infrastructure').length);
     assert.equal(infraRow.openHigh, 1);
+    // The sector card: every report of the sector, whatever its status (the resolved one too).
+    assert.equal(infraRow.total, reports.filter((r) => r.department === 'infrastructure').length);
+    assert.ok(d.byDepartment!.every((s) => s.total >= s.open));
     assert.equal(d.pendingTransfers, 0);
     assert.ok(d.byCategory.length > 0);
     assert.ok(d.byNeighbourhood.length > 0);

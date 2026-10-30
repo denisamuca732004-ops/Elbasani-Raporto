@@ -52,7 +52,8 @@ export interface DashboardResult {
   byNeighbourhood: Array<{ name: string; received: number }>;
   byDepartment: Array<{
     id: number | null; code: string | null; nameSq: string | null; nameEn: string | null;
-    received: number; resolved: number; open: number; overdue: number; openHigh: number;
+    /** total: every report of the sector, any status, any date (the number on its card). */
+    total: number; received: number; resolved: number; open: number; overdue: number; openHigh: number;
   }> | null;
   pendingTransfers: number;
 }
@@ -156,6 +157,7 @@ export async function getDashboard(user: Principal, query: DashboardQuery): Prom
       WITH ${windowCte},
       agg AS (
         SELECT r.department_id,
+          count(*)::int AS total,
           count(*) FILTER (WHERE ${inPeriod(created)})::int AS received,
           count(*) FILTER (WHERE ${inPeriod(resolvedAt)})::int AS resolved,
           count(*) FILTER (WHERE r.status IN ${OPEN_SQL})::int AS open,
@@ -165,20 +167,20 @@ export async function getDashboard(user: Principal, query: DashboardQuery): Prom
         WHERE TRUE ${testFilter}
         GROUP BY r.department_id
       )
-      SELECT d.id, d.code, d.name_sq AS "nameSq", d.name_en AS "nameEn",
+      SELECT d.id, d.code, d.name_sq AS "nameSq", d.name_en AS "nameEn", coalesce(agg.total, 0)::int AS total,
              coalesce(agg.received, 0)::int AS received, coalesce(agg.resolved, 0)::int AS resolved,
              coalesce(agg.open, 0)::int AS open, coalesce(agg.overdue, 0)::int AS overdue, coalesce(agg.open_high, 0)::int AS open_high
       FROM departments d LEFT JOIN agg ON agg.department_id = d.id
       WHERE d.active = true OR coalesce(agg.open, 0) > 0
       UNION ALL
-      SELECT NULL, NULL, NULL, NULL, received, resolved, open, overdue, open_high FROM agg WHERE agg.department_id IS NULL
+      SELECT NULL, NULL, NULL, NULL, total, received, resolved, open, overdue, open_high FROM agg WHERE agg.department_id IS NULL
       ORDER BY open DESC, received DESC, "nameSq" NULLS LAST`;
     byDepartment = rows.map((r) => ({
       id: r.id === null || r.id === undefined ? null : Number(r.id),
       code: (r.code as string | null) ?? null,
       nameSq: (r.nameSq as string | null) ?? null,
       nameEn: (r.nameEn as string | null) ?? null,
-      received: int(r.received), resolved: int(r.resolved), open: int(r.open), overdue: int(r.overdue), openHigh: int(r.open_high),
+      total: int(r.total), received: int(r.received), resolved: int(r.resolved), open: int(r.open), overdue: int(r.overdue), openHigh: int(r.open_high),
     }));
   }
 

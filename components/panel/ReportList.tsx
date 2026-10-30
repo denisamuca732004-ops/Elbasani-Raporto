@@ -16,8 +16,8 @@ import {
 } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { departmentName, formatDate, key, timeAgo, typeName } from '@/lib/client/format';
-import type { Priority } from '@/lib/shared/domain';
-import { REPORT_SORTS, STATUS_VIEW_NAMES, type ReportSort, type StatusView } from '@/lib/shared/reportViews';
+import type { Priority, Status } from '@/lib/shared/domain';
+import { REPORT_SORTS, STATUS_VIEW_NAMES, viewCount, type ReportSort, type StatusView } from '@/lib/shared/reportViews';
 import type { Paged, Principal, ReportListItem } from '@/lib/shared/types';
 
 export interface ReportListView {
@@ -34,11 +34,13 @@ export interface ReportListView {
   exportQuery: string;
 }
 
-export default function ReportList({ principal, view, data, counts }: {
+export default function ReportList({ principal, view, data, counts, statusCounts }: {
   principal: Principal;
   view: ReportListView;
   data: Paged<ReportListItem> | null;
   counts: (Record<Priority, number> & { total: number }) | null;
+  /** How many reports of each status (the other filters applied): the numbers on the status tabs. */
+  statusCounts: Partial<Record<Status, number>> | null;
 }) {
   const { t, lang } = useI18n();
   const { departmentById } = useCatalog();
@@ -79,7 +81,6 @@ export default function ReportList({ principal, view, data, counts }: {
           {view.scope === 'own' && <p className="muted" style={{ margin: 0 }}>{t('reports.ownIntro')}</p>}
         </div>
         <div className="row">
-          {admin && <Link href="/admin/reports/new" className="btn btn-sm"><Icon name="plus" size={16} />{t('panel.nav.newReport')}</Link>}
           <a href={`/api/admin/reports/export?${view.exportQuery}`} className="btn btn-sm btn-outline" download>
             <Icon name="download" size={16} />{t('reports.export')}
           </a>
@@ -106,13 +107,17 @@ export default function ReportList({ principal, view, data, counts }: {
       </div>
 
       <div className="filter-row">
-        <Segmented<StatusView>
-          size="sm"
-          label={t('reports.status')}
-          value={view.view}
-          onChange={(v) => update({ status: v === 'open' ? null : v })}
-          options={STATUS_VIEW_NAMES.map((k) => ({ value: k, label: t(`reports.presets.${k}`) }))}
-        />
+        {/* The statuses of the reports, each with its number; a click shows only that status. */}
+        <div className="field inline wrap">
+          <span className="label" aria-hidden="true">{t('reports.status')}</span>
+          <Segmented<StatusView>
+            size="sm"
+            label={t('reports.status')}
+            value={view.view}
+            onChange={(v) => update({ status: v === 'open' ? null : v })}
+            options={STATUS_VIEW_NAMES.map((k) => ({ value: k, label: t(`reports.presets.${k}`), count: statusCounts ? viewCount(k, statusCounts) : undefined }))}
+          />
+        </div>
       </div>
       <div className="filter-row">
         <form className="search-inline" role="search" onSubmit={(e) => { e.preventDefault(); update({ q: search.trim() }); }}>

@@ -72,7 +72,7 @@ Every request is checked in layers.
 | Resident (no account) | **Ask or search** on the home page: a question ("si raportoj", "sa zgjat") gets a short answer with a button, "zjarr" or "aksident" gets the emergency numbers first, a report number opens its progress, a problem opens its report type, a street lists the open reports there. **Report** in six steps: type → location (either GPS / a tap on the map, with the zone found from the zone borders and no address needed, or by hand: zone → one of its lagje or villages → street) → photo → description (10+ characters) → contact or anonymous → review. Nothing can be skipped, and the server rejects incomplete reports and names the step to go back to. Works offline (queued on the phone). **Also:** track by case number, map, public statistics, confirm or reopen from the "resolved" email. |
 | System | Routes each report to the department of its type and checks it (AI when enabled, keyword rules otherwise). Emails the department and the resident in the background. |
 | Department head (`MUNICIPALITY_STAFF`) | Sees only their department, split into **High / Medium / Low** priority tabs. **Can:** verify, assign, start work, resolve with an "after" photo, reject with a reason, add notes and message the resident. **"Not our department":** sends a review request to the admin. |
-| Admin (`ADMIN`) | Dashboard for **week / month / year**, every report, one link per department, reports without a department and the review requests. **Can:** set any status, edit any detail, move or delete reports. **Manages:** departments, accounts, report types (routing, deadline, default priority), areas, appearance, email log, embed code and demo data. |
+| Admin (`ADMIN`) | Dashboard for **week / month / year**, starting with **a card per department** (its number of reports, open, high priority, overdue): a click opens that department's reports with the **number in each status** on the status tabs, and each report opens for editing. Also every report, reports without a department and the review requests ("not our department" → the admin moves the report to the right department). **Can:** set any status, edit any detail, move or delete reports. The menu keeps only daily work plus *Zonat, Emailet, Integrimi, Të dhëna demo*. **Not in the menu, but still at their address:** departments `/admin/departments`, accounts `/admin/users`, report types `/admin/report-types`, the search guide `/admin/guide`, appearance `/admin/appearance`, and a report entered by staff `/admin/reports/new`; the dashboard's "first steps" card links to the first three. |
 
 Statuses (PostgreSQL enum):
 
@@ -94,7 +94,8 @@ npm run dev                   # http://localhost:3000
 Then:
 
 1. Open `/hyrje` and choose **Krijo llogarinë e administratorit**. Locally this is allowed only for `admin@example.com`, from `.env.development`.
-2. Use *Administrimi → Të dhëna demo* to create 60 sample reports for a presentation. They are marked as demo and never counted in public statistics.
+2. Create the department heads' accounts at `/admin/users` (linked from the dashboard's "first steps" card).
+3. Use *Administrimi → Të dhëna demo* to create 60 sample reports for a presentation. They are marked as demo and never counted in public statistics.
 
 Without Vercel Blob, Upstash Redis or QStash, the app uses local fallbacks: a disk folder, in-memory cache and `after()`. Production requires the real services, and `lib/server/env.ts` refuses to start without them.
 
@@ -189,7 +190,7 @@ The admin edits lagje and villages in *Administrimi → Zonat*.
 
 The search box sits at the right of the menu bar on every page (on phones, under the logo). It answers questions as well as finding reports. The menu has no "Track a report" or "Help" item: a report is tracked with the "Ndiq raportimin" button on the home page (`/ndiq`) or by typing its number in this box.
 
-- **Where the answers live.** In the database (`guide_entries`), in Albanian and English. The seed adds 17 starting questions, including the emergency numbers (112, 127, 128, 129). The admin edits them in *Administrimi → Udhëzuesi*: add, edit, order, hide, and try the search as a resident would. Running the seed again never overwrites those changes.
+- **Where the answers live.** In the database (`guide_entries`), in Albanian and English. The seed adds 17 starting questions, including the emergency numbers (112, 127, 128, 129). The admin edits them at `/admin/guide` (not in the menu): add, edit, order, hide, and try the search as a resident would. Running the seed again never overwrites those changes.
 - **How matching works.** [`lib/shared/guide.ts`](lib/shared/guide.ts) runs in the browser: no AI, no request, instant. It ignores accents and common words ("si", "a", "një"), and accepts different word endings ("gropa" / "gropë").
   - Emergencies always come first, already open.
   - When the text names a problem ("si raportoj një gropë"), the report type comes before the answers.

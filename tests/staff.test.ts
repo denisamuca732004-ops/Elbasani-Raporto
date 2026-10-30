@@ -10,11 +10,12 @@ import * as adminService from '@/lib/server/services/admin';
 import { getDashboard, sidebarCounts } from '@/lib/server/services/dashboard';
 import {
   addNote, assignableUsers, assignReport, changePriority, changeStatus, getReport, getStaffPhoto, listReports, messageCitizen,
-  priorityCounts, rejectReport, resolveReport, updateReport,
+  priorityCounts, rejectReport, resolveReport, statusCounts, updateReport,
 } from '@/lib/server/services/report';
 import { getPublicCase } from '@/lib/server/services/publicReport';
 import { exportCsv } from '@/lib/server/services/stats';
 import { createUser, listUsers } from '@/lib/server/services/users';
+import { viewCount } from '@/lib/shared/reportViews';
 import type { Principal } from '@/lib/shared/types';
 import { dashboardSchema, exportSchema, prioritySchema, reportFiltersSchema, reportListSchema } from '@/lib/validation/report';
 import {
@@ -140,6 +141,12 @@ describe('priorities: LOW, MEDIUM and HIGH', () => {
     assert.equal(counts.HIGH, base.HIGH + 2);
     assert.equal(counts.LOW, base.LOW + 1);
     assert.equal(counts.total, base.total + 3);
+
+    // The status tabs count with the same filters, without the status: "open" is part of "all".
+    const byStatus = await statusCounts(infra, open);
+    assert.equal(viewCount('open', byStatus), counts.total);
+    assert.ok(viewCount('all', byStatus) >= viewCount('open', byStatus));
+    assert.equal(viewCount('review', byStatus) + viewCount('work', byStatus) + (byStatus.VERIFIED ?? 0), counts.total);
 
     const highOnly = (await list(infra, { priority: 'HIGH', status: 'open' })).items;
     assert.ok(highOnly.length >= 2 && highOnly.every((r) => r.priority === 'HIGH'));

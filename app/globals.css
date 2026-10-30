@@ -459,9 +459,11 @@ pre.code { background: #10200F; color: #D8F5D8; padding: 14px; border-radius: va
 /* ── Panel pages ── */
 .page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
 .filter-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-.field.inline { display: flex; gap: 8px; align-items: center; margin: 0; }
-.field.inline label { margin: 0; white-space: nowrap; }
-.field.inline select { width: auto; min-width: 180px; padding: 8px 10px; }
+.field.inline { display: flex; gap: 8px; align-items: center; margin: 0; max-width: 100%; }
+.field.inline label, .field.inline .label { margin: 0; white-space: nowrap; }
+.field.inline.wrap { flex-wrap: wrap; }
+/* A long option (a sector's full name) must not push the page wider than a phone. */
+.field.inline select { width: auto; min-width: min(180px, 100%); max-width: 100%; flex: 0 1 auto; padding: 8px 10px; }
 .search-inline { display: flex; gap: 6px; flex: 1 1 280px; max-width: 460px; }
 .search-inline input { padding: 8px 10px; }
 .refreshing { opacity: 0.55; transition: opacity 0.15s; }
@@ -560,12 +562,19 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .kpi .delta svg { flex: none; margin-top: 2px; }
 .table tr.clickable:hover th { background: var(--bg-tint); }
 
-@media (max-width: 760px) {
-  .sector-table tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; padding: 10px 12px; }
-  .sector-table th[scope=row] { grid-column: 1 / -1; padding: 0 0 4px; border: 0; }
-  .sector-table td { padding: 0; text-align: left; }
-  .sector-table td[data-label]::before { font-size: 0.6rem; }
-}
+/* Admin dashboard: a card for each sector (its reports → their statuses → each report) */
+.section-label { font-family: var(--font-head); font-weight: 800; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.04em; margin: 0 0 4px; }
+.sector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.sector-card { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--line); border-top: 4px solid var(--brand-button); border-radius: var(--radius); background: #fff; color: var(--ink); text-decoration: none; box-shadow: var(--shadow); transition: background 0.15s; }
+.sector-card:hover, .sector-card:focus-visible { background: var(--bg-tint); color: var(--ink); }
+.sector-card.unrouted { border-top-color: var(--danger); }
+.sector-name { display: flex; gap: 8px; align-items: flex-start; font-family: var(--font-head); font-weight: 700; line-height: 1.25; }
+.sector-name svg { flex: none; margin-top: 2px; color: var(--brand-button); }
+.sector-card.unrouted .sector-name svg { color: var(--danger); }
+.sector-total strong { font-family: var(--font-head); font-weight: 800; font-size: 1.9rem; line-height: 1; margin-right: 2px; }
+.sector-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 0.9rem; }
+.sector-go { margin-top: auto; display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-head); font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--brand-button); }
+@media (prefers-reduced-motion: reduce) { .sector-card { transition: none; } }
 
 /* Residents' accounts */
 .btn-google { background: #fff; color: var(--ink); border-color: var(--line); }

@@ -1,7 +1,9 @@
 'use client';
 /**
  * Dashboard of report statistics for a week, a month or a year.
- * The admin sees the whole municipality (or one department); a department head sees their department.
+ * The admin sees the whole municipality (or one department), starting with a
+ * card for each sector (its reports → their statuses → each report); a
+ * department head sees their department.
  * The period and department live in the address (?period=week&departmentId=3).
  */
 import Link from 'next/link';
@@ -45,6 +47,39 @@ function Onboarding({ info }: { info: OnboardingInfo }) {
         </li>
       </ol>
     </section>
+  );
+}
+
+type SectorRow = NonNullable<DashboardResult['byDepartment']>[number];
+
+/**
+ * One sector on the admin's dashboard: its name and how many reports it has.
+ * Opens its reports with every status, where the tabs show how many are in
+ * each status (to verify, in progress, resolved…) and each report can be edited.
+ */
+function SectorCard({ sector, periodLabel }: { sector: SectorRow; periodLabel: string }) {
+  const { t, lang } = useI18n();
+  const unrouted = sector.id === null;
+  const href = unrouted ? '/admin/reports?unrouted=1' : `/admin/reports?departmentId=${sector.id}&status=all`;
+  return (
+    <Link href={href} className={`sector-card${unrouted ? ' unrouted' : ''}`}>
+      <span className="sector-name">
+        <Icon name={unrouted ? 'alert' : 'layers'} size={18} />
+        {unrouted ? t('panel.nav.unrouted') : (lang === 'en' ? sector.nameEn : sector.nameSq)}
+      </span>
+      <span className="sector-total">
+        <strong>{unrouted ? sector.open : sector.total}</strong> {t(unrouted ? 'dashboard.sectorWaiting' : 'dashboard.sectorReports', { n: unrouted ? sector.open : sector.total })}
+      </span>
+      {!unrouted && (
+        <span className="sector-meta">
+          <span>{t('dashboard.sectorOpen', { n: sector.open })}</span>
+          {sector.openHigh > 0 && <span className="priority priority-high"><Icon name="arrowUp" size={12} strokeWidth={3} />{sector.openHigh}<span className="sr-only"> {t('dashboard.highOpen')}</span></span>}
+          {sector.overdue > 0 && <span className="badge badge-overdue">{t('dashboard.sectorOverdue', { n: sector.overdue })}</span>}
+        </span>
+      )}
+      {!unrouted && <span className="small muted">{t('dashboard.sectorPeriod', { period: periodLabel, received: sector.received, resolved: sector.resolved })}</span>}
+      <span className="sector-go">{t('dashboard.sectorOpenList')}<Icon name="chevronRight" size={16} /></span>
+    </Link>
   );
 }
 
@@ -123,6 +158,18 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
             </Link>
           )}
 
+          {data.byDepartment && (
+            <section aria-labelledby="dash-sectors">
+              <h2 className="section-label" id="dash-sectors">{t('dashboard.sectorsTitle')}</h2>
+              <p className="hint" style={{ marginTop: 0 }}>{t('dashboard.sectorsHint')}</p>
+              <div className="sector-grid">
+                {data.byDepartment.filter((s) => s.id !== null || s.open > 0).map((s) => (
+                  <SectorCard key={s.id ?? 'none'} sector={s} periodLabel={periodLabel} />
+                ))}
+              </div>
+            </section>
+          )}
+
           <section aria-label={t('dashboard.kpis', { period: periodLabel })}>
             <div className="kpis">
               <KpiTile label={t('dashboard.received')} value={data.totals.received} previous={data.totals.receivedPrevious} upIsGood={null} />
@@ -154,46 +201,6 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
             <h2 className="card-title">{t('dashboard.trendTitle', { period: periodLabel.toLowerCase() })}</h2>
             <TrendChart rows={data.trend} unit={data.unit} series={series} title={t('dashboard.trendTitle', { period: periodLabel.toLowerCase() })} />
           </section>
-
-          {data.byDepartment && (
-            <section className="card">
-              <h2 className="card-title">{t('dashboard.bySector')}</h2>
-              <div className="table-wrap">
-                <table className="table report-table sector-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">{t('dashboard.sector')}</th>
-                      <th scope="col" className="num">{t('dashboard.received')}</th>
-                      <th scope="col" className="num">{t('dashboard.resolved')}</th>
-                      <th scope="col" className="num">{t('dashboard.openNow')}</th>
-                      <th scope="col" className="num">{t('dashboard.highOpen')}</th>
-                      <th scope="col" className="num">{t('dashboard.overdueNow')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.byDepartment.map((s) => {
-                      const href = s.id ? `/admin/reports?departmentId=${s.id}` : '/admin/reports?unrouted=1';
-                      return (
-                        <tr key={s.id ?? 'none'} className="clickable" onClick={() => router.push(href)}>
-                          <th scope="row" style={{ fontWeight: 600 }}>
-                            <Link href={href} onClick={(e) => e.stopPropagation()}>
-                              {s.id ? (lang === 'en' ? s.nameEn : s.nameSq) : t('panel.nav.unrouted')}
-                            </Link>
-                          </th>
-                          <td className="num" data-label={t('dashboard.received')}>{s.received}</td>
-                          <td className="num" data-label={t('dashboard.resolved')}>{s.resolved}</td>
-                          <td className="num" data-label={t('dashboard.openNow')}>{s.open}</td>
-                          <td className="num" data-label={t('dashboard.highOpen')}>{s.openHigh ? <span className="priority priority-high"><Icon name="arrowUp" size={12} strokeWidth={3} />{s.openHigh}</span> : 0}</td>
-                          <td className="num" data-label={t('dashboard.overdueNow')}>{s.overdue ? <span className="badge badge-overdue">{s.overdue}</span> : 0}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <p className="hint">{t('dashboard.bySectorHint', { period: periodLabel.toLowerCase() })}</p>
-            </section>
-          )}
 
           <div className="grid-stats">
             <section className="card">

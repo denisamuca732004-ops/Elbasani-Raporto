@@ -125,6 +125,12 @@ export async function priorityCounts(user: Principal, query: ReportFilters): Pro
   return counts;
 }
 
+/** Numbers for the status tabs ("Të hapura", "Në punë"…): the same filters, without the status. */
+export async function statusCounts(user: Principal, query: ReportFilters): Promise<Partial<Record<Status, number>>> {
+  const rows = await db.report.groupBy({ by: ['status'], where: buildWhere(user, { ...query, status: undefined }), _count: { _all: true } });
+  return Object.fromEntries(rows.map((r) => [r.status, r._count._all]));
+}
+
 /** People a report can be given to: the heads of its department (and, for the admin, the admins). */
 export async function assignableUsers(user: Principal, reportId: string) {
   const report = await loadAccessible(user, reportId);

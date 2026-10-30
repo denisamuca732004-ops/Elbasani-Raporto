@@ -37,7 +37,6 @@ function useIsActive(href: string, exact?: boolean): boolean {
   if (wanted.length) return wanted.every(([k, v]) => params.get(k) === v);
   // The plain "all reports" link is not active while a department is filtered from the menu.
   if (url.pathname === '/admin/reports' && (params.get('departmentId') || params.get('unrouted'))) return false;
-  if (url.pathname === '/admin/reports' && pathname.startsWith('/admin/reports/new')) return false;
   return true;
 }
 
@@ -77,18 +76,15 @@ function navGroups(principal: Principal, counts: SidebarCounts | null, t: (k: st
       {
         items: [
           { href: '/admin/transfers', icon: 'transfer', label: t('panel.nav.reviews'), badge: counts?.pendingTransfers, badgeTone: 'alert', badgeLabel: t('panel.pendingShort') },
-          { href: '/admin/reports/new', icon: 'plus', label: t('panel.nav.newReport'), exact: true },
         ],
       },
       {
         title: t('panel.nav.administration'),
         items: [
-          { href: '/admin/departments', icon: 'building', label: t('panel.nav.sectors') },
-          { href: '/admin/users', icon: 'users', label: t('panel.nav.users') },
-          { href: '/admin/report-types', icon: 'list', label: t('panel.nav.catalogue') },
+          // Sectors, accounts, report types, the search guide and the appearance are not in the
+          // menu (kept simple for daily work). Their pages still work: the "first steps" card of
+          // the dashboard links to them, and they open at their address (/admin/users…).
           { href: '/admin/areas', icon: 'map', label: t('panel.nav.areas') },
-          { href: '/admin/guide', icon: 'help', label: t('panel.nav.guide') },
-          { href: '/admin/appearance', icon: 'settings', label: t('panel.nav.appearance') },
           { href: '/admin/emails', icon: 'mail', label: t('panel.nav.emails') },
           { href: '/admin/integration', icon: 'code', label: t('panel.nav.integration') },
           { href: '/admin/demo', icon: 'sparkle', label: t('panel.nav.demo') },

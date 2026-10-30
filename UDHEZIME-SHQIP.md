@@ -81,10 +81,10 @@ Kutia e kërkimit është lart djathtas në menu, në çdo faqe (në telefon, n�
   * *"gropë"*: lloji i problemit, për ta raportuar;
   * *"Rruga Rinia"*: raportimet e hapura aty.
 - **Ku ruhen përgjigjet:** në databazë, në shqip dhe anglisht. Platforma nis me 17 pyetje.
-- **Si i ndryshon Bashkia:** *Administrimi → Udhëzuesi*. Aty mund të:
+- **Si i ndryshon Bashkia:** te faqja `/admin/guide` (nuk është më në menu). Aty mund të:
   * shtojë, ndryshojë ose fshehë pyetje, pa programues;
   * provojë kërkimin ashtu si qytetari.
-- **Ku shfaqen:** te kutia e kërkimit. Kur qytetari e klikon, para se të shkruajë, del lista **Pyetje të shpeshta**: 6 pyetjet e para (sipas *Radhës*), butoni “Shiko të gjitha pyetjet” dhe në fund “Është emergjencë?”. Çdo pyetje hap përgjigjen aty. Te *Administrimi → Udhëzuesi* këto 6 kanë shenjën “Në listën e kërkimit”. Kur qytetari shkruan, dalin përgjigjet që përputhen. Menuja nuk ka më “Ndiq raportimin” dhe “Ndihmë”; raportimi ndiqet me butonin “Ndiq raportimin” në faqen kryesore ose duke shkruar numrin te kjo kuti. Lidhjet e vjetra vazhdojnë të punojnë (`/ndiq/EL-…` hap raportimin, `/ndihme` çon te faqja kryesore).
+- **Ku shfaqen:** te kutia e kërkimit. Kur qytetari e klikon, para se të shkruajë, del lista **Pyetje të shpeshta**: 6 pyetjet e para (sipas *Radhës*), butoni “Shiko të gjitha pyetjet” dhe në fund “Është emergjencë?”. Çdo pyetje hap përgjigjen aty. Te `/admin/guide` këto 6 kanë shenjën “Në listën e kërkimit”. Kur qytetari shkruan, dalin përgjigjet që përputhen. Menuja nuk ka më “Ndiq raportimin” dhe “Ndihmë”; raportimi ndiqet me butonin “Ndiq raportimin” në faqen kryesore ose duke shkruar numrin te kjo kuti. Lidhjet e vjetra vazhdojnë të punojnë (`/ndiq/EL-…` hap raportimin, `/ndihme` çon te faqja kryesore).
 - **Pa AI:** kërkimi bëhet në telefonin e qytetarit. Është falas dhe i menjëhershëm, dhe nuk shpik kurrë përgjigje.
 - **Siguria:** butoni nën përgjigje zgjidhet nga një listë e mbyllur (raporto, ndiq, harta, statistikat, privatësia, telefono 112). Administratori nuk mund të vendosë lidhje të jashtme.
 
@@ -103,14 +103,30 @@ npm run dev                 # http://localhost:3000
 Llogaritë krijohen me këtë radhë:
 1. Hapni `/hyrje` → **Krijo llogarinë e administratorit**. Lokalisht lejohet vetëm emaili
    `admin@example.com`.
-2. *Administrimi → Sektorët*: kontrolloni sektorët.
-3. *Administrimi → Llojet e raportimeve*: lidhni çdo lloj me sektorin që e trajton.
-4. *Administrimi → Përdoruesit → Krijo llogari*: krijoni llogarinë e përgjegjësit të çdo sektori.
+2. Te paneli, karta **Hapat e parë** ka lidhjet për hapat 3–5 (këto faqe nuk janë më në menu).
+3. Sektorët (`/admin/departments`): kontrolloni sektorët.
+4. Llojet e raportimeve (`/admin/report-types`): lidhni çdo lloj me sektorin që e trajton.
+5. Përdoruesit (`/admin/users`) → **Krijo llogari**: krijoni llogarinë e përgjegjësit të çdo sektori.
    * Fjalëkalimi i përkohshëm shfaqet **vetëm një herë**. Jepjani personit drejtpërdrejt.
    * Në hyrjen e parë, personi detyrohet ta ndryshojë.
 
 Për prezantim: *Administrimi → Të dhëna demo → Krijo të dhëna shembull*. Krijohen 60 raportime
 të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me një klik.
+
+## Paneli i administratorit
+
+- **Menuja** ka vetëm punën e përditshme: Paneli, raportimet (të gjitha dhe një lidhje për çdo
+  sektor), Kërkesat për rishikim, dhe te *Administrimi*: Zonat, Emailet, Integrimi, Të dhëna demo.
+- **Jo në menu**, por faqet punojnë me adresën e tyre: Sektorët (`/admin/departments`),
+  Përdoruesit (`/admin/users`), Llojet e raportimeve (`/admin/report-types`), Udhëzuesi
+  (`/admin/guide`), Pamja (`/admin/appearance`) dhe Raportim i ri nga stafi (`/admin/reports/new`).
+- **Paneli** nis me një kartë për çdo sektor: sa raportime ka, sa janë të hapura, sa me
+  prioritet të lartë dhe sa me vonesë. Klikimi hap raportimet e sektorit; skedat e statusit
+  (Të hapura, Për verifikim, Në punë, Zgjidhur, Mbyllur/refuzuar, Të gjitha) tregojnë numrin
+  për secilin. Çdo raportim hapet dhe administratori e ndryshon (statusi, prioriteti, sektori,
+  përgjegjësi, të dhënat, vendi në hartë).
+- **Kur raportimi nuk i përket sektorit:** sektori dërgon **kërkesë për rishikim**. Administratori
+  e sheh te *Kërkesat për rishikim* dhe e dërgon raportimin te sektori i duhur.
 
 ## Vendosja në Vercel
 
