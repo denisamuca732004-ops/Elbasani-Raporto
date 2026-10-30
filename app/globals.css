@@ -77,7 +77,7 @@ small, .small { font-size: 0.85rem; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
 
 /* ── Header ── */
-.site-header { background: var(--brand-header); color: #fff; position: sticky; top: 0; z-index: 1000; }
+.site-header { background: var(--brand-header); color: #fff; position: sticky; top: 0; z-index: 1100; } /* above the map buttons (Leaflet: 1000), so the search list covers them */
 .site-header a { color: #fff; text-decoration: none; }
 .header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 68px; }
 .brand { display: flex; align-items: center; gap: 12px; }
@@ -202,6 +202,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand-button); o
 .search-results .guide-hit.open .chevron { transform: rotate(180deg); }
 .search-results .guide-hit.open > button { border-bottom: 0; background: var(--bg-tint); }
 .search-results .guide-hit .guide-answer { padding: 0 16px 14px 44px; background: var(--bg-tint); border-bottom: 1px solid var(--line-soft); }
+.search-results .guide-hit.urgent > button, .search-results .guide-hit.urgent > button svg { color: var(--danger); }
+.search-results .guide-hit.urgent.open > button, .search-results .guide-hit.urgent .guide-answer { background: var(--danger-bg); }
+.search-results button.more-hit { font-family: var(--font-head); font-weight: 700; font-size: 0.8rem; color: var(--brand-button); padding-left: 44px; }
 .search-results .guide-hit.emergency .guide-title { display: flex; gap: 10px; align-items: center; padding: 12px 16px; color: var(--danger); background: var(--danger-bg); }
 .search-results .guide-hit.emergency .guide-title svg { flex: none; }
 .search-results .guide-hit.emergency .guide-answer { background: var(--danger-bg); }

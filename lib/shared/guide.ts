@@ -22,6 +22,17 @@ export interface GuideItem {
   emergency: boolean;
 }
 
+/** How many common questions the search box lists when it is clicked, before anything is typed. */
+export const COMMON_COUNT = 6;
+
+/**
+ * The common questions of that list: active, not emergencies, in the admin's
+ * order (the lists from lib/server/services/guide.ts are already sorted).
+ */
+export function commonQuestions<T extends GuideItem & { active?: boolean }>(items: T[]): T[] {
+  return items.filter((i) => i.active !== false && !i.emergency).slice(0, COMMON_COUNT);
+}
+
 /** The only places a guide button can lead to. The admin picks one; no free links. */
 export const GUIDE_ACTION_HREF: Readonly<Record<Exclude<GuideAction, 'NONE'>, string>> = {
   REPORT: '/raporto',

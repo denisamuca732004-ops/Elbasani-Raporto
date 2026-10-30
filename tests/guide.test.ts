@@ -1,5 +1,5 @@
 /**
- * "Ask or search": the guide of the home search box. The default questions,
+ * "Ask or search": the guide of the search box in the menu. The default questions,
  * the matching residents get while typing (the same code runs in the
  * browser), the admin's edits and what residents see after them.
  */
@@ -8,7 +8,7 @@ import { after, before, describe, test } from 'node:test';
 import { seedReferenceData } from '@/lib/server/referenceData';
 import { getCatalog } from '@/lib/server/services/catalog';
 import { createGuideEntry, getGuide, listGuideEntries, updateGuideEntry } from '@/lib/server/services/guide';
-import { guideHref, matchGuide, matchTypes, significantWords, wordsMatch, type GuideItem } from '@/lib/shared/guide';
+import { COMMON_COUNT, commonQuestions, guideHref, matchGuide, matchTypes, significantWords, wordsMatch, type GuideItem } from '@/lib/shared/guide';
 import type { Principal } from '@/lib/shared/types';
 import { guideEntryPatchSchema, guideEntrySchema } from '@/lib/validation/admin';
 import { adminSession, db, rejects, setupTestDb, staffSession, teardown } from './helpers';
@@ -46,6 +46,20 @@ describe('the default guide', () => {
     for (const g of guide) {
       const href = guideHref(g.action);
       assert.ok(href === null || href === 'tel:112' || /^\/[a-z]+$/.test(href), `${g.questionSq}: ${href}`);
+    }
+  });
+
+  test('clicking the search box lists the first common questions, in the admin order, without emergencies', () => {
+    const list = commonQuestions(guide);
+    assert.equal(list.length, COMMON_COUNT);
+    assert.ok(list.every((g) => !g.emergency));
+    assert.deepEqual(list.map((g) => codeOf.get(g.id)).slice(0, 3), ['how_to_report', 'how_long', 'privacy']);
+  });
+
+  test('no starting answer sends residents to the removed "Ndiq raportimin" page', () => {
+    for (const g of guide) {
+      assert.notEqual(g.action, 'TRACK', g.questionSq);
+      assert.doesNotMatch(`${g.answerSq} ${g.answerEn}`, /Ndiq raportimin|Track a report/);
     }
   });
 });

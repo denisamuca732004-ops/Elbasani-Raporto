@@ -14,7 +14,7 @@ import { useI18n } from '@/i18n';
 import { call } from '@/lib/client/action';
 import type { GuideAdminRow } from '@/lib/server/services/guide';
 import { GUIDE_ACTIONS, type GuideAction } from '@/lib/shared/domain';
-import { guideHref, matchGuide } from '@/lib/shared/guide';
+import { commonQuestions, guideHref, matchGuide } from '@/lib/shared/guide';
 import { useAdminAction } from './useAdminAction';
 
 type GuideForm = {
@@ -129,6 +129,8 @@ export default function Guide({ items }: { items: GuideAdminRow[] }) {
   const { busy, error, notice, run } = useAdminAction();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
+  // Listed when a resident clicks the search box (same rule as the box itself).
+  const listed = new Set(commonQuestions(items).map((i) => i.id));
   const nextOrder = String(Math.min(9999, Math.max(0, ...items.map((i) => i.sortOrder)) + 10));
 
   return (
@@ -176,6 +178,7 @@ export default function Guide({ items }: { items: GuideAdminRow[] }) {
                 </div>
                 <div className="row">
                   {item.emergency && <span className="badge badge-overdue">{t('admin.guide.emergency')}</span>}
+                  {listed.has(item.id) && <span className="badge status-open">{t('admin.guide.inList')}</span>}
                   {!item.active && <span className="badge badge-muted">{t('admin.inactive')}</span>}
                   <button type="button" className="btn btn-sm btn-outline" onClick={() => { setEditing(item.id); setAdding(false); }}><Icon name="edit" size={14} />{t('common.edit')}</button>
                   <button

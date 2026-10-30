@@ -194,7 +194,7 @@ The search box sits at the right of the menu bar on every page (on phones, under
   - Emergencies always come first, already open.
   - When the text names a problem ("si raportoj një gropë"), the report type comes before the answers.
 - **Buttons under answers.** Each answer has one button from a fixed list: report, track, map, statistics, privacy, call 112, or none. The admin cannot type a link, and answers are plain text, never HTML.
-- **Where answers show.** Only in the search box, while typing. `/ndihme` (the old Help page) redirects to the home page; `/ndiq` and `/ndiq/EL-…` still work for old links and emails. Migration `20261030120000_search_in_menu` removes the "Track" button from the starting answers, unless the admin changed them.
+- **Where answers show.** Only in the search box. Clicked before anything is typed, it lists the common questions: the first `COMMON_COUNT` (6) active non-emergency questions in the admin's order, "See all questions", then the emergency entry; each opens its answer in place. The admin page marks those 6. While typing, the matching answers show. `/ndihme` (the old Help page) redirects to the home page; `/ndiq` and `/ndiq/EL-…` still work for old links and emails. Migration `20261030120000_search_in_menu` removes the "Track" button from the starting answers, unless the admin changed them.
 - **AI later (phase 2).** An AI assistant could answer free questions using only these answers, after the Municipality approves it and with `AI_API_KEY` in Vercel.
 
 ## Deploy on Vercel

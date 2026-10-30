@@ -1,7 +1,9 @@
 'use client';
 /**
- * The search box in the menu bar, on every page ("Ask or search"). It answers
- * four kinds of input at once:
+ * The search box in the menu bar, on every page ("Ask or search"). Clicked
+ * before anything is typed, it lists the common questions (the first ones of
+ * the guide, in the admin's order); each one opens its answer in place.
+ * Typed text answers four kinds of input at once:
  *  - a question ("si raportoj", "sa zgjat") → a short answer from the guide the
  *    admin manages, with a button (matched in the browser: instant, no AI);
  *    emergencies ("zjarr") show the emergency numbers first;
@@ -21,11 +23,26 @@ import { StatusBadge, TestBadge } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { call } from '@/lib/client/action';
 import { typeName } from '@/lib/client/format';
-import { matchGuide, matchTypes, type GuideItem } from '@/lib/shared/guide';
+import { commonQuestions, matchGuide, matchTypes, type GuideItem } from '@/lib/shared/guide';
 import type { PublicCard } from '@/lib/shared/types';
 
 const CASE_RE = /^[A-Z]{1,6}-\d{4}-\d{5,}$/;
 const CASE_START = /^[A-Z]{1,6}-\d/;
+
+/** One question of the list: the question as a button; pressed, its answer opens under it. */
+function Question({ item, open, onToggle, onNavigate }: { item: GuideItem; open: boolean; onToggle: () => void; onNavigate: () => void }) {
+  const { lang } = useI18n();
+  return (
+    <li className={`guide-hit${open ? ' open' : ''}${item.emergency ? ' urgent' : ''}`}>
+      <button type="button" aria-expanded={open} onClick={onToggle}>
+        <Icon name={item.emergency ? 'alert' : 'help'} size={18} />
+        <strong>{guideQuestion(item, lang)}</strong>
+        <Icon name="chevronDown" size={16} className="chevron" />
+      </button>
+      {open && <GuideAnswer item={item} onNavigate={onNavigate} />}
+    </li>
+  );
+}
 
 export default function SiteSearch({ guide }: { guide: GuideItem[] }) {
   const { t, lang } = useI18n();
@@ -35,8 +52,12 @@ export default function SiteSearch({ guide }: { guide: GuideItem[] }) {
   const [query, setQuery] = useState('');
   const [places, setPlaces] = useState<PublicCard[] | null>(null);
   const [searching, setSearching] = useState(false);
-  // Which answer is open: null = the first one, -1 = none (the resident closed it).
+  // Which answer is open. Typed results: null = the first one, -1 = none (the resident
+  // closed it). Common questions: only the one pressed.
   const [openId, setOpenId] = useState<number | null>(null);
+  // The list under the box is shown (the box was clicked or typed in).
+  const [open, setOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const request = useRef(0);
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -56,28 +77,43 @@ export default function SiteSearch({ guide }: { guide: GuideItem[] }) {
   const emergencies = answers.filter((a) => a.emergency);
   const others = answers.filter((a) => !a.emergency).slice(0, matches.length ? 1 : 3);
 
+  // Before anything is typed: the common questions, "all questions" on request, emergencies last.
+  const common = useMemo(() => commonQuestions(guide), [guide]);
+  const allQuestions = useMemo(() => guide.filter((g) => !g.emergency), [guide]);
+  const urgent = useMemo(() => guide.filter((g) => g.emergency), [guide]);
+  const listed = showAll ? allQuestions : common;
+
   function type(value: string) {
     setQuery(value);
     setOpenId(null);
+    setOpen(true);
+  }
+
+  /** Empty and closed: after choosing something, on a new page, or with Escape. */
+  function reset() {
+    setQuery('');
+    setOpenId(null);
+    setOpen(false);
+    setShowAll(false);
   }
 
   function go(href: string) {
-    type('');
+    reset();
     router.push(href);
   }
 
   // A new page: start empty.
-  useEffect(() => { type(''); }, [pathname]);
+  useEffect(() => { reset(); }, [pathname]);
 
-  // Click outside or Escape closes the results.
+  // A click or tap outside closes the list; the typed text stays, and clicking the box shows it again.
   useEffect(() => {
-    if (!trimmed) return undefined;
-    const onDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) type('');
+    if (!open) return undefined;
+    const onDown = (e: PointerEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [trimmed]);
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [open]);
 
   // Open reports on that street / in that area (asked a moment after typing stops).
   useEffect(() => {
@@ -97,7 +133,8 @@ export default function SiteSearch({ guide }: { guide: GuideItem[] }) {
     return () => clearTimeout(timer);
   }, [trimmed, looksLikeCase]);
 
-  const showBox = trimmed.length >= 2;
+  const showFaq = open && trimmed.length < 2 && (common.length > 0 || urgent.length > 0);
+  const showBox = open && trimmed.length >= 2;
   const nothing = showBox && !looksLikeCase && answers.length === 0 && matches.length === 0 && !searching && (places?.length ?? 0) === 0;
 
   function submit() {
@@ -109,17 +146,38 @@ export default function SiteSearch({ guide }: { guide: GuideItem[] }) {
   }
 
   return (
-    <div className="site-search" ref={boxRef} role="search">
+    <div
+      className="site-search" ref={boxRef} role="search"
+      // Tab out of the box (to another link or field) closes the list too.
+      onBlur={(e) => { if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}
+    >
       <label htmlFor="site-search" className="sr-only">{t('home.searchLabel')}</label>
       <input
         id="site-search" type="search" autoComplete="off" placeholder={t('home.searchPlaceholder')} maxLength={100}
         value={query} onChange={(e) => type(e.target.value)}
+        onFocus={() => setOpen(true)} onClick={() => setOpen(true)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') submit();
-          if (e.key === 'Escape') type('');
+          // First Escape closes the list, a second one empties the box (not the browser's own clearing).
+          if (e.key === 'Escape') { e.preventDefault(); if (open) setOpen(false); else reset(); }
         }}
       />
       <Icon name="search" size={20} className="search-icon" />
+      {showFaq && (
+        <ul className="search-results">
+          <li className="group-title">{t('home.search.faq')}</li>
+          {listed.map((item) => (
+            <Question key={item.id} item={item} open={openId === item.id} onToggle={() => setOpenId(openId === item.id ? null : item.id)} onNavigate={reset} />
+          ))}
+          {!showAll && allQuestions.length > common.length && (
+            <li><button type="button" className="more-hit" onClick={() => setShowAll(true)}>{t('home.search.more', { n: allQuestions.length })}</button></li>
+          )}
+          {urgent.map((item) => (
+            <Question key={item.id} item={item} open={openId === item.id} onToggle={() => setOpenId(openId === item.id ? null : item.id)} onNavigate={reset} />
+          ))}
+          <li className="search-note">{t('home.search.faqHint')}</li>
+        </ul>
+      )}
       {showBox && (
         <ul className="search-results" aria-live="polite">
           {looksLikeCase && (
@@ -135,7 +193,7 @@ export default function SiteSearch({ guide }: { guide: GuideItem[] }) {
           {emergencies.map((item) => (
             <li key={`guide-${item.id}`} className="guide-hit emergency open">
               <div className="guide-title"><Icon name="alert" size={18} /><strong>{guideQuestion(item, lang)}</strong></div>
-              <GuideAnswer item={item} onNavigate={() => type('')} />
+              <GuideAnswer item={item} onNavigate={reset} />
             </li>
           ))}
 
@@ -151,17 +209,8 @@ export default function SiteSearch({ guide }: { guide: GuideItem[] }) {
 
           {others.length > 0 && <li className="group-title">{t('home.search.answers')}</li>}
           {others.map((item, i) => {
-            const open = openId === item.id || (openId === null && i === 0 && matches.length === 0);
-            return (
-              <li key={`guide-${item.id}`} className={`guide-hit${open ? ' open' : ''}`}>
-                <button type="button" aria-expanded={open} onClick={() => setOpenId(open ? -1 : item.id)}>
-                  <Icon name="help" size={18} />
-                  <strong>{guideQuestion(item, lang)}</strong>
-                  <Icon name="chevronDown" size={16} className="chevron" />
-                </button>
-                {open && <GuideAnswer item={item} onNavigate={() => type('')} />}
-              </li>
-            );
+            const expanded = openId === item.id || (openId === null && i === 0 && matches.length === 0);
+            return <Question key={`guide-${item.id}`} item={item} open={expanded} onToggle={() => setOpenId(expanded ? -1 : item.id)} onNavigate={reset} />;
           })}
 
           {searching && !looksLikeCase && <li className="search-note">{t('home.search.searching')}</li>}
@@ -171,7 +220,7 @@ export default function SiteSearch({ guide }: { guide: GuideItem[] }) {
               <li className="search-note">{t('home.search.openHint')}</li>
               {places.map((c) => (
                 <li key={c.caseNumber}>
-                  <Link href={`/ndiq/${c.caseNumber}`} className="search-hit" onClick={() => type('')}>
+                  <Link href={`/ndiq/${c.caseNumber}`} className="search-hit" onClick={reset}>
                     <span>
                       <span className="case-number">{c.caseNumber}</span> · <strong>{typeName(c.type, lang)}</strong>
                       <span className="where">{[c.address, c.neighbourhood].filter(Boolean).join(' · ') || '–'}</span>
