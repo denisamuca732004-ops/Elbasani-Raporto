@@ -48,7 +48,7 @@ Kontrolli bëhet në tre nivele, dhe të tri duhet të kalojnë:
   * Pa foto, pa përshkrim ose pa vendndodhje, raportimi **nuk krijohet**.
   * **Vendndodhja jepet në njërën nga dy mënyrat:**
     1. me **GPS** ose duke prekur hartën: zona gjendet vetë nga kufijtë e 13 njësive administrative, dhe adresa nuk kërkohet;
-    2. **me dorë:** zona → një nga lagjet ose fshatrat e **asaj** zone → rruga. Lagjja ose fshati nuk mund të jetë nga një zonë tjetër. Mund të shtohet edhe një pikë në hartë (opsionale), por brenda zonës së zgjedhur.
+    2. **me dorë:** zona → një nga lagjet ose fshatrat e **asaj** zone → rruga (**opsionale**: pa të, adresa është lagjja ose fshati). Lagjja ose fshati nuk mund të jetë nga një zonë tjetër. Mund të shtohet edhe një pikë në hartë (opsionale), por brenda zonës së zgjedhur.
   * **Në hartën publike** çdo raportim del si pikë me ngjyrën e statusit, që kur merret ("Marrë", gri).
     - Fotoja dhe përshkrimi shfaqen vetëm pasi verifikohet.
     - Raportimet e refuzuara nuk shfaqen.
@@ -95,10 +95,15 @@ Fotoja kontrollohet sapo qytetari e zgjedh, te hapi “Shtoni një foto”.
 - **Foto e papërshtatshme** (nuditet ose përmbajtje seksuale, dhunë e rëndë ndaj njerëzve,
   imazhe të turpshme): refuzohet dhe qytetari duhet të zgjedhë një tjetër. Serveri e refuzon
   përsëri kur dërgohet raportimi, kështu që nuk mund të anashkalohet. Kërkon AI-në.
-- **Foto që nuk tregon problemin** (selfie, screenshot, dokument, foto e zgjedhur gabimisht
-  nga galeria): del pyetja “A është kjo fotoja e problemit?”. Qytetari zgjedh një tjetër ose
-  konfirmon. Nuk refuzohet, sepse AI mund të gabojë me një foto të errët ose nga larg; Bashkia
-  e kontrollon gjithsesi. Kërkon AI-në.
+- **Dokument ose screenshot** (jo foto e vendit): refuzohet si më sipër, me mesazhin “Kjo duket
+  si dokument ose screenshot, jo si foto e vendit”. Kërkon AI-në.
+- **Foto që nuk tregon problemin** (selfie, foto e zgjedhur gabimisht nga galeria): del pyetja
+  “A është kjo fotoja e problemit?”. Qytetari zgjedh një tjetër ose konfirmon. Nuk refuzohet,
+  sepse AI mund të gabojë me një foto të errët ose nga larg; Bashkia e kontrollon gjithsesi.
+  Kërkon AI-në.
+- **Kur AI nuk përgjigjet** (çelës i gabuar, pa kredit): qytetari sheh “Fotoja nuk u kontrollua
+  automatikisht”, dhe raportimi vazhdon. Shkakun e tregon butoni **Provo lidhjen me AI** te
+  *Administrimi → Integrimi*.
 - **Foto më e vjetër se 7 ditë:** del një shënim që sugjeron një foto të re. Punon edhe pa AI.
 - **Aktivizimi:** te Vercel → *Settings → Environment Variables* vendosni `AI_ENABLED=true`,
   `AI_API_KEY` (çelësi i OpenAI) dhe `AI_MODEL=gpt-4o-mini`, pastaj *Redeploy*. Pa to, fotot nuk

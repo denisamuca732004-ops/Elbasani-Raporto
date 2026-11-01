@@ -10,6 +10,7 @@ import { after, before, describe, test } from 'node:test';
 import { resetConfigForTests } from '@/lib/server/env';
 import { getReport, resolveReport } from '@/lib/server/services/report';
 import { createCitizenReport, getPublicCase } from '@/lib/server/services/publicReport';
+import { testAiConnection } from '@/lib/server/ai';
 import { checkPhoto } from '@/lib/server/services/photoCheck';
 import { changePriority, changeStatus } from '@/lib/server/services/report';
 import { extractFromText } from '@/lib/server/services/triage';
@@ -17,7 +18,7 @@ import type { Principal } from '@/lib/shared/types';
 import { adminSession, citizenData, db, drainJobs, jpeg, setupTestDb, submitReport, teardown, typeId, uploadPhoto } from './helpers';
 
 const calls: Array<{ auth?: string; body: { model: string; messages: Array<{ content: unknown }> } }> = [];
-let mode: 'ok' | 'error' = 'ok';
+let mode: 'ok' | 'error' | 'unauthorized' | 'quota' = 'ok';
 /** What the fake AI answers to the photo check (and whether it refuses to look). */
 let photoAnswer: Record<string, unknown> = { safe: true, matches: true, kind: 'scene' };
 let photoRefuses = false;
@@ -32,6 +33,14 @@ const fake = http.createServer((req, res) => {
     if (hold && !String(body.messages[0].content).includes('check a photo')) await hold;
     if (mode === 'error') {
       res.writeHead(500).end('boom');
+      return;
+    }
+    if (mode === 'unauthorized') {
+      res.writeHead(401).end(JSON.stringify({ error: { message: 'Incorrect API key provided: sk-proj-abcdEFGH1234. You can find your API key at https://platform.openai.com/account/api-keys.' } }));
+      return;
+    }
+    if (mode === 'quota') {
+      res.writeHead(429).end(JSON.stringify({ error: { message: 'You exceeded your current quota, please check your plan and billing details.', code: 'insufficient_quota' } }));
       return;
     }
     const system = String(body.messages[0].content);
@@ -215,13 +224,28 @@ describe('the photo check while the report is created', () => {
     photoAnswer = { safe: true, matches: true, kind: 'scene' };
   });
 
-  test('a photo that does not show the problem only gets a warning: the resident may still send it', async () => {
-    photoAnswer = { safe: true, matches: false, kind: 'screenshot' };
-    const photoKey = await uploadPhoto(await jpeg('#3060a0'));
-    assert.deepEqual(await checkPhoto(photoKey, await pothole()), { verdict: 'unrelated' });
-    const result = await createCitizenReport(await citizenData({ photoKey }));
-    assert.ok(result.caseNumber);
+  test('a document or a screenshot is refused like an inappropriate photo (it is not a photo of a place)', async () => {
+    photoAnswer = { safe: true, matches: false, kind: 'document' };
+    const photoKey = await uploadPhoto(await jpeg('#f4f4f4'));
+    assert.deepEqual(await checkPhoto(photoKey, await pothole()), { verdict: 'not_photo' });
+    await assert.rejects(createCitizenReport(await citizenData({ photoKey })), (err: { code?: string; details?: Array<{ field: string; code: string }> }) => {
+      assert.equal(err.code, 'REPORT_INCOMPLETE');
+      assert.deepEqual(err.details?.map((d) => [d.field, d.code]), [['photo', 'not_photo']]);
+      return true;
+    });
     photoAnswer = { safe: true, matches: true, kind: 'scene' };
+  });
+
+  test('a photo that does not show the problem only gets a warning: the resident may still send it', async () => {
+    photoAnswer = { safe: true, matches: false, kind: 'scene' };
+    try {
+      const photoKey = await uploadPhoto(await jpeg('#3060a0'));
+      assert.deepEqual(await checkPhoto(photoKey, await pothole()), { verdict: 'unrelated' });
+      const result = await createCitizenReport(await citizenData({ photoKey }));
+      assert.ok(result.caseNumber);
+    } finally {
+      photoAnswer = { safe: true, matches: true, kind: 'scene' };
+    }
   });
 
   test('a model that refuses to look at the photo counts as an inappropriate photo', async () => {
@@ -245,6 +269,27 @@ describe('the photo check while the report is created', () => {
       mode = 'ok';
     }
     await drainJobs();
+  });
+});
+
+describe('"Provo lidhjen me AI" in the panel', () => {
+  test('a working connection says so', async () => {
+    assert.deepEqual(await testAiConnection(), { ok: true });
+  });
+
+  test('a wrong key, no credit or no answer are told apart, and the key never shows', async () => {
+    try {
+      mode = 'unauthorized';
+      const key = await testAiConnection();
+      assert.equal(key.problem, 'key');
+      assert.doesNotMatch(key.detail ?? '', /abcdEFGH1234/);
+      mode = 'quota';
+      assert.equal((await testAiConnection()).problem, 'quota');
+      mode = 'error';
+      assert.equal((await testAiConnection()).problem, 'other');
+    } finally {
+      mode = 'ok';
+    }
   });
 });
 

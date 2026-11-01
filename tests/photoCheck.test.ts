@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import sharp from 'sharp';
 import { exifDateFromJpeg, isOldPhoto, parseExifDate } from '@/lib/client/photoDate';
+import { hideKeys, testAiConnection } from '@/lib/server/ai';
 import { checkPhoto, verdictOf } from '@/lib/server/services/photoCheck';
 
 const photoWithExif = (exif: Record<string, Record<string, string>>) =>
@@ -44,11 +45,21 @@ describe('the date of a photo (an old photo from the gallery)', () => {
 describe('the photo check without the AI', () => {
   test('with the AI off nothing is checked and nothing is refused', async () => {
     assert.deepEqual(await checkPhoto('tmp/00000000-0000-4000-8000-000000000000.jpg', 1), { verdict: 'unchecked' });
+    assert.deepEqual(await testAiConnection(), { ok: false, problem: 'disabled' });
+  });
+
+  test('an error text never shows an API key', () => {
+    assert.equal(hideKeys('Incorrect API key provided: sk-proj-abc123XYZ****wxyz.'), 'Incorrect API key provided: sk-….');
+    assert.equal(hideKeys('AI HTTP 500: boom'), 'AI HTTP 500: boom');
   });
 
   test('only an explicit "false" refuses or warns (an odd answer lets the photo through)', () => {
     assert.equal(verdictOf({ safe: false, matches: true }), 'inappropriate');
     assert.equal(verdictOf({ safe: true, matches: false }), 'unrelated');
+    assert.equal(verdictOf({ safe: true, matches: false, kind: 'document' }), 'not_photo');
+    assert.equal(verdictOf({ safe: true, matches: false, kind: 'screenshot' }), 'not_photo');
+    assert.equal(verdictOf({ safe: true, matches: false, kind: 'people' }), 'unrelated');
+    assert.equal(verdictOf({ safe: true, matches: true, kind: 'screenshot' }), 'ok', 'a screenshot that shows the problem (e.g. a photo of it) is not refused');
     assert.equal(verdictOf({ safe: true, matches: true }), 'ok');
     assert.equal(verdictOf({}), 'ok');
     assert.equal(verdictOf({ safe: 'no', matches: 'maybe' }), 'ok');

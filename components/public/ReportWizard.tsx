@@ -4,15 +4,16 @@
  * type → location → photo → description → contact → review → case number.
  * The location is given ONE of two ways: GPS / a tap on the map (the zone is
  * found from the point, no address needed), or by hand: zone → one of THAT
- * zone's lagje or villages → street. So the zone and the place always match.
+ * zone's lagje or villages → street (optional). So the zone and the place always match.
  * EVERY step is mandatory: the next step opens only when the current one is
  * complete, and the server (createReportAction) refuses incomplete reports
  * anyway, telling the wizard which step to go back to.
  * The photo goes straight to Vercel Blob with a one-file upload token.
  * With the AI on, the photo is checked as soon as it is chosen: an
- * inappropriate photo is refused (the server refuses it again when the report
- * is sent), and one that does not seem to show the chosen problem needs the
- * resident's confirmation (lib/server/services/photoCheck.ts).
+ * inappropriate photo, a document or a screenshot is refused (the server
+ * refuses it again when the report is sent), and one that does not seem to
+ * show the chosen problem needs the resident's confirmation
+ * (lib/server/services/photoCheck.ts).
  * Used on /raporto and inside the /embed widget.
  */
 import Link from 'next/link';
@@ -66,8 +67,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [showAddressMap, setShowAddressMap] = useState(false);
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoCheck, setPhotoCheck] = useState<PhotoCheck | null>(null);
-  // The last photo was refused (inappropriate): the message stays until another photo is chosen.
-  const [photoRefused, setPhotoRefused] = useState(false);
+  // The last photo was refused (inappropriate, or a document / screenshot): the message stays until another photo is chosen.
+  const [photoRefused, setPhotoRefused] = useState<'inappropriate' | 'not_photo' | null>(null);
   const [description, setDescription] = useState('');
   const [contactMode, setContactMode] = useState<'contact' | 'anonymous' | null>(null); // null until the resident chooses
   const [contact, setContact] = useState({ name: resident?.name ?? '', email: resident?.email ?? '', phone: resident?.phone ?? '' });
@@ -98,7 +99,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     let cancelled = false;
     setPhotoCheck({ photo, typeId, status: 'checking', confirmed: false });
     void (async () => {
-      let verdict: 'ok' | 'unrelated' | 'inappropriate' | 'unchecked' = 'unchecked';
+      let verdict: 'ok' | 'unrelated' | 'not_photo' | 'inappropriate' | 'unchecked' = 'unchecked';
       try {
         const photoKey = await photoKeyFor(photo);
         verdict = (await call(checkPhotoAction({ photoKey, requestTypeId: typeId }))).verdict;
@@ -106,9 +107,9 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
         uploaded.current = null; // no answer: the report goes on, and the photo is uploaded again when it is sent
       }
       if (cancelled) return;
-      if (verdict === 'inappropriate') {
+      if (verdict === 'inappropriate' || verdict === 'not_photo') {
         uploaded.current = null;
-        setPhotoRefused(true);
+        setPhotoRefused(verdict);
         setPhoto(null);
         return;
       }
@@ -159,10 +160,9 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       if (locationMode === 'address') {
         if (!zone) e.neighbourhoodId = t('report.errors.area');
         else if (zone.localities.length > 0 && !locality) e.localityId = t('report.errors.locality');
+        // The street is optional; when written, it may not name a place of another zone.
         const text = street.trim();
-        if (!text) e.address = t('report.errors.street');
-        else if (text.length < LIMITS.minAddress) e.address = t('report.errors.addressShort', { n: LIMITS.minAddress });
-        else if (zone) {
+        if (text && zone) {
           const other = otherZonePlace(text, zone.id, catalog.neighbourhoods);
           if (other) e.address = t('report.errors.otherZone', { place: other.place, zone: other.zone });
         }
@@ -291,8 +291,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
         for (const d of err.details as Array<{ field: string; message: string; step?: string; code?: string }>) {
           const field = d.field === 'longitude' ? 'latitude' : d.field === 'photoKey' ? 'photo' : d.field;
           byField[field] = d.message;
-          if (field === 'photo' && d.code === 'inappropriate') {
-            byField.photo = t('report.photoCheck.inappropriate');
+          if (field === 'photo' && (d.code === 'inappropriate' || d.code === 'not_photo')) {
+            byField.photo = t(d.code === 'not_photo' ? 'report.photoCheck.notPhoto' : 'report.photoCheck.inappropriate');
             setPhoto(null);
           }
           const index = STEPS.indexOf((d.step ?? STEP_OF_FIELD[d.field] ?? 'review') as StepName);
@@ -449,8 +449,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
                   </Field>
                 )}
               </div>
-              <Field label={t('report.street')} hint={t('report.streetHint')} htmlFor="street" error={visibleError('address')} required>
-                <input id="street" type="text" value={street} maxLength={LIMITS.maxAddress - 40} aria-required="true" onChange={(e) => setStreet(e.target.value)} />
+              <Field label={t('report.street')} hint={t('report.streetHint')} htmlFor="street" error={visibleError('address')}>
+                <input id="street" type="text" value={street} maxLength={LIMITS.maxAddress - 40} onChange={(e) => setStreet(e.target.value)} />
               </Field>
               {/* Optional: a pin, so the report also appears on the public map. It must be inside the chosen zone. */}
               {!showAddressMap ? (
@@ -490,11 +490,13 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
           <h2>{t('report.photoTitle')}</h2>
           <PhotoInput
             value={photo}
-            onChange={(p) => { setPhoto(p); setServerErrors((e) => ({ ...e, photo: undefined })); if (p) setPhotoRefused(false); }}
-            required error={photoRefused ? t('report.photoCheck.inappropriate') : visibleError('photo')} maxBytes={rules.maxUploadBytes}
+            onChange={(p) => { setPhoto(p); setServerErrors((e) => ({ ...e, photo: undefined })); if (p) setPhotoRefused(null); }}
+            required maxBytes={rules.maxUploadBytes}
+            error={photoRefused === 'not_photo' ? t('report.photoCheck.notPhoto') : photoRefused ? t('report.photoCheck.inappropriate') : visibleError('photo')}
           />
           {currentCheck?.status === 'checking' && <p className="hint" role="status">{t('report.photoCheck.checking')}</p>}
           {currentCheck?.status === 'ok' && <p className="hint ok" role="status"><Icon name="check" size={14} /> {t('report.photoCheck.ok')}</p>}
+          {currentCheck?.status === 'unchecked' && <p className="hint" role="status">{t('report.photoCheck.unchecked')}</p>}
           {currentCheck?.status === 'unrelated' && (currentCheck.confirmed ? (
             <p className="hint" role="status"><Icon name="check" size={14} /> {t('report.photoCheck.confirmed')}</p>
           ) : (

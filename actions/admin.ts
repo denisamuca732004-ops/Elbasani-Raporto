@@ -7,6 +7,7 @@
  */
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { testAiConnection } from '@/lib/server/ai';
 import { requireAdmin } from '@/lib/server/session';
 import * as admin from '@/lib/server/services/admin';
 import * as guide from '@/lib/server/services/guide';
@@ -187,6 +188,14 @@ export async function deleteDemoDataAction() {
     const result = await admin.deleteSampleData(await requireAdmin());
     refresh('/admin/demo');
     return result;
+  });
+}
+
+/** Integrimi → "Provo lidhjen me AI": one small request, and why it failed in plain words. */
+export async function testAiAction() {
+  return run(async () => {
+    await requireAdmin();
+    return testAiConnection();
   });
 }
 

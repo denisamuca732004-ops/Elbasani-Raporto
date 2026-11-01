@@ -120,3 +120,35 @@ export async function chatJson({ kind, system, userText, imageDataUrls = [], cac
   }
   return output;
 }
+
+/** Hides anything that looks like an API key in an error text (OpenAI repeats part of a wrong key). */
+export const hideKeys = (text: string): string => text.replace(/\b(sk|pk|key)-[A-Za-z0-9_*-]{4,}/g, '$1-…');
+
+export type AiProblem = 'disabled' | 'key' | 'quota' | 'model' | 'timeout' | 'other';
+
+/** What the admin sees about the AI settings (never the key itself). */
+export function aiSettingsSummary(): { enabled: boolean; enabledFlag: boolean; hasKey: boolean; model: string; host: string } {
+  const ai = config().ai;
+  let host = '';
+  try { host = new URL(ai.baseUrl).host; } catch { host = ai.baseUrl; }
+  return { enabled: aiEnabled(), enabledFlag: ai.enabled, hasKey: Boolean(ai.apiKey), model: ai.model, host };
+}
+
+/**
+ * "Test the AI connection" in the panel: one tiny request (not cached), and in
+ * plain words why it failed: a wrong key, no credit, an unknown model, a timeout.
+ */
+export async function testAiConnection(): Promise<{ ok: boolean; problem?: AiProblem; detail?: string }> {
+  if (!aiEnabled()) return { ok: false, problem: 'disabled' };
+  try {
+    await chatJson({ kind: 'test', system: 'Answer ONLY with the JSON object {"ok": true}.', userText: 'ping' });
+    return { ok: true };
+  } catch (err) {
+    const message = hideKeys(err instanceof Error ? err.message : String(err)).slice(0, 300);
+    const problem: AiProblem = /HTTP 401|HTTP 403/.test(message) ? 'key'
+      : /HTTP 429|quota|billing/i.test(message) ? 'quota'
+        : /HTTP 404|model_not_found|does not exist/i.test(message) ? 'model'
+          : /timed out/i.test(message) ? 'timeout' : 'other';
+    return { ok: false, problem, detail: message };
+  }
+}

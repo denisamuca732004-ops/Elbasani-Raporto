@@ -3,11 +3,12 @@
  *  - an inappropriate photo (nudity or sexual content, graphic violence
  *    against people, obscene images) is refused, on the server too, so the
  *    report cannot be sent with it even by skipping the form;
- *  - a photo that does not show the chosen problem (a selfie, a screenshot,
- *    a picture taken by mistake from the gallery) gets a warning, and the
- *    resident confirms or chooses another one. It is never refused: the AI
- *    can be wrong about a dark or distant photo, and a person in the
- *    department checks every report that the AI does not confirm.
+ *  - a document or a screenshot (not a photo of a place) is refused the same way;
+ *  - a photo that does not show the chosen problem (a selfie, a picture taken
+ *    by mistake from the gallery) gets a warning, and the resident confirms or
+ *    chooses another one. It is not refused: the AI can be wrong about a dark
+ *    or distant photo, and a person in the department checks every report
+ *    that the AI does not confirm.
  * Needs the AI (AI_ENABLED + AI_API_KEY). Without it, or when the AI does not
  * answer, the answer is "unchecked" and the report goes on as before: photos
  * are never public until the department has verified the report.
@@ -16,13 +17,16 @@
  */
 import 'server-only';
 import sharp from 'sharp';
-import { AiRefusedError, AiUnavailableError, aiEnabled, chatJson, type AiJson } from '../ai';
+import { AiRefusedError, AiUnavailableError, aiEnabled, chatJson, hideKeys, type AiJson } from '../ai';
 import { db } from '../db';
 import { config } from '../env';
 import { takeTemporaryUpload } from '../storage';
 import { sha256 } from '../tokens';
 
-export type PhotoVerdict = 'ok' | 'unrelated' | 'inappropriate' | 'unchecked';
+export type PhotoVerdict = 'ok' | 'unrelated' | 'not_photo' | 'inappropriate' | 'unchecked';
+
+/** Verdicts that refuse the photo, in the form and when the report is sent. */
+export const REFUSED_VERDICTS: readonly PhotoVerdict[] = ['inappropriate', 'not_photo'];
 
 const PHOTO_CHECK_SYSTEM = `You check a photo that a resident attaches to a report for the Municipality of Elbasan (Albania), before the report is sent.
 Answer ONLY with a JSON object with exactly these keys:
@@ -34,9 +38,14 @@ Answer ONLY with a JSON object with exactly these keys:
   "kind": "scene" | "screenshot" | "document" | "people" | "other"
 }`;
 
-/** The answer of the model, read defensively: only an explicit "false" counts. */
+/**
+ * The answer of the model, read defensively: only an explicit "false" counts.
+ * A document or a screenshot is never a photo of the problem: refused. A real
+ * photo that does not seem to show the chosen problem only gets a warning.
+ */
 export function verdictOf(answer: AiJson): PhotoVerdict {
   if (answer.safe === false) return 'inappropriate';
+  if (answer.matches === false && (answer.kind === 'document' || answer.kind === 'screenshot')) return 'not_photo';
   if (answer.matches === false) return 'unrelated';
   return 'ok';
 }
@@ -82,7 +91,11 @@ export async function checkPhoto(photoKey: string, requestTypeId: number): Promi
       });
       return { verdict: 'inappropriate' };
     }
-    if (err instanceof AiUnavailableError) return { verdict: 'unchecked' };
+    if (err instanceof AiUnavailableError) {
+      // In the Vercel logs, so a wrong key or an account without credit is found (also: Integrimi → "Provo lidhjen me AI").
+      console.error('[photo-check] AI unavailable:', hideKeys(err.message));
+      return { verdict: 'unchecked' };
+    }
     throw err;
   }
 }

@@ -1,7 +1,7 @@
 /**
  * Where the problem is. A resident gives the place ONE of two ways:
  *  - GPS or a tap on the map: the zone comes from the zone borders, no address is needed;
- *  - by hand: zone → one of THAT zone's lagje or villages → street (no point on the map).
+ *  - by hand: zone → one of THAT zone's lagje or villages → street, which is optional (no point on the map).
  * The zone and the place can never disagree.
  */
 import assert from 'node:assert/strict';
@@ -130,14 +130,26 @@ describe('way 2: typing the address', () => {
     assert.deepEqual(await problemsOf(mixed), [['localityId', 'other_zone']]);
   });
 
-  test('zone, lagje or village and street are all required', async () => {
+  test('zone and lagje or village are required', async () => {
     assert.deepEqual(await problemsOf(await byHand({ neighbourhoodId: undefined, address: 'Rruga e Re 4' })), [['neighbourhoodId', 'required']]);
     assert.deepEqual(await problemsOf(await byHand({ neighbourhoodId: 99999, address: 'Rruga e Re 4' })), [['neighbourhoodId', 'unknown']]);
     assert.deepEqual(await problemsOf(await byHand({ neighbourhoodId: await zoneId('gracen'), address: 'Rruga e Re 4' })), [['localityId', 'required']]);
-    assert.deepEqual(
-      await problemsOf(await byHand({ neighbourhoodId: await zoneId('gracen'), localityId: await placeId('gracen', 'Bodin'), address: ' ' })),
-      [['address', 'required']],
-    );
+  });
+
+  test('the street is optional: the lagje or village is the address, and two such reports are not on one spot', async () => {
+    const bodin = { neighbourhoodId: await zoneId('gracen'), localityId: await placeId('gracen', 'Bodin') };
+    const a = await createCitizenReport(await byHand({ ...bodin, address: ' ', description: 'Kosha e mbeturinave është plot prej një jave.' }));
+    const b = await createCitizenReport(await byHand({ ...bodin, address: '', description: 'Drita e rrugës nuk ndizet natën.' }));
+    const first = await db.report.findUniqueOrThrow({ where: { caseNumber: a.caseNumber } });
+    const second = await db.report.findUniqueOrThrow({ where: { caseNumber: b.caseNumber } });
+    assert.equal(first.address, 'fshati Bodin, njësia Gracen');
+    assert.equal(first.locationApproximate, true);
+    assert.equal(zoneCodeAt(first.latitude!, first.longitude!), 'gracen');
+    assert.notDeepEqual([first.latitude, first.longitude], [second.latitude, second.longitude]);
+    const city = await createCitizenReport(await byHand({ neighbourhoodId: await zoneId('elbasan'), localityId: await placeId('elbasan', 'Qemal Stafa'), address: '' }));
+    assert.equal((await db.report.findUniqueOrThrow({ where: { caseNumber: city.caseNumber } })).address, 'Lagjja Qemal Stafa');
+    // A short text is fine too ("12", a house number).
+    assert.ok((await createCitizenReport(await byHand({ ...bodin, address: '12' }))).caseNumber);
   });
 
   test('a street that names a village of another zone is refused, with the right zone in the message', async () => {

@@ -23,7 +23,7 @@ import { CITY_ZONE_CODE, approximatePoint, otherZonePlace, zoneCenter } from '@/
 import { boundingBox, distanceMeters, insideMunicipality, roundCoord, zoneOfPoint } from './geo';
 import { isPubliclyVerified, publicInclude, toPublicCard, toPublicCase } from './mapper';
 import { departmentRecipients } from './notification';
-import { checkPhoto } from './photoCheck';
+import { REFUSED_VERDICTS, checkPhoto } from './photoCheck';
 import { persistNewReport } from './reportCreation';
 
 /* ───────────────────────── Strict citizen report ───────────────────────── */
@@ -44,7 +44,6 @@ const MESSAGES: Record<string, string> = {
   'longitude.required': 'Përdorni vendndodhjen tuaj (GPS) ose prekni hartën.',
   'latitude.outside_area': 'Pika në hartë duhet të jetë brenda Bashkisë Elbasan.',
   'address.required': 'Shkruani rrugën, numrin ose një pikë reference.',
-  'address.too_short': `Adresa duhet të ketë të paktën ${LIMITS.minAddress} shkronja.`,
   'neighbourhoodId.required': 'Zgjidhni zonën (njësinë administrative).',
   'neighbourhoodId.unknown': 'Zgjidhni një zonë nga lista.',
   'localityId.required': 'Zgjidhni lagjen ose fshatin.',
@@ -80,7 +79,8 @@ interface ResolvedLocation {
 /**
  * The place of a resident's report, in one of two ways (see LOCATION_MODES):
  *  - map: a point inside the Municipality; the zone comes from the point, never from the form;
- *  - address: a zone, one of ITS lagje or villages, and the street, which may not name a place of another zone.
+ *  - address: a zone and one of ITS lagje or villages; the street, number or landmark is optional,
+ *    and when given it may not name a place of another zone.
  */
 async function resolveLocation(data: CitizenReport, problems: ReportProblem[]): Promise<ResolvedLocation> {
   const text = clean(data.address);
@@ -109,9 +109,8 @@ async function resolveLocation(data: CitizenReport, problems: ReportProblem[]): 
     else if (!locality) problems.push(problem('localityId', 'other_zone'));
   }
 
-  if (!text) problems.push(problem('address', 'required'));
-  else if (text.length < LIMITS.minAddress) problems.push(problem('address', 'too_short'));
-  else if (zone) {
+  // The street, number or landmark is optional: the zone and the lagje / village are enough to find the place.
+  if (text && zone) {
     const other = otherZonePlace(text, zone.id, zones);
     if (other) problems.push(problem('address', 'other_zone', `“${other.place}” ndodhet në zonën ${other.zone}. Zgjidhni zonën e duhur ose ndryshoni adresën.`));
   }
@@ -139,13 +138,15 @@ async function resolveLocation(data: CitizenReport, problems: ReportProblem[]): 
   const base = locality?.latitude != null && locality.longitude != null
     ? { latitude: locality.latitude, longitude: locality.longitude }
     : zone?.code ? zoneCenter(zone.code) : null;
-  const approx = base ? approximatePoint(base, address || zone?.name || '') : null;
+  // The description is part of the key: reports from the same village without a street do not land on one spot.
+  const approx = base ? approximatePoint(base, `${address || zone?.name || ''}|${clean(data.description)}`) : null;
   return { latitude: approx?.latitude ?? null, longitude: approx?.longitude ?? null, neighbourhoodId: zone?.id ?? null, address: address || null, approximate: Boolean(approx) };
 }
 
 type CitizenReport = z.output<typeof citizenReportShape>;
 
 const PHOTO_REFUSED = 'Kjo foto nuk mund të përdoret. Zgjidhni një foto që tregon problemin.';
+const PHOTO_NOT_A_PHOTO = 'Kjo duket si dokument ose screenshot, jo si foto e vendit. Bëni një foto të problemit.';
 
 /**
  * Creates a resident's report only when EVERY step is complete:
@@ -216,9 +217,11 @@ export async function createCitizenReport(raw: unknown, options: { citizenId?: s
   try {
     // The same check as the photo step of the form (one AI call for both): an inappropriate photo is
     // refused here too, so the report cannot be sent with it even without the form.
-    if (data.photoKey && (await checkPhoto(data.photoKey, type.id)).verdict === 'inappropriate') {
+    const verdict = data.photoKey ? (await checkPhoto(data.photoKey, type.id)).verdict : 'unchecked';
+    if (data.photoKey && REFUSED_VERDICTS.includes(verdict)) {
       await discardTemporaryUpload(data.photoKey);
-      throw new AppError(400, 'PHOTO_INVALID', PHOTO_REFUSED, [{ field: 'photo', code: 'inappropriate', message: PHOTO_REFUSED, step: 'photo' }]);
+      const message = verdict === 'not_photo' ? PHOTO_NOT_A_PHOTO : PHOTO_REFUSED;
+      throw new AppError(400, 'PHOTO_INVALID', message, [{ field: 'photo', code: verdict, message, step: 'photo' }]);
     }
     created = await persistNewReport({
       type,
