@@ -5,7 +5,7 @@
   "description": "Elbasani Raporton \u2013 Next.js (App Router) + Prisma + Auth.js + Vercel Blob + Upstash",
   "type": "module",
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   },
   "allowScripts": {
     "@prisma/engines": true,

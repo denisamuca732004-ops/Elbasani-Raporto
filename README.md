@@ -81,7 +81,7 @@ Statuses (PostgreSQL enum):
 
 ## Run locally
 
-Requirements: Node.js 22+, plus Docker (or any PostgreSQL 14+).
+Requirements: Node.js 24 (the version Vercel uses, pinned in `package.json`; 22 still works for local development), plus Docker (or any PostgreSQL 14+).
 
 ```bash
 docker compose up -d          # PostgreSQL with raporton_next_dev and raporton_next_test

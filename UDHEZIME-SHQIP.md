@@ -106,7 +106,7 @@ Fotoja kontrollohet sapo qytetari e zgjedh, te hapi “Shtoni një foto”.
 
 ## Nisja në kompjuter
 
-Duhen **Node.js 22** dhe **Docker Desktop** (ose PostgreSQL i instaluar).
+Duhen **Node.js 24** (versioni që përdor Vercel) dhe **Docker Desktop** (ose PostgreSQL i instaluar).
 
 ```bash
 docker compose up -d        # ngre PostgreSQL-në
