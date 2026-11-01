@@ -11,6 +11,7 @@ import { resetConfigForTests } from '@/lib/server/env';
 import { getReport, resolveReport } from '@/lib/server/services/report';
 import { createCitizenReport, getPublicCase } from '@/lib/server/services/publicReport';
 import { testAiConnection } from '@/lib/server/ai';
+import { checkDescription } from '@/lib/server/services/descriptionCheck';
 import { checkPhoto } from '@/lib/server/services/photoCheck';
 import { changePriority, changeStatus } from '@/lib/server/services/report';
 import { extractFromText } from '@/lib/server/services/triage';
@@ -22,6 +23,8 @@ let mode: 'ok' | 'error' | 'unauthorized' | 'quota' = 'ok';
 /** What the fake AI answers to the photo check (and whether it refuses to look). */
 let photoAnswer: Record<string, unknown> = { safe: true, matches: true, kind: 'scene' };
 let photoRefuses = false;
+/** What the fake AI answers to the description check. */
+let descriptionAnswer: Record<string, unknown> = { meaningful: true, abusive: false, matches: true };
 let hold: Promise<void> | null = null; // lets a test keep the AI "thinking"
 const fake = http.createServer((req, res) => {
   let raw = '';
@@ -29,8 +32,8 @@ const fake = http.createServer((req, res) => {
   req.on('end', async () => {
     const body = JSON.parse(raw);
     calls.push({ auth: req.headers.authorization, body });
-    // The hold keeps the check of the whole report "thinking", not the photo check of the form.
-    if (hold && !String(body.messages[0].content).includes('check a photo')) await hold;
+    // The hold keeps the check of the whole report "thinking", not the checks of the form.
+    if (hold && !/check a photo|check the description/.test(String(body.messages[0].content))) await hold;
     if (mode === 'error') {
       res.writeHead(500).end('boom');
       return;
@@ -53,6 +56,8 @@ const fake = http.createServer((req, res) => {
     }
     if (system.includes('check a photo')) {
       answer = photoAnswer;
+    } else if (system.includes('check the description')) {
+      answer = descriptionAnswer;
     } else if (system.includes('intake assistant')) {
       const blurry = user.includes('blurry');
       const face = user.includes('selfie');
@@ -103,7 +108,7 @@ describe('AI check of resident reports', () => {
     assert.equal(report.aiConfidence, 92);
     assert.equal(report.aiSummary, 'Gropë e madhe në rrugë');
     assert.ok(report.verifiedAt);
-    assert.equal(calls.length, before + 2, 'one photo check while creating, one check of the whole report');
+    assert.equal(calls.length, before + 3, 'a description check and a photo check while creating, one check of the whole report');
     const call = calls.at(-1)!;
     assert.equal(call.auth, 'Bearer test-key');
     assert.equal(call.body.model, 'fake-model');
@@ -205,7 +210,8 @@ describe('the photo check while the report is created', () => {
     const afterCheck = calls.length;
     const result = await createCitizenReport(await citizenData({ photoKey }));
     assert.ok(result.caseNumber);
-    assert.equal(calls.length, afterCheck, 'the check of the form is reused (no second paid call)');
+    const photoCalls = calls.slice(afterCheck).filter((c) => /check a photo/.test(String(c.body.messages[0]!.content)));
+    assert.equal(photoCalls.length, 0, 'the check of the form is reused (no second paid call)');
   });
 
   test('an inappropriate photo is refused: no report is created and the upload is deleted', async () => {
@@ -269,6 +275,68 @@ describe('the photo check while the report is created', () => {
       mode = 'ok';
     }
     await drainJobs();
+  });
+});
+
+describe('the description check while the report is created', () => {
+  const pothole = () => typeId('streets.pothole');
+  const refusedWith = (code: string) => (err: { code?: string; details?: Array<{ field: string; code: string; step: string }> }) => {
+    assert.equal(err.code, 'REPORT_INCOMPLETE');
+    assert.deepEqual(err.details?.map((d) => [d.field, d.code, d.step]), [['description', code, 'details']]);
+    return true;
+  };
+
+  test('a description of the problem passes, and sending the report asks the AI no second time about it', async () => {
+    const text = 'Gropë e madhe para pallatit 7, makinat e shmangin me vështirësi.';
+    assert.deepEqual(await checkDescription(text, await pothole()), { verdict: 'ok' });
+    const call = calls.at(-1)!;
+    assert.match(String(call.body.messages[0]!.content), /check the description/);
+    assert.match(JSON.stringify(call.body.messages[1]!.content), /Pothole|pothole/);
+    const before = calls.length;
+    await createCitizenReport(await citizenData({ description: text }));
+    assert.equal(calls.filter((c, i) => i >= before && /check the description/.test(String(c.body.messages[0]!.content))).length, 0);
+  });
+
+  test('text that says nothing is refused, even when it is made of real letters ("test test")', async () => {
+    descriptionAnswer = { meaningful: false, abusive: false, matches: false };
+    try {
+      assert.deepEqual(await checkDescription('test test test test', await pothole()), { verdict: 'gibberish' });
+      const reportsBefore = await db.report.count();
+      await assert.rejects(createCitizenReport(await citizenData({ description: 'test test test test' })), refusedWith('gibberish'));
+      assert.equal(await db.report.count(), reportsBefore);
+    } finally {
+      descriptionAnswer = { meaningful: true, abusive: false, matches: true };
+    }
+  });
+
+  test('an abusive description is refused; the photo upload is deleted too', async () => {
+    const photoKey = await uploadPhoto(await jpeg('#405060'));
+    descriptionAnswer = { meaningful: true, abusive: true, matches: true };
+    try {
+      await assert.rejects(createCitizenReport(await citizenData({ description: 'Tekst fyes për testin e kontrollit', photoKey })), refusedWith('abusive'));
+    } finally {
+      descriptionAnswer = { meaningful: true, abusive: false, matches: true };
+    }
+    // The photo of the refused report cannot be reused: its upload is gone.
+    await assert.rejects(createCitizenReport(await citizenData({ description: 'Gropë e thellë te ura e vjetër', photoKey })), (err: { details?: Array<{ field: string }> }) => err.details?.[0]?.field === 'photo');
+  });
+
+  test('a description of another problem only gets a warning: the report can still be sent', async () => {
+    descriptionAnswer = { meaningful: true, abusive: false, matches: false };
+    try {
+      const text = 'Drita e rrugës është e fikur prej një jave te shkolla.';
+      assert.deepEqual(await checkDescription(text, await pothole()), { verdict: 'unrelated' });
+      assert.ok((await createCitizenReport(await citizenData({ description: text }))).caseNumber);
+    } finally {
+      descriptionAnswer = { meaningful: true, abusive: false, matches: true };
+    }
+    await drainJobs();
+  });
+
+  test('e-mail addresses and phone numbers in the description never reach the AI', async () => {
+    await checkDescription('Gropë te shkolla, më shkruani te beni@example.com ose 069 123 4567', await pothole());
+    const sent = JSON.stringify(calls.at(-1)!.body.messages[1]!.content);
+    assert.doesNotMatch(sent, /beni@example\.com|069 123 4567/);
   });
 });
 

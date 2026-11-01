@@ -201,6 +201,19 @@ The photo step of the form checks the photo as soon as it is chosen ([`lib/serve
 - Offline, or when the AI does not answer, the photo is "unchecked": the form says it was not checked automatically and the report goes on. The failure is logged (`[photo-check]`, key hidden), and *Administrimi → Integrimi → Provo lidhjen me AI* names the cause: wrong key, no credit, unknown model or timeout.
 - The privacy page says that the AI checks photos, also before the report is sent.
 
+### The description, checked the same way
+
+When "Vazhdo" is pressed at the description step ([`lib/server/services/descriptionCheck.ts`](lib/server/services/descriptionCheck.ts), [`lib/shared/text.ts`](lib/shared/text.ts)):
+
+| The description | With the AI on | Without the AI |
+|---|---|---|
+| Random letters ("asdfkz kcp zvkmv"), one letter repeated, no words | Refused (`gibberish`), in the form and when the report is sent. | The same: a check of letters, vowels and words, in the browser and on the server. |
+| Says nothing ("test test test") | Refused (`gibberish`). | Not detected. |
+| Obscene or sexual content, hate speech, threats, insults aimed at people (anger at the problem or criticism of the municipality is allowed) | Refused (`abusive`). | Not detected. |
+| About another problem than the chosen type | Warning: "A përputhet përshkrimi me llojin e zgjedhur?" with "Ndrysho llojin" or "Po, vazhdo". | Not detected. |
+
+E-mail addresses and phone numbers are masked before the text goes to the AI. One call per text and type, cached; rate limit `textCheck` per IP.
+
 ## Search guide ("Ask or search")
 
 The search box sits at the right of the menu bar on every page (on phones, under the logo). It answers questions as well as finding reports. The menu has no "Track a report" or "Help" item: a report is tracked with the "Ndiq raportimin" button on the home page (`/ndiq`) or by typing its number in this box.

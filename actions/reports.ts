@@ -22,10 +22,12 @@ import { getResident, requireAdmin, requireStaff } from '@/lib/server/session';
 import * as publicReports from '@/lib/server/services/publicReport';
 import * as reports from '@/lib/server/services/report';
 import * as transfers from '@/lib/server/services/transfer';
+import { checkDescription } from '@/lib/server/services/descriptionCheck';
 import { checkPhoto } from '@/lib/server/services/photoCheck';
 import { extractFromText } from '@/lib/server/services/triage';
 import {
-  assignSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoCheckSchema, photoVisibilitySchema, placeSearchSchema,
+  assignSchema, descriptionCheckSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoCheckSchema,
+  photoVisibilitySchema, placeSearchSchema,
   prioritySchema, rejectSchema, reportUpdateSchema, resolveSchema, staffReportSchema, statusChangeSchema, testFlagSchema,
   transferDecisionSchema, transferRequestSchema,
 } from '@/lib/validation/report';
@@ -60,6 +62,19 @@ export async function checkPhotoAction(input: unknown) {
     await enforceRateLimit('photoCheck', await clientIp());
     const data = parseInput(photoCheckSchema, input);
     return checkPhoto(data.photoKey, data.requestTypeId);
+  });
+}
+
+/**
+ * The description step: checks the text when the resident presses "Vazhdo". Answers "ok",
+ * "unrelated" (the form asks to change the type or confirm), "gibberish" or "abusive"
+ * (the form asks to rewrite it; sending the report with it is refused) or "unchecked".
+ */
+export async function checkDescriptionAction(input: unknown) {
+  return run(async () => {
+    await enforceRateLimit('textCheck', await clientIp());
+    const data = parseInput(descriptionCheckSchema, input);
+    return checkDescription(data.description, data.requestTypeId);
   });
 }
 

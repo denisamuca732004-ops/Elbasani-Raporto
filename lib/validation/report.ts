@@ -191,6 +191,12 @@ export const nearbySchema = z.strictObject({ requestTypeId: id, latitude, longit
 export const placeSearchSchema = z.strictObject({ q: requiredText(3, 100) });
 export const followSchema = z.strictObject({ caseNumber, email: optionalEmail });
 
+/** The description step of the form: the text and the problem type chosen in step 1. */
+export const descriptionCheckSchema = z.strictObject({
+  description: z.string().max(LIMITS.maxDescription),
+  requestTypeId: z.coerce.number().int().positive().max(2_147_483_647),
+});
+
 /** The photo step of the form: the uploaded photo and the problem type chosen in step 1. */
 export const photoCheckSchema = z.strictObject({ photoKey: uploadKey, requestTypeId: z.coerce.number().int().positive().max(2_147_483_647) });
 export const feedbackSchema = z.strictObject({

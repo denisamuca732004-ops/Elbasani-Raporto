@@ -8,7 +8,9 @@ import { describe, test } from 'node:test';
 import sharp from 'sharp';
 import { exifDateFromJpeg, isOldPhoto, parseExifDate } from '@/lib/client/photoDate';
 import { hideKeys, testAiConnection } from '@/lib/server/ai';
+import { checkDescription, descriptionVerdictOf } from '@/lib/server/services/descriptionCheck';
 import { checkPhoto, verdictOf } from '@/lib/server/services/photoCheck';
+import { looksLikeGibberish } from '@/lib/shared/text';
 
 const photoWithExif = (exif: Record<string, Record<string, string>>) =>
   sharp({ create: { width: 64, height: 48, channels: 3, background: '#556655' } }).jpeg().withExif(exif).toBuffer();
@@ -63,5 +65,35 @@ describe('the photo check without the AI', () => {
     assert.equal(verdictOf({ safe: true, matches: true }), 'ok');
     assert.equal(verdictOf({}), 'ok');
     assert.equal(verdictOf({ safe: 'no', matches: 'maybe' }), 'ok');
+  });
+});
+
+describe('the description check (random letters, without the AI)', () => {
+  test('random letters, one letter repeated or no words are caught', () => {
+    for (const text of ["asdfkz:kcp'zvkmv", 'aaaaaaaaaaaaaa', '1234567890 12', 'zxcvbnm qwrtpsdfg', 'kkkkk lllll mmmmm', 'Gropëgropëgropë']) {
+      assert.equal(looksLikeGibberish(text), true, text);
+    }
+  });
+
+  test('real descriptions pass, also short, misspelled, in English or with numbers', () => {
+    for (const text of [
+      'Gropë e thellë në mes të rrugës, para shkollës.', 'kontejneri plot prej 3 ditesh', 'Drita e rrugës nuk ndizet',
+      'Light out on Rruga Rinia since Monday', 'Rruga 5 Maji nr 12, gropë', 'Shtrëngim i tubit, rrjedh ujë', 'qen endacak agresiv te parku',
+    ]) {
+      assert.equal(looksLikeGibberish(text), false, text);
+    }
+  });
+
+  test('without the AI the random letters are refused and a real text goes on', async () => {
+    assert.deepEqual(await checkDescription("asdfkz:kcp'zvkmv", 1), { verdict: 'gibberish' });
+    assert.deepEqual(await checkDescription('Gropë e thellë në mes të rrugës', 1), { verdict: 'unchecked' });
+  });
+
+  test('the AI answer: abusive wins, then meaningless, then another problem', () => {
+    assert.equal(descriptionVerdictOf({ meaningful: true, abusive: true, matches: true }), 'abusive');
+    assert.equal(descriptionVerdictOf({ meaningful: false, abusive: false, matches: false }), 'gibberish');
+    assert.equal(descriptionVerdictOf({ meaningful: true, abusive: false, matches: false }), 'unrelated');
+    assert.equal(descriptionVerdictOf({ meaningful: true, abusive: false, matches: true }), 'ok');
+    assert.equal(descriptionVerdictOf({}), 'ok');
   });
 });

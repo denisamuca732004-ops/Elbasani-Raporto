@@ -13,12 +13,15 @@
  * inappropriate photo, a document or a screenshot is refused (the server
  * refuses it again when the report is sent), and one that does not seem to
  * show the chosen problem needs the resident's confirmation
- * (lib/server/services/photoCheck.ts).
+ * (lib/server/services/photoCheck.ts). The description is checked the same
+ * way when "Vazhdo" is pressed: random letters (also without the AI) and
+ * abusive text are refused, a text about another problem needs a confirmation
+ * (lib/server/services/descriptionCheck.ts).
  * Used on /raporto and inside the /embed widget.
  */
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { checkPhotoAction, createReportAction, findNearbyAction, followReportAction } from '@/actions/reports';
+import { checkDescriptionAction, checkPhotoAction, createReportAction, findNearbyAction, followReportAction } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { LocationPicker } from '@/components/maps';
 import PhotoInput from '@/components/PhotoInput';
@@ -31,10 +34,13 @@ import { isMine, rememberMine, rememberSupported } from '@/lib/client/myReports'
 import { newClientRef, queueReport } from '@/lib/client/offlineQueue';
 import { uploadPhoto } from '@/lib/client/upload';
 import { LIMITS } from '@/lib/shared/domain';
+import { looksLikeGibberish } from '@/lib/shared/text';
 import type { PublicCard } from '@/lib/shared/types';
 import { otherZonePlace, zoneCenter, zoneCodeAt } from '@/lib/shared/zones';
 
 const STEPS = ['type', 'location', 'photo', 'details', 'contact', 'review'] as const;
+/** The check of the description for the chosen type, made when "Vazhdo" is pressed. */
+type DescriptionCheck = { text: string; typeId: number; status: 'ok' | 'unrelated' | 'unchecked'; confirmed: boolean };
 /** The check of the chosen photo for the chosen type ("unchecked": AI off, offline or no answer). */
 type PhotoCheck = { photo: Blob; typeId: number; status: 'checking' | 'ok' | 'unrelated' | 'unchecked'; confirmed: boolean };
 type StepName = (typeof STEPS)[number];
@@ -69,6 +75,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [photoCheck, setPhotoCheck] = useState<PhotoCheck | null>(null);
   // The last photo was refused (inappropriate, or a document / screenshot): the message stays until another photo is chosen.
   const [photoRefused, setPhotoRefused] = useState<'inappropriate' | 'not_photo' | null>(null);
+  const [descriptionCheck, setDescriptionCheck] = useState<DescriptionCheck | null>(null);
+  const [checkingDescription, setCheckingDescription] = useState(false);
   const [description, setDescription] = useState('');
   const [contactMode, setContactMode] = useState<'contact' | 'anonymous' | null>(null); // null until the resident chooses
   const [contact, setContact] = useState({ name: resident?.name ?? '', email: resident?.email ?? '', phone: resident?.phone ?? '' });
@@ -92,7 +100,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
 
   // The photo is checked as soon as it is chosen (and again if the type changes), only with the AI on and online.
   useEffect(() => {
-    if (!photo || !typeId || !rules.photoCheck || !navigator.onLine) {
+    if (!photo || !typeId || !rules.aiChecks || !navigator.onLine) {
       setPhotoCheck(null);
       return undefined;
     }
@@ -118,7 +126,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     return () => { cancelled = true; };
     // photoKeyFor only reads a ref; re-running it on every render would upload again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photo, typeId, rules.photoCheck]);
+  }, [photo, typeId, rules.aiChecks]);
   const currentCheck = photo && photoCheck?.photo === photo && photoCheck.typeId === typeId ? photoCheck : null;
   // Map mode: the zone of the pin, from the zone borders (works offline too).
   const pin = locationMode === 'map' ? location : null;
@@ -180,6 +188,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     if (name === 'details') {
       if (!description.trim()) e.description = t('report.errors.description');
       else if (description.trim().length < LIMITS.minDescription) e.description = t('report.errors.descriptionShort', { n: LIMITS.minDescription });
+      else if (looksLikeGibberish(description)) e.description = t('report.errors.descriptionGibberish');
     }
     if (name === 'contact') {
       if (!contactMode) e.anonymous = t('report.errors.contactChoice');
@@ -205,10 +214,39 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function next() {
+  function showStepErrors() {
+    setShowErrors(true);
+    requestAnimationFrame(() => topRef.current?.querySelector<HTMLElement>('.has-error input, .has-error select, .has-error textarea, .has-error button')?.focus());
+  }
+
+  // The description as last checked, if the text and the type are still the same.
+  const currentDescriptionCheck = descriptionCheck && descriptionCheck.text === description.trim() && descriptionCheck.typeId === typeId ? descriptionCheck : null;
+
+  async function next() {
     if (Object.keys(currentErrors).length) {
-      setShowErrors(true);
-      requestAnimationFrame(() => topRef.current?.querySelector<HTMLElement>('.has-error input, .has-error select, .has-error textarea, .has-error button')?.focus());
+      showStepErrors();
+      return;
+    }
+    // The description is checked once per text and type (only with the AI on and online).
+    if (stepName === 'details' && rules.aiChecks && typeId && navigator.onLine && !currentDescriptionCheck) {
+      const text = description.trim();
+      setCheckingDescription(true);
+      let verdict: 'ok' | 'unrelated' | 'gibberish' | 'abusive' | 'unchecked' = 'unchecked';
+      try {
+        verdict = (await call(checkDescriptionAction({ description: text, requestTypeId: typeId }))).verdict;
+      } catch {
+        /* no answer: the report goes on, the department reads it */
+      } finally {
+        setCheckingDescription(false);
+      }
+      if (verdict === 'gibberish' || verdict === 'abusive') {
+        setServerErrors((e) => ({ ...e, description: t(verdict === 'abusive' ? 'report.descriptionCheck.abusive' : 'report.errors.descriptionGibberish') }));
+        showStepErrors();
+        return;
+      }
+      setDescriptionCheck({ text, typeId, status: verdict, confirmed: false });
+      if (verdict === 'unrelated') return; // the question under the text decides
+    } else if (stepName === 'details' && currentDescriptionCheck?.status === 'unrelated' && !currentDescriptionCheck.confirmed) {
       return;
     }
     goTo(step + 1);
@@ -291,6 +329,9 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
         for (const d of err.details as Array<{ field: string; message: string; step?: string; code?: string }>) {
           const field = d.field === 'longitude' ? 'latitude' : d.field === 'photoKey' ? 'photo' : d.field;
           byField[field] = d.message;
+          if (field === 'description' && (d.code === 'gibberish' || d.code === 'abusive')) {
+            byField.description = t(d.code === 'abusive' ? 'report.descriptionCheck.abusive' : 'report.errors.descriptionGibberish');
+          }
           if (field === 'photo' && (d.code === 'inappropriate' || d.code === 'not_photo')) {
             byField.photo = t(d.code === 'not_photo' ? 'report.photoCheck.notPhoto' : 'report.photoCheck.inappropriate');
             setPhoto(null);
@@ -533,6 +574,20 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
           <p id="desc-count" className={`hint${description.trim().length < LIMITS.minDescription ? '' : ' ok'}`}>
             {t('report.descriptionCount', { n: description.trim().length, min: LIMITS.minDescription })}
           </p>
+          {currentDescriptionCheck?.status === 'unrelated' && !currentDescriptionCheck.confirmed && (
+            <div className="alert alert-warn" role="alert">
+              <p style={{ margin: 0 }}>
+                <strong>{t('report.descriptionCheck.unrelatedTitle')}</strong>{' '}
+                {t('report.descriptionCheck.unrelatedText', { type: type ? (lang === 'en' ? type.nameEn : type.nameSq) : '' })}
+              </p>
+              <div className="row" style={{ marginTop: 10 }}>
+                <button type="button" className="btn btn-sm" onClick={() => goTo(0)}>{t('report.descriptionCheck.changeType')}</button>
+                <button type="button" className="btn btn-sm btn-outline" onClick={() => { setDescriptionCheck({ ...currentDescriptionCheck, confirmed: true }); goTo(step + 1); }}>
+                  {t('report.descriptionCheck.keep')}
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -604,8 +659,10 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
           <button type="button" className="btn btn-lg" onClick={submit} disabled={submitting}>{submitting ? t('report.sending') : t('report.send')}</button>
         ) : (
           (stepName !== 'type' || type) && (
-            <button type="button" className="btn" onClick={next} disabled={stepName === 'photo' && currentCheck?.status === 'checking'}>
-              {stepName === 'photo' && currentCheck?.status === 'checking' ? t('report.photoCheck.checking') : <>{t('common.next')}<Icon name="arrowRight" size={18} /></>}
+            <button type="button" className="btn" onClick={() => void next()} disabled={(stepName === 'photo' && currentCheck?.status === 'checking') || checkingDescription}>
+              {stepName === 'photo' && currentCheck?.status === 'checking' ? t('report.photoCheck.checking')
+                : checkingDescription ? t('report.descriptionCheck.checking')
+                  : <>{t('common.next')}<Icon name="arrowRight" size={18} /></>}
             </button>
           )
         )}

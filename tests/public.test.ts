@@ -96,6 +96,8 @@ describe('strict reporting: a report is created only when every step is complete
     delete (data as Record<string, unknown>).description;
     assert.ok((await problemsOf(data)).some((p) => p.field === 'description' && p.step === 'details'));
     assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ description: 'Gropë' }))), [['description', 'too_short']]);
+    // Random letters typed to get past the form (refused without the AI too).
+    assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ description: "asdfkz:kcp'zvkmv" }))), [['description', 'gibberish']]);
     assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ description: '            ' }))), [['description', 'required']]);
     assert.equal(await countReports(), before);
   });

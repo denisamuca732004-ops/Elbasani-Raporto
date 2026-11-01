@@ -88,7 +88,7 @@ Kutia e kërkimit është lart djathtas në menu, në çdo faqe (në telefon, n�
 - **Pa AI:** kërkimi bëhet në telefonin e qytetarit. Është falas dhe i menjëhershëm, dhe nuk shpik kurrë përgjigje.
 - **Siguria:** butoni nën përgjigje zgjidhet nga një listë e mbyllur (raporto, ndiq, harta, statistikat, privatësia, telefono 112). Administratori nuk mund të vendosë lidhje të jashtme.
 
-## Kontrolli i fotos gjatë raportimit
+## Kontrolli i fotos dhe i përshkrimit gjatë raportimit
 
 Fotoja kontrollohet sapo qytetari e zgjedh, te hapi “Shtoni një foto”.
 
@@ -104,6 +104,11 @@ Fotoja kontrollohet sapo qytetari e zgjedh, te hapi “Shtoni një foto”.
 - **Kur AI nuk përgjigjet** (çelës i gabuar, pa kredit): qytetari sheh “Fotoja nuk u kontrollua
   automatikisht”, dhe raportimi vazhdon. Shkakun e tregon butoni **Provo lidhjen me AI** te
   *Administrimi → Integrimi*.
+- **Përshkrimi** kontrollohet kur qytetari shtyp “Vazhdo”: shkronja të rastit (“asdfkz kcp”)
+  refuzohen edhe pa AI; me AI refuzohen edhe tekstet që nuk thonë asgjë (“test test”) dhe ato
+  fyese ose të turpshme (zemërimi apo kritika ndaj Bashkisë lejohen). Nëse përshkrimi flet për
+  një problem tjetër, del pyetja “A përputhet përshkrimi me llojin e zgjedhur?” me “Ndrysho
+  llojin” ose “Po, vazhdo”. Emailet dhe numrat e telefonit fshihen para se teksti t'i shkojë AI-së.
 - **Foto më e vjetër se 7 ditë:** del një shënim që sugjeron një foto të re. Punon edhe pa AI.
 - **Aktivizimi:** te Vercel → *Settings → Environment Variables* vendosni `AI_ENABLED=true`,
   `AI_API_KEY` (çelësi i OpenAI) dhe `AI_MODEL=gpt-4o-mini`, pastaj *Redeploy*. Pa to, fotot nuk

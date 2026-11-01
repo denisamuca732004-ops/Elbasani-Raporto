@@ -19,10 +19,12 @@ import { queueEmails } from '../mail';
 import { discardTemporaryUpload } from '../storage';
 import * as tpl from '../mailTemplates';
 import { hashToken } from '../tokens';
+import { looksLikeGibberish } from '@/lib/shared/text';
 import { CITY_ZONE_CODE, approximatePoint, otherZonePlace, zoneCenter } from '@/lib/shared/zones';
 import { boundingBox, distanceMeters, insideMunicipality, roundCoord, zoneOfPoint } from './geo';
 import { isPubliclyVerified, publicInclude, toPublicCard, toPublicCase } from './mapper';
 import { departmentRecipients } from './notification';
+import { REFUSED_DESCRIPTIONS, checkDescription } from './descriptionCheck';
 import { REFUSED_VERDICTS, checkPhoto } from './photoCheck';
 import { persistNewReport } from './reportCreation';
 
@@ -43,7 +45,6 @@ const MESSAGES: Record<string, string> = {
   'latitude.required': 'Përdorni vendndodhjen tuaj (GPS) ose prekni hartën.',
   'longitude.required': 'Përdorni vendndodhjen tuaj (GPS) ose prekni hartën.',
   'latitude.outside_area': 'Pika në hartë duhet të jetë brenda Bashkisë Elbasan.',
-  'address.required': 'Shkruani rrugën, numrin ose një pikë reference.',
   'neighbourhoodId.required': 'Zgjidhni zonën (njësinë administrative).',
   'neighbourhoodId.unknown': 'Zgjidhni një zonë nga lista.',
   'localityId.required': 'Zgjidhni lagjen ose fshatin.',
@@ -51,6 +52,8 @@ const MESSAGES: Record<string, string> = {
   'photo.required': 'Shtoni një foto të problemit.',
   'description.required': 'Përshkruani problemin.',
   'description.too_short': `Përshkrimi duhet të ketë të paktën ${LIMITS.minDescription} shkronja.`,
+  'description.gibberish': 'Përshkrimi nuk kuptohet. Shkruani me fjalë çfarë ndodh, p.sh. “Gropë e thellë në mes të rrugës”.',
+  'description.abusive': 'Përshkrimi ka fjalë fyese ose të papërshtatshme. Përshkruani problemin pa to.',
   'anonymous.required': 'Zgjidhni nëse doni të lini kontakt ose të raportoni anonim.',
   'contactName.required': 'Shkruani emrin tuaj ose zgjidhni "Anonim".',
   'contactEmail.invalid': 'Emaili nuk është i saktë.',
@@ -185,6 +188,7 @@ export async function createCitizenReport(raw: unknown, options: { citizenId?: s
     const description = cleanMultiline(data.description);
     if (!description) problems.push(problem('description', 'required'));
     else if (description.length < LIMITS.minDescription) problems.push(problem('description', 'too_short'));
+    else if (looksLikeGibberish(description)) problems.push(problem('description', 'gibberish'));
 
     if (!data.anonymous) {
       const name = clean(data.contactName);
@@ -213,6 +217,14 @@ export async function createCitizenReport(raw: unknown, options: { citizenId?: s
   const anonymous = data.anonymous;
   const email = anonymous ? '' : clean(data.contactEmail).toLowerCase();
   const phone = anonymous ? '' : clean(data.contactPhone);
+  // The same check as the description step of the form (one AI call for both): text that says
+  // nothing or is abusive is refused here too, so the report cannot be sent with it.
+  const descriptionVerdict = (await checkDescription(cleanMultiline(data.description), type.id)).verdict;
+  if (REFUSED_DESCRIPTIONS.includes(descriptionVerdict)) {
+    if (data.photoKey) await discardTemporaryUpload(data.photoKey);
+    throw new AppError(400, 'REPORT_INCOMPLETE', 'Plotësoni të gjitha hapat e raportimit.', [problem('description', descriptionVerdict)]);
+  }
+
   let created;
   try {
     // The same check as the photo step of the form (one AI call for both): an inappropriate photo is
