@@ -88,6 +88,22 @@ Kutia e kërkimit është lart djathtas në menu, në çdo faqe (në telefon, n�
 - **Pa AI:** kërkimi bëhet në telefonin e qytetarit. Është falas dhe i menjëhershëm, dhe nuk shpik kurrë përgjigje.
 - **Siguria:** butoni nën përgjigje zgjidhet nga një listë e mbyllur (raporto, ndiq, harta, statistikat, privatësia, telefono 112). Administratori nuk mund të vendosë lidhje të jashtme.
 
+## Kontrolli i fotos gjatë raportimit
+
+Fotoja kontrollohet sapo qytetari e zgjedh, te hapi “Shtoni një foto”.
+
+- **Foto e papërshtatshme** (nuditet ose përmbajtje seksuale, dhunë e rëndë ndaj njerëzve,
+  imazhe të turpshme): refuzohet dhe qytetari duhet të zgjedhë një tjetër. Serveri e refuzon
+  përsëri kur dërgohet raportimi, kështu që nuk mund të anashkalohet. Kërkon AI-në.
+- **Foto që nuk tregon problemin** (selfie, screenshot, dokument, foto e zgjedhur gabimisht
+  nga galeria): del pyetja “A është kjo fotoja e problemit?”. Qytetari zgjedh një tjetër ose
+  konfirmon. Nuk refuzohet, sepse AI mund të gabojë me një foto të errët ose nga larg; Bashkia
+  e kontrollon gjithsesi. Kërkon AI-në.
+- **Foto më e vjetër se 7 ditë:** del një shënim që sugjeron një foto të re. Punon edhe pa AI.
+- **Aktivizimi:** te Vercel → *Settings → Environment Variables* vendosni `AI_ENABLED=true`,
+  `AI_API_KEY` (çelësi i OpenAI) dhe `AI_MODEL=gpt-4o-mini`, pastaj *Redeploy*. Pa to, fotot nuk
+  kontrollohen, por nuk publikohen kurrë para se sektori ta verifikojë raportimin.
+
 ## Nisja në kompjuter
 
 Duhen **Node.js 22** dhe **Docker Desktop** (ose PostgreSQL i instaluar).

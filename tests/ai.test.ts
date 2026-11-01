@@ -10,6 +10,7 @@ import { after, before, describe, test } from 'node:test';
 import { resetConfigForTests } from '@/lib/server/env';
 import { getReport, resolveReport } from '@/lib/server/services/report';
 import { createCitizenReport, getPublicCase } from '@/lib/server/services/publicReport';
+import { checkPhoto } from '@/lib/server/services/photoCheck';
 import { changePriority, changeStatus } from '@/lib/server/services/report';
 import { extractFromText } from '@/lib/server/services/triage';
 import type { Principal } from '@/lib/shared/types';
@@ -17,6 +18,9 @@ import { adminSession, citizenData, db, drainJobs, jpeg, setupTestDb, submitRepo
 
 const calls: Array<{ auth?: string; body: { model: string; messages: Array<{ content: unknown }> } }> = [];
 let mode: 'ok' | 'error' = 'ok';
+/** What the fake AI answers to the photo check (and whether it refuses to look). */
+let photoAnswer: Record<string, unknown> = { safe: true, matches: true, kind: 'scene' };
+let photoRefuses = false;
 let hold: Promise<void> | null = null; // lets a test keep the AI "thinking"
 const fake = http.createServer((req, res) => {
   let raw = '';
@@ -24,7 +28,8 @@ const fake = http.createServer((req, res) => {
   req.on('end', async () => {
     const body = JSON.parse(raw);
     calls.push({ auth: req.headers.authorization, body });
-    if (hold) await hold;
+    // The hold keeps the check of the whole report "thinking", not the photo check of the form.
+    if (hold && !String(body.messages[0].content).includes('check a photo')) await hold;
     if (mode === 'error') {
       res.writeHead(500).end('boom');
       return;
@@ -32,7 +37,14 @@ const fake = http.createServer((req, res) => {
     const system = String(body.messages[0].content);
     const user = JSON.stringify(body.messages[1].content);
     let answer: Record<string, unknown>;
-    if (system.includes('intake assistant')) {
+    if (system.includes('check a photo') && photoRefuses) {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ choices: [{ message: { content: null, refusal: 'I can’t help with that.' } }] }));
+      return;
+    }
+    if (system.includes('check a photo')) {
+      answer = photoAnswer;
+    } else if (system.includes('intake assistant')) {
       const blurry = user.includes('blurry');
       const face = user.includes('selfie');
       const manhole = user.includes('pus pa kapak');
@@ -82,7 +94,7 @@ describe('AI check of resident reports', () => {
     assert.equal(report.aiConfidence, 92);
     assert.equal(report.aiSummary, 'Gropë e madhe në rrugë');
     assert.ok(report.verifiedAt);
-    assert.equal(calls.length, before + 1);
+    assert.equal(calls.length, before + 2, 'one photo check while creating, one check of the whole report');
     const call = calls.at(-1)!;
     assert.equal(call.auth, 'Bearer test-key');
     assert.equal(call.body.model, 'fake-model');
@@ -137,9 +149,9 @@ describe('AI check of resident reports', () => {
     let release = () => {};
     hold = new Promise<void>((resolve) => { release = resolve; });
     try {
-      const before = calls.length;
       const created = await createCitizenReport(await citizenData({ description: 'Gropë e thellë te kryqëzimi i rrugës kryesore' }));
       const report = await db.report.findUniqueOrThrow({ where: { caseNumber: created.caseNumber } });
+      const before = calls.length; // after the photo check of the form
       const job = drainJobs(); // the AI check starts and waits for the fake server
       for (let i = 0; calls.length === before && i < 500; i += 1) await new Promise((r) => setTimeout(r, 10));
       assert.equal(calls.length, before + 1, 'the AI is answering');
@@ -167,6 +179,72 @@ describe('AI check of resident reports', () => {
     assert.equal(calls.length, afterFirst);
     assert.deepEqual(second, first);
     assert.equal(await db.aiResult.count({ where: { kind: 'extract' } }), 1);
+  });
+});
+
+describe('the photo check while the report is created', () => {
+  const pothole = () => typeId('streets.pothole');
+
+  test('a photo of the problem passes, and sending the report asks the AI no second time', async () => {
+    photoAnswer = { safe: true, matches: true, kind: 'scene' };
+    const photoKey = await uploadPhoto();
+    assert.deepEqual(await checkPhoto(photoKey, await pothole()), { verdict: 'ok' });
+    const call = calls.at(-1)!;
+    assert.match(String(call.body.messages[0]!.content), /check a photo/);
+    assert.match(JSON.stringify(call.body.messages[1]!.content), /Pothole|pothole/);
+    assert.match(JSON.stringify(call.body.messages[1]!.content), /data:image\/jpeg;base64/);
+    const afterCheck = calls.length;
+    const result = await createCitizenReport(await citizenData({ photoKey }));
+    assert.ok(result.caseNumber);
+    assert.equal(calls.length, afterCheck, 'the check of the form is reused (no second paid call)');
+  });
+
+  test('an inappropriate photo is refused: no report is created and the upload is deleted', async () => {
+    photoAnswer = { safe: false, matches: false, kind: 'people' };
+    const photoKey = await uploadPhoto(await jpeg('#d08080'));
+    assert.deepEqual(await checkPhoto(photoKey, await pothole()), { verdict: 'inappropriate' });
+    const reportsBefore = await db.report.count();
+    await assert.rejects(createCitizenReport(await citizenData({ photoKey })), (err: { code?: string; details?: Array<{ field: string; code: string; step: string }> }) => {
+      assert.equal(err.code, 'REPORT_INCOMPLETE');
+      assert.deepEqual(err.details?.map((d) => [d.field, d.code, d.step]), [['photo', 'inappropriate', 'photo']]);
+      return true;
+    });
+    assert.equal(await db.report.count(), reportsBefore);
+    // The same photo cannot be used again: its temporary upload is gone.
+    await assert.rejects(createCitizenReport(await citizenData({ photoKey })), (err: { details?: Array<{ field: string }> }) => err.details?.[0]?.field === 'photo');
+    photoAnswer = { safe: true, matches: true, kind: 'scene' };
+  });
+
+  test('a photo that does not show the problem only gets a warning: the resident may still send it', async () => {
+    photoAnswer = { safe: true, matches: false, kind: 'screenshot' };
+    const photoKey = await uploadPhoto(await jpeg('#3060a0'));
+    assert.deepEqual(await checkPhoto(photoKey, await pothole()), { verdict: 'unrelated' });
+    const result = await createCitizenReport(await citizenData({ photoKey }));
+    assert.ok(result.caseNumber);
+    photoAnswer = { safe: true, matches: true, kind: 'scene' };
+  });
+
+  test('a model that refuses to look at the photo counts as an inappropriate photo', async () => {
+    photoRefuses = true;
+    try {
+      const photoKey = await uploadPhoto(await jpeg('#a0a030'));
+      assert.deepEqual(await checkPhoto(photoKey, await pothole()), { verdict: 'inappropriate' });
+      await assert.rejects(createCitizenReport(await citizenData({ photoKey })), (err: { code?: string }) => err.code === 'REPORT_INCOMPLETE');
+    } finally {
+      photoRefuses = false;
+    }
+  });
+
+  test('when the AI does not answer, the photo is not refused (the department checks it)', async () => {
+    mode = 'error';
+    try {
+      const photoKey = await uploadPhoto(await jpeg('#30a060'));
+      assert.deepEqual(await checkPhoto(photoKey, await pothole()), { verdict: 'unchecked' });
+      assert.ok((await createCitizenReport(await citizenData({ photoKey }))).caseNumber);
+    } finally {
+      mode = 'ok';
+    }
+    await drainJobs();
   });
 });
 

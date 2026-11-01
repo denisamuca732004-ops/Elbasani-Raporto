@@ -225,5 +225,9 @@ export interface Branding {
 }
 export interface AppSettings { branding: Branding; embed: { allowedOrigins: string[] } }
 export interface PublicSettings extends AppSettings {
-  rules: { serviceArea: { minLat: number; minLng: number; maxLat: number; maxLng: number }; minDescription: number; minAddress: number; maxUploadBytes: number };
+  rules: {
+    serviceArea: { minLat: number; minLng: number; maxLat: number; maxLng: number }; minDescription: number; minAddress: number; maxUploadBytes: number;
+    /** The photo is checked while the report is created (the AI is on). */
+    photoCheck: boolean;
+  };
 }

@@ -186,6 +186,20 @@ A resident gives the place one of two ways. The server refuses anything else.
 
 The admin edits lagje and villages in *Administrimi → Zonat*.
 
+## Photo check while a report is created
+
+The photo step of the form checks the photo as soon as it is chosen ([`lib/server/services/photoCheck.ts`](lib/server/services/photoCheck.ts), [`lib/client/photoDate.ts`](lib/client/photoDate.ts)).
+
+| The photo | With the AI on (`AI_ENABLED=true` + `AI_API_KEY`) | Without the AI |
+|---|---|---|
+| Inappropriate (nudity or sexual content, graphic violence against people, obscene images; a model that refuses to look counts too) | Refused: the resident must choose another photo. The server refuses it again when the report is sent, so skipping the form does not help, and deletes the upload. | Not detected. Photos are never public until the department verifies the report, and staff can hide a photo. |
+| Does not show the chosen problem (selfie, screenshot, document, a picture from the gallery by mistake) | Warning: "A është kjo fotoja e problemit?" The resident chooses another photo or confirms. Never refused, because the AI can be wrong about a dark or distant photo; the report check after sending sends it to a person. | Not detected. |
+| Taken more than 7 days ago (EXIF camera date, else the file date, read in the browser before the photo is made smaller) | A note suggesting a new photo. | The same note. |
+
+- One AI call per uploaded photo and report type, cached in `ai_results`: the form's check and the check when the report is sent cost one call. Rate limit `photoCheck` per IP, like uploads.
+- Offline, or when the AI does not answer, the photo is "unchecked" and the report goes on as before.
+- The privacy page says that the AI checks photos, also before the report is sent.
+
 ## Search guide ("Ask or search")
 
 The search box sits at the right of the menu bar on every page (on phones, under the logo). It answers questions as well as finding reports. The menu has no "Track a report" or "Help" item: a report is tracked with the "Ndiq raportimin" button on the home page (`/ndiq`) or by typing its number in this box.

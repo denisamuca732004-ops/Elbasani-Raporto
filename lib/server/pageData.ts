@@ -27,7 +27,7 @@ export async function pageSettings(): Promise<PublicSettings> {
     return {
       branding: DEFAULT_SETTINGS.branding,
       embed: DEFAULT_SETTINGS.embed,
-      rules: { serviceArea: DEFAULT_SERVICE_AREA, minDescription: LIMITS.minDescription, minAddress: LIMITS.minAddress, maxUploadBytes },
+      rules: { serviceArea: DEFAULT_SERVICE_AREA, minDescription: LIMITS.minDescription, minAddress: LIMITS.minAddress, maxUploadBytes, photoCheck: false },
     };
   }
 }

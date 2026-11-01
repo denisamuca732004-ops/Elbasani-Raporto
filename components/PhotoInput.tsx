@@ -1,7 +1,13 @@
 'use client';
-/** Take a photo with the phone camera or choose one from the gallery. */
+/**
+ * Take a photo with the phone camera or choose one from the gallery. A photo
+ * taken more than a week ago (picked from the gallery by mistake?) gets a
+ * note asking for a new one; it is only a note, the resident decides.
+ */
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useI18n } from '@/i18n';
+import { formatDate } from '@/lib/client/format';
+import { isOldPhoto, photoTakenAt } from '@/lib/client/photoDate';
 import Icon from './Icon';
 
 /** Big phone photos are made smaller before upload (faster on mobile data, smaller offline storage). */
@@ -25,16 +31,19 @@ async function shrinkImage(file: File, maxSize = 2048, quality = 0.85): Promise<
 export default function PhotoInput({ value, onChange, required, error, maxBytes, idPrefix = 'photo' }: {
   value: Blob | null; onChange: (photo: Blob | null) => void; required?: boolean; error?: string | null; maxBytes?: number; idPrefix?: string;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  /** When the chosen photo was taken, if that is more than a week ago. */
+  const [oldDate, setOldDate] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!value) {
       setPreview(null);
+      setOldDate(null);
       return undefined;
     }
     const url = URL.createObjectURL(value);
@@ -52,12 +61,15 @@ export default function PhotoInput({ value, onChange, required, error, maxBytes,
     }
     setProblem(null);
     setBusy(true);
+    // Read before making it smaller: the smaller copy has no date in it.
+    const takenAt = await photoTakenAt(file).catch(() => null);
     const shrunk = await shrinkImage(file);
     setBusy(false);
     if (maxBytes && shrunk.size > maxBytes) {
       setProblem(t('report.photoTooLarge', { mb: Math.round(maxBytes / (1024 * 1024)) }));
       return;
     }
+    setOldDate(isOldPhoto(takenAt) ? takenAt : null);
     onChange(shrunk);
   }
   const message = problem || error;
@@ -67,6 +79,7 @@ export default function PhotoInput({ value, onChange, required, error, maxBytes,
       <div className="photo-preview">
         {/* eslint-disable-next-line @next/next/no-img-element -- local preview (blob: URL) */}
         <img src={preview} alt={t('report.photoPreview')} />
+        {oldDate && <div className="alert alert-warn" role="status" style={{ marginTop: 10 }}><Icon name="clock" size={16} /> {t('report.photoOld', { date: formatDate(oldDate.toISOString(), lang) })}</div>}
         <div className="row" style={{ marginTop: 10 }}>
           <button type="button" className="btn btn-sm btn-outline" onClick={() => cameraRef.current?.click()}><Icon name="camera" size={18} />{t('report.retake')}</button>
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => onChange(null)}>{t('report.removePhoto')}</button>

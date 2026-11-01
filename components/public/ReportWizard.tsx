@@ -9,11 +9,15 @@
  * complete, and the server (createReportAction) refuses incomplete reports
  * anyway, telling the wizard which step to go back to.
  * The photo goes straight to Vercel Blob with a one-file upload token.
+ * With the AI on, the photo is checked as soon as it is chosen: an
+ * inappropriate photo is refused (the server refuses it again when the report
+ * is sent), and one that does not seem to show the chosen problem needs the
+ * resident's confirmation (lib/server/services/photoCheck.ts).
  * Used on /raporto and inside the /embed widget.
  */
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createReportAction, findNearbyAction, followReportAction } from '@/actions/reports';
+import { checkPhotoAction, createReportAction, findNearbyAction, followReportAction } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { LocationPicker } from '@/components/maps';
 import PhotoInput from '@/components/PhotoInput';
@@ -30,6 +34,8 @@ import type { PublicCard } from '@/lib/shared/types';
 import { otherZonePlace, zoneCenter, zoneCodeAt } from '@/lib/shared/zones';
 
 const STEPS = ['type', 'location', 'photo', 'details', 'contact', 'review'] as const;
+/** The check of the chosen photo for the chosen type ("unchecked": AI off, offline or no answer). */
+type PhotoCheck = { photo: Blob; typeId: number; status: 'checking' | 'ok' | 'unrelated' | 'unchecked'; confirmed: boolean };
 type StepName = (typeof STEPS)[number];
 /** Field (as named by the server) → wizard step. */
 const STEP_OF_FIELD: Record<string, StepName> = {
@@ -59,6 +65,9 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [addressPin, setAddressPin] = useState<LatLng | null>(null); // address mode: optional pin, inside the chosen zone
   const [showAddressMap, setShowAddressMap] = useState(false);
   const [photo, setPhoto] = useState<Blob | null>(null);
+  const [photoCheck, setPhotoCheck] = useState<PhotoCheck | null>(null);
+  // The last photo was refused (inappropriate): the message stays until another photo is chosen.
+  const [photoRefused, setPhotoRefused] = useState(false);
   const [description, setDescription] = useState('');
   const [contactMode, setContactMode] = useState<'contact' | 'anonymous' | null>(null); // null until the resident chooses
   const [contact, setContact] = useState({ name: resident?.name ?? '', email: resident?.email ?? '', phone: resident?.phone ?? '' });
@@ -79,6 +88,37 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   }, [typeId, locationMode, reference, neighbourhoodId, localityId, street, description, contact, contactMode]);
 
   const type = typeId ? typeById(typeId) ?? null : null;
+
+  // The photo is checked as soon as it is chosen (and again if the type changes), only with the AI on and online.
+  useEffect(() => {
+    if (!photo || !typeId || !rules.photoCheck || !navigator.onLine) {
+      setPhotoCheck(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setPhotoCheck({ photo, typeId, status: 'checking', confirmed: false });
+    void (async () => {
+      let verdict: 'ok' | 'unrelated' | 'inappropriate' | 'unchecked' = 'unchecked';
+      try {
+        const photoKey = await photoKeyFor(photo);
+        verdict = (await call(checkPhotoAction({ photoKey, requestTypeId: typeId }))).verdict;
+      } catch {
+        uploaded.current = null; // no answer: the report goes on, and the photo is uploaded again when it is sent
+      }
+      if (cancelled) return;
+      if (verdict === 'inappropriate') {
+        uploaded.current = null;
+        setPhotoRefused(true);
+        setPhoto(null);
+        return;
+      }
+      setPhotoCheck({ photo, typeId, status: verdict, confirmed: false });
+    })();
+    return () => { cancelled = true; };
+    // photoKeyFor only reads a ref; re-running it on every render would upload again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo, typeId, rules.photoCheck]);
+  const currentCheck = photo && photoCheck?.photo === photo && photoCheck.typeId === typeId ? photoCheck : null;
   // Map mode: the zone of the pin, from the zone borders (works offline too).
   const pin = locationMode === 'map' ? location : null;
   const pinZoneCode = pin && insideArea(pin, rules.serviceArea) ? zoneCodeAt(pin.latitude, pin.longitude) : null;
@@ -135,6 +175,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       }
     }
     if (name === 'photo' && !photo) e.photo = t('report.errors.photo');
+    if (name === 'photo' && currentCheck?.status === 'checking') e.photo = t('report.photoCheck.wait');
+    if (name === 'photo' && currentCheck?.status === 'unrelated' && !currentCheck.confirmed) e.photo = t('report.photoCheck.confirmFirst');
     if (name === 'details') {
       if (!description.trim()) e.description = t('report.errors.description');
       else if (description.trim().length < LIMITS.minDescription) e.description = t('report.errors.descriptionShort', { n: LIMITS.minDescription });
@@ -151,7 +193,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       }
     }
     return e;
-  }, [type, locationMode, location, pinZoneCode, zone, locality, street, addressPin, addressPinZoneCode, addressPinZone, catalog.neighbourhoods, photo, description, contactMode, contact, t]);
+  }, [type, locationMode, location, pinZoneCode, zone, locality, street, addressPin, addressPinZoneCode, addressPinZone, catalog.neighbourhoods, photo, currentCheck, description, contactMode, contact, t]);
 
   const currentErrors = useMemo(() => errorsFor(stepName), [errorsFor, stepName]);
   const firstIncompleteStep = useMemo(() => STEPS.findIndex((s) => s !== 'review' && Object.keys(errorsFor(s)).length > 0), [errorsFor]);
@@ -246,9 +288,13 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
         // The server found something missing: go back to the first step concerned and show it there.
         const byField: Errors = {};
         let target = STEPS.length - 1;
-        for (const d of err.details as Array<{ field: string; message: string; step?: string }>) {
+        for (const d of err.details as Array<{ field: string; message: string; step?: string; code?: string }>) {
           const field = d.field === 'longitude' ? 'latitude' : d.field === 'photoKey' ? 'photo' : d.field;
           byField[field] = d.message;
+          if (field === 'photo' && d.code === 'inappropriate') {
+            byField.photo = t('report.photoCheck.inappropriate');
+            setPhoto(null);
+          }
           const index = STEPS.indexOf((d.step ?? STEP_OF_FIELD[d.field] ?? 'review') as StepName);
           if (index >= 0) target = Math.min(target, index);
         }
@@ -444,9 +490,22 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
           <h2>{t('report.photoTitle')}</h2>
           <PhotoInput
             value={photo}
-            onChange={(p) => { setPhoto(p); setServerErrors((e) => ({ ...e, photo: undefined })); }}
-            required error={visibleError('photo')} maxBytes={rules.maxUploadBytes}
+            onChange={(p) => { setPhoto(p); setServerErrors((e) => ({ ...e, photo: undefined })); if (p) setPhotoRefused(false); }}
+            required error={photoRefused ? t('report.photoCheck.inappropriate') : visibleError('photo')} maxBytes={rules.maxUploadBytes}
           />
+          {currentCheck?.status === 'checking' && <p className="hint" role="status">{t('report.photoCheck.checking')}</p>}
+          {currentCheck?.status === 'ok' && <p className="hint ok" role="status"><Icon name="check" size={14} /> {t('report.photoCheck.ok')}</p>}
+          {currentCheck?.status === 'unrelated' && (currentCheck.confirmed ? (
+            <p className="hint" role="status"><Icon name="check" size={14} /> {t('report.photoCheck.confirmed')}</p>
+          ) : (
+            <div className="alert alert-warn" role="alert">
+              <p style={{ margin: 0 }}><strong>{t('report.photoCheck.unrelatedTitle')}</strong> {t('report.photoCheck.unrelatedText', { type: type ? (lang === 'en' ? type.nameEn : type.nameSq) : '' })}</p>
+              <div className="row" style={{ marginTop: 10 }}>
+                <button type="button" className="btn btn-sm" onClick={() => setPhoto(null)}>{t('report.photoCheck.another')}</button>
+                <button type="button" className="btn btn-sm btn-outline" onClick={() => setPhotoCheck({ ...currentCheck, confirmed: true })}>{t('report.photoCheck.keep')}</button>
+              </div>
+            </div>
+          ))}
         </section>
       )}
 
@@ -530,8 +589,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
           <button type="button" className="btn btn-lg" onClick={submit} disabled={submitting}>{submitting ? t('report.sending') : t('report.send')}</button>
         ) : (
           (stepName !== 'type' || type) && (
-            <button type="button" className="btn" onClick={next}>
-              {t('common.next')}<Icon name="arrowRight" size={18} />
+            <button type="button" className="btn" onClick={next} disabled={stepName === 'photo' && currentCheck?.status === 'checking'}>
+              {stepName === 'photo' && currentCheck?.status === 'checking' ? t('report.photoCheck.checking') : <>{t('common.next')}<Icon name="arrowRight" size={18} /></>}
             </button>
           )
         )}

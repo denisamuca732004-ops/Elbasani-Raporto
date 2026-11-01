@@ -16,12 +16,14 @@ import { Prisma, db } from '../db';
 import { config } from '../env';
 import { AppError, conflict, notFound } from '../errors';
 import { queueEmails } from '../mail';
+import { discardTemporaryUpload } from '../storage';
 import * as tpl from '../mailTemplates';
 import { hashToken } from '../tokens';
 import { CITY_ZONE_CODE, approximatePoint, otherZonePlace, zoneCenter } from '@/lib/shared/zones';
 import { boundingBox, distanceMeters, insideMunicipality, roundCoord, zoneOfPoint } from './geo';
 import { isPubliclyVerified, publicInclude, toPublicCard, toPublicCase } from './mapper';
 import { departmentRecipients } from './notification';
+import { checkPhoto } from './photoCheck';
 import { persistNewReport } from './reportCreation';
 
 /* ───────────────────────── Strict citizen report ───────────────────────── */
@@ -143,6 +145,8 @@ async function resolveLocation(data: CitizenReport, problems: ReportProblem[]): 
 
 type CitizenReport = z.output<typeof citizenReportShape>;
 
+const PHOTO_REFUSED = 'Kjo foto nuk mund të përdoret. Zgjidhni një foto që tregon problemin.';
+
 /**
  * Creates a resident's report only when EVERY step is complete:
  * type → location (a point on the map, or zone + lagje/village + street) → photo → description → contact (or anonymous).
@@ -210,6 +214,12 @@ export async function createCitizenReport(raw: unknown, options: { citizenId?: s
   const phone = anonymous ? '' : clean(data.contactPhone);
   let created;
   try {
+    // The same check as the photo step of the form (one AI call for both): an inappropriate photo is
+    // refused here too, so the report cannot be sent with it even without the form.
+    if (data.photoKey && (await checkPhoto(data.photoKey, type.id)).verdict === 'inappropriate') {
+      await discardTemporaryUpload(data.photoKey);
+      throw new AppError(400, 'PHOTO_INVALID', PHOTO_REFUSED, [{ field: 'photo', code: 'inappropriate', message: PHOTO_REFUSED, step: 'photo' }]);
+    }
     created = await persistNewReport({
       type,
       channel: data.channel,

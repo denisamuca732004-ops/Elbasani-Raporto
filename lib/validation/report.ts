@@ -190,6 +190,9 @@ export const nearbySchema = z.strictObject({ requestTypeId: id, latitude, longit
 /** Home page search: a street, an area or a problem ("gropë Rinia"). */
 export const placeSearchSchema = z.strictObject({ q: requiredText(3, 100) });
 export const followSchema = z.strictObject({ caseNumber, email: optionalEmail });
+
+/** The photo step of the form: the uploaded photo and the problem type chosen in step 1. */
+export const photoCheckSchema = z.strictObject({ photoKey: uploadKey, requestTypeId: z.coerce.number().int().positive().max(2_147_483_647) });
 export const feedbackSchema = z.strictObject({
   token: z.string().min(16).max(128),
   action: z.enum(['confirm', 'reopen']),

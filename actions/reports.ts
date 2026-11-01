@@ -22,9 +22,10 @@ import { getResident, requireAdmin, requireStaff } from '@/lib/server/session';
 import * as publicReports from '@/lib/server/services/publicReport';
 import * as reports from '@/lib/server/services/report';
 import * as transfers from '@/lib/server/services/transfer';
+import { checkPhoto } from '@/lib/server/services/photoCheck';
 import { extractFromText } from '@/lib/server/services/triage';
 import {
-  assignSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoVisibilitySchema, placeSearchSchema,
+  assignSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoCheckSchema, photoVisibilitySchema, placeSearchSchema,
   prioritySchema, rejectSchema, reportUpdateSchema, resolveSchema, staffReportSchema, statusChangeSchema, testFlagSchema,
   transferDecisionSchema, transferRequestSchema,
 } from '@/lib/validation/report';
@@ -46,6 +47,19 @@ export async function createReportAction(input: unknown) {
     // Signed in with a resident account: the report also goes to "my reports" (from the session, never from the form).
     const resident = await getResident();
     return publicReports.createCitizenReport(input, { citizenId: resident?.id ?? null });
+  });
+}
+
+/**
+ * The photo step: checks the photo as soon as it is chosen (only with the AI on).
+ * Answers "ok", "unrelated" (the form asks the resident to confirm), "inappropriate"
+ * (the form asks for another photo; sending the report with it is refused) or "unchecked".
+ */
+export async function checkPhotoAction(input: unknown) {
+  return run(async () => {
+    await enforceRateLimit('photoCheck', await clientIp());
+    const data = parseInput(photoCheckSchema, input);
+    return checkPhoto(data.photoKey, data.requestTypeId);
   });
 }
 

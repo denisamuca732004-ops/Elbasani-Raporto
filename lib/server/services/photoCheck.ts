@@ -1,0 +1,88 @@
+/**
+ * The photo check while a resident creates a report, before it is sent:
+ *  - an inappropriate photo (nudity or sexual content, graphic violence
+ *    against people, obscene images) is refused, on the server too, so the
+ *    report cannot be sent with it even by skipping the form;
+ *  - a photo that does not show the chosen problem (a selfie, a screenshot,
+ *    a picture taken by mistake from the gallery) gets a warning, and the
+ *    resident confirms or chooses another one. It is never refused: the AI
+ *    can be wrong about a dark or distant photo, and a person in the
+ *    department checks every report that the AI does not confirm.
+ * Needs the AI (AI_ENABLED + AI_API_KEY). Without it, or when the AI does not
+ * answer, the answer is "unchecked" and the report goes on as before: photos
+ * are never public until the department has verified the report.
+ * One check per uploaded photo and report type, kept in ai_results: the form's
+ * check and the one when the report is sent cost a single AI call.
+ */
+import 'server-only';
+import sharp from 'sharp';
+import { AiRefusedError, AiUnavailableError, aiEnabled, chatJson, type AiJson } from '../ai';
+import { db } from '../db';
+import { config } from '../env';
+import { takeTemporaryUpload } from '../storage';
+import { sha256 } from '../tokens';
+
+export type PhotoVerdict = 'ok' | 'unrelated' | 'inappropriate' | 'unchecked';
+
+const PHOTO_CHECK_SYSTEM = `You check a photo that a resident attaches to a report for the Municipality of Elbasan (Albania), before the report is sent.
+Answer ONLY with a JSON object with exactly these keys:
+{
+  "safe": boolean,     // false ONLY for: nudity or sexual content; graphic violence or gore involving people; obscene or hateful images.
+                       // Waste, sewage, damage, accidents to property, and dead or injured animals in a public place are normal for these reports: safe.
+  "matches": boolean,  // true when the photo plausibly shows the chosen problem. Be generous: a dark, blurry or distant photo still matches if the problem can be seen.
+                       // false for selfies, people posing, screenshots, documents, memes, food, rooms at home, or any picture where the problem cannot be seen.
+  "kind": "scene" | "screenshot" | "document" | "people" | "other"
+}`;
+
+/** The answer of the model, read defensively: only an explicit "false" counts. */
+export function verdictOf(answer: AiJson): PhotoVerdict {
+  if (answer.safe === false) return 'inappropriate';
+  if (answer.matches === false) return 'unrelated';
+  return 'ok';
+}
+
+/**
+ * Checks the temporary upload `photoKey` (actions/upload.ts) against the chosen
+ * report type. Throws only when the photo itself is missing or unreadable
+ * (PHOTO_INVALID, shown at the photo step).
+ */
+export async function checkPhoto(photoKey: string, requestTypeId: number): Promise<{ verdict: PhotoVerdict }> {
+  if (!aiEnabled()) return { verdict: 'unchecked' };
+  const type = await db.requestType.findUnique({ where: { id: requestTypeId }, include: { category: true } });
+  if (!type || !type.active) return { verdict: 'unchecked' };
+
+  const cacheKey = sha256(`photo-check:v1:${config().ai.model}:${photoKey}:${type.code}`);
+  const cached = await db.aiResult.findUnique({ where: { cacheKey } });
+  if (cached) return { verdict: verdictOf(cached.output as AiJson) };
+
+  const original = await takeTemporaryUpload(photoKey);
+  let small: Buffer;
+  try {
+    small = await sharp(original, { limitInputPixels: 80_000_000 }).rotate()
+      .resize({ width: 768, height: 768, fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 70 }).toBuffer();
+  } catch {
+    return { verdict: 'unchecked' }; // not a readable image: storing it refuses it with its own message
+  }
+  try {
+    const answer = await chatJson({
+      kind: 'photo-check',
+      system: PHOTO_CHECK_SYSTEM,
+      userText: `Chosen problem: ${type.nameEn} (category: ${type.category.nameEn}). The resident has not written the description yet.`,
+      imageDataUrls: [`data:image/jpeg;base64,${small.toString('base64')}`],
+      cacheKey,
+    });
+    return { verdict: verdictOf(answer) };
+  } catch (err) {
+    // A model that refuses to look at a photo for this check: the photo is not acceptable.
+    if (err instanceof AiRefusedError) {
+      await db.aiResult.upsert({
+        where: { cacheKey },
+        create: { cacheKey, kind: 'photo-check', model: config().ai.model, output: { safe: false, refused: true } },
+        update: {},
+      });
+      return { verdict: 'inappropriate' };
+    }
+    if (err instanceof AiUnavailableError) return { verdict: 'unchecked' };
+    throw err;
+  }
+}

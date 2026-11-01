@@ -16,6 +16,19 @@ export class AiUnavailableError extends Error {
   }
 }
 
+/**
+ * The model declined to answer (OpenAI-compatible APIs put the reason in
+ * `message.refusal`). For a photo check that usually means the picture
+ * itself is not acceptable. Callers that only need "no answer" can treat it
+ * as AiUnavailableError, which it extends.
+ */
+export class AiRefusedError extends AiUnavailableError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AiRefusedError';
+  }
+}
+
 export type AiJson = Record<string, unknown>;
 
 export function aiEnabled(): boolean {
@@ -88,13 +101,15 @@ export async function chatJson({ kind, system, userText, imageDataUrls = [], cac
     const body = await response.text().catch(() => '');
     throw new AiUnavailableError(`AI HTTP ${response.status}: ${body.slice(0, 200)}`);
   }
-  let json: { choices?: Array<{ message?: { content?: unknown } }> };
+  let json: { choices?: Array<{ message?: { content?: unknown; refusal?: unknown } }> };
   try {
     json = (await response.json()) as typeof json;
   } catch {
     throw new AiUnavailableError('AI answer was not valid JSON');
   }
-  const output = parseJsonLoose(json?.choices?.[0]?.message?.content);
+  const message = json?.choices?.[0]?.message;
+  if (typeof message?.refusal === 'string' && message.refusal.trim()) throw new AiRefusedError(`AI refused: ${message.refusal.slice(0, 200)}`);
+  const output = parseJsonLoose(message?.content);
 
   if (cacheKey) {
     await db.aiResult.upsert({
