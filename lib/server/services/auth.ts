@@ -1,6 +1,5 @@
 /**
- * Accounts and sign-in of the STAFF. (Residents may have an optional account of
- * their own, with Google or email + password: services/residents.ts.) The very
+ * Accounts and sign-in of the STAFF (residents have no accounts). The very
  * first admin is created once, only with the ADMIN_EMAIL configured on the
  * server; every other staff account is created by the admin with a temporary
  * password that must be changed at the first sign-in.
@@ -91,8 +90,6 @@ interface UserState {
   departmentNameSq: string | null;
   departmentNameEn: string | null;
   mustChangePassword: boolean;
-  hasPassword: boolean;
-  hasGoogle: boolean;
 }
 
 async function userState(id: string): Promise<UserState | null> {
@@ -110,14 +107,9 @@ async function userState(id: string): Promise<UserState | null> {
       departmentNameSq: user.department?.nameSq ?? null,
       departmentNameEn: user.department?.nameEn ?? null,
       mustChangePassword: user.mustChangePassword,
-      hasPassword: user.passwordHash !== null,
-      hasGoogle: user.googleId !== null,
     };
   });
 }
-
-/** For residents' sessions (services/residents.ts). */
-export const readUserState = userState;
 
 /** After any change to an account: the next request reads it fresh from the database. */
 export const forgetUserState = (id: string) => invalidate(CACHE_KEYS.userState(id));

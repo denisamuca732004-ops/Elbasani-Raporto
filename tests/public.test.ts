@@ -17,7 +17,7 @@ import { invalidate, CACHE_KEYS } from '@/lib/server/cache';
 import { caseNumber as caseNumberSchema, mapSchema, recentSchema } from '@/lib/validation/report';
 import type { Principal } from '@/lib/shared/types';
 import {
-  adminSession, citizenData, db, drainJobs, ELBASAN, jpeg, rejects, setupTestDb, submitReport, teardown, typeId, uploadPhoto,
+  adminSession, citizenData, db, drainJobs, ELBASAN, jpeg, rejects, setupTestDb, submitReport, teardown, typeId, uploadPhoto, withOlderEmail,
 } from './helpers';
 
 let admin: Principal;
@@ -73,14 +73,15 @@ describe('strict reporting: a report is created only when every step is complete
     const infra = await db.department.findUniqueOrThrow({ where: { code: 'infrastructure' } });
     assert.equal(report.departmentId, infra.id);
     assert.equal(report.priority, 'MEDIUM');
-    assert.equal(report.contactEmail, 'qytetar@example.com');
+    assert.equal(report.contactName, 'Qytetar Test');
+    assert.equal(report.contactPhone, '069 123 4567');
+    assert.equal(report.contactEmail, null, 'residents leave no e-mail');
+    assert.equal(report.wantsUpdates, false);
+    assert.equal(report.citizenId, null, 'residents have no accounts');
     assert.equal(await db.attachment.count({ where: { reportId: report.id } }), 1);
-    const mail = await db.emailLog.findFirst({ where: { template: 'request_received', reportId: report.id } });
-    assert.ok(mail);
-    assert.match(mail.bodyText, new RegExp(result.caseNumber));
-    // Here e-mails are only logged (MAIL_DRIVER=log): the final screen must not say "we e-mailed it to you".
-    assert.equal(result.emailSent, false);
-    assert.equal(mail.status, 'LOGGED', 'the background job delivered it (MAIL_DRIVER=log)');
+    assert.equal(await db.emailLog.count({ where: { template: 'request_received', reportId: report.id } }), 0, 'nothing is e-mailed to the resident');
+    // The number is only on the final screen: nothing there promises an e-mail.
+    assert.deepEqual(Object.keys(result).sort(), ['caseNumber', 'duplicateSubmission', 'publicStatus', 'trackUrl']);
   });
 
   test('without a photo nothing is created and the photo step is reported', async () => {
@@ -120,20 +121,28 @@ describe('strict reporting: a report is created only when every step is complete
     assert.equal((await problemsOf(noPin)).filter((p) => p.step === 'location').length, 1, 'reported once, not twice');
   });
 
-  test('the contact step needs a name and an email or phone, or the explicit choice "anonymous"', async () => {
+  test('the contact step needs a name and a phone number, or the explicit choice "anonymous"', async () => {
     const before = await countReports();
     assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ contactName: '' })), true), [['contactName', 'required', 'contact']]);
-    assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ contactEmail: '', contactPhone: '' }))), [['contactEmail', 'contact_required']]);
-    assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ contactEmail: '', contactPhone: '12' }))), [['contactPhone', 'invalid']]);
-    assert.ok((await problemsOf(await citizenData({ contactEmail: 'not-an-email' }))).some((p) => p.field === 'contactEmail'));
+    assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ contactPhone: '' })), true), [['contactPhone', 'required', 'contact']]);
+    assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ contactPhone: '12' }))), [['contactPhone', 'invalid']]);
+    assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ contactPhone: '069 abc' }))), [['contactPhone', 'invalid']]);
+    // A report queued offline by the older form, with an e-mail instead of a phone: the phone is still needed.
+    assert.deepEqual(fieldsOf(await problemsOf(await citizenData({ contactEmail: 'old@example.com', contactPhone: '' }))), [['contactPhone', 'required']]);
     const noChoice = await citizenData();
     delete (noChoice as Record<string, unknown>).anonymous;
     assert.ok((await problemsOf(noChoice)).some((p) => p.field === 'anonymous' && p.step === 'contact'));
     assert.equal(await countReports(), before);
 
-    const phoneOnly = await submitReport({ contactEmail: '', contactPhone: '+355 69 123 4567' });
+    const phoneOnly = await submitReport({ contactPhone: '+355 69 123 4567' });
     assert.equal(phoneOnly.report.contactPhone, '+355 69 123 4567');
     assert.equal(phoneOnly.report.wantsUpdates, false);
+
+    // The older form's e-mail is accepted (so a queued report is not lost) but never stored.
+    const older = await submitReport({ contactEmail: 'old@example.com' });
+    assert.equal(older.report.contactEmail, null);
+    assert.equal(older.report.contactPhone, '069 123 4567');
+    assert.equal(await db.emailLog.count({ where: { reportId: older.report.id } }), 0);
 
     const anon = await submitReport({ anonymous: true, contactName: 'Emër', contactEmail: 'x@example.com', contactPhone: '069 000 0000' });
     assert.equal(anon.report.anonymous, true);
@@ -186,7 +195,8 @@ describe('strict reporting: a report is created only when every step is complete
 
 describe('tracking, map and duplicates', () => {
   test('the tracking page never shows contact details; description and photo appear once verified', async () => {
-    const { result, report } = await submitReport({ contactEmail: 'private@example.com', contactPhone: '+355 68 999 9999' });
+    const { result, report } = await submitReport({ contactPhone: '+355 68 999 9999' });
+    await withOlderEmail(report.id, 'private@example.com');
     const unverified = await getPublicCase(caseNumberSchema.parse(result.caseNumber.toLowerCase()));
     const text = JSON.stringify(unverified);
     assert.ok(!text.includes('private@example.com'));
@@ -222,8 +232,10 @@ describe('tracking, map and duplicates', () => {
     assert.ok(match.distanceMeters! <= 50);
     const far = await findNearbyOpen({ requestTypeId: await typeId('streets.pothole'), latitude: 41.12, longitude: 20.095 });
     assert.ok(!far.some((i) => i.caseNumber === result.caseNumber));
-    const follow = await followReport(result.caseNumber, 'fqinji@example.com');
+    const follow = await followReport(result.caseNumber);
     assert.equal(follow.supporters, 1);
+    const follower = await db.reportFollower.findFirstOrThrow({ where: { reportId: report.id } });
+    assert.equal(follower.email, null, 'no contact details are kept for a supporter');
   });
 
   test('the map shows a report at once, with its status ("Marrë", then the next ones), rounded; never a rejected one', async () => {
@@ -256,7 +268,8 @@ describe('tracking, map and duplicates', () => {
 
 describe('the resident confirms after the department resolves the report', () => {
   async function resolvedReport() {
-    const { result, report } = await submitReport({ contactEmail: 'konfirmo@example.com' });
+    const { result, report } = await submitReport();
+    await withOlderEmail(report.id, 'konfirmo@example.com');
     await resolveReport(admin, report.id, { note: 'U mbush gropa me asfalt.', photoKey: await uploadPhoto(await jpeg('#222222')) });
     await drainJobs();
     const mail = await db.emailLog.findFirst({ where: { template: 'resolved_confirm', reportId: report.id } });
@@ -338,21 +351,3 @@ describe('home page search: open reports on a street', () => {
   });
 });
 
-describe('the number on the final screen', () => {
-  test('"we e-mail it to you" only with an e-mail address AND real sending; anonymous: never', async () => {
-    const { resetConfigForTests } = await import('@/lib/server/env');
-    process.env.MAIL_DRIVER = 'smtp';
-    process.env.SMTP_HOST = 'smtp.invalid';
-    resetConfigForTests();
-    try {
-      assert.equal((await createCitizenReport(await citizenData())).emailSent, true);
-      assert.equal((await createCitizenReport(await citizenData({ anonymous: true, contactName: undefined, contactEmail: undefined }))).emailSent, false);
-      assert.equal((await createCitizenReport(await citizenData({ contactEmail: '', contactPhone: '069 123 4567' }))).emailSent, false, 'phone only');
-    } finally {
-      process.env.MAIL_DRIVER = 'log';
-      delete process.env.SMTP_HOST;
-      resetConfigForTests();
-      await db.emailLog.deleteMany({ where: { status: 'QUEUED' } }); // never try to send them
-    }
-  });
-});

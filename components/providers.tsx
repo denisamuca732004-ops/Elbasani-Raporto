@@ -21,7 +21,7 @@ export function useSettings(): PublicSettings {
 
 const ViewerContext = createContext<Viewer>(null);
 
-/** Who is signed in on the public site (read once per page on the server). */
+/** A staff member signed in, on the public site (read once per page on the server). */
 export function ViewerProvider({ value, children }: { value: Viewer; children: ReactNode }) {
   return <ViewerContext.Provider value={value}>{children}</ViewerContext.Provider>;
 }

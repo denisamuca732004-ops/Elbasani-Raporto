@@ -53,8 +53,7 @@ function contentSecurityPolicy(nonce: string, frameAncestors: string, secure: bo
     "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
-    // The "Continue with Google" form ends in a redirect to Google's sign-in page.
-    "form-action 'self' https://accounts.google.com",
+    "form-action 'self'",
     `frame-ancestors ${frameAncestors}`,
     ...(secure ? ['upgrade-insecure-requests'] : []),
   ].join('; ');
@@ -68,7 +67,7 @@ async function sessionRole(request: NextRequest): Promise<{ signedIn: boolean; r
     // On HTTPS Auth.js names the cookie "__Secure-authjs.session-token"; locally (http) "authjs.session-token".
     const secureCookie = request.cookies.has('__Secure-authjs.session-token');
     const token = await getToken({ req: request, secret, secureCookie });
-    // A staff session ends 12 hours after signing in, although the cookie may live longer (residents' 30 days).
+    // A staff session ends 12 hours after signing in (also for a cookie made before that limit was shortened).
     if (!token?.uid || staffSessionExpired(typeof token.lt === 'number' ? token.lt : null)) return { signedIn: false, role: null };
     return { signedIn: true, role: typeof token.role === 'string' ? token.role : null };
   } catch {
@@ -113,7 +112,7 @@ export default async function proxy(request: NextRequest) {
   response.headers.set('Permissions-Policy', 'camera=(self), geolocation=(self), microphone=()');
   if (!embed) response.headers.set('X-Frame-Options', 'DENY');
   if (secure && !isDev) response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
-  if (pathname.startsWith('/admin') || pathname.startsWith('/hyrje') || pathname.startsWith('/llogaria')) response.headers.set('Cache-Control', 'no-store');
+  if (pathname.startsWith('/admin') || pathname.startsWith('/hyrje')) response.headers.set('Cache-Control', 'no-store');
   return response;
 }
 

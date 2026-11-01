@@ -36,19 +36,16 @@ declare module '@auth/core/jwt' {
 
 /** Staff: signed out SESSION_MAX_AGE_HOURS (12) after signing in, whatever they do. */
 export const STAFF_SESSION_SECONDS = (Number(process.env.SESSION_MAX_AGE_HOURS) || 12) * 3600;
-/** Residents: stay signed in on their phone for RESIDENT_SESSION_DAYS (30). */
-const RESIDENT_SESSION_SECONDS = (Number(process.env.RESIDENT_SESSION_DAYS) || 30) * 86400;
 
-/** True when a staff session is older than its limit (the cookie itself lives as long as a resident's). */
+/** True when a staff session is older than its limit (also checked on the server, not only by the cookie's age). */
 export function staffSessionExpired(loginAt: number | null | undefined, nowSeconds = Math.floor(Date.now() / 1000)): boolean {
   return typeof loginAt === 'number' && nowSeconds - loginAt > STAFF_SESSION_SECONDS;
 }
 
 export const authConfig = {
   trustHost: true,
-  // Errors of the Google sign-in (e.g. a refused account) land on the residents' sign-in page.
-  pages: { signIn: '/hyrje', error: '/llogaria/hyr' },
-  session: { strategy: 'jwt', maxAge: Math.max(RESIDENT_SESSION_SECONDS, STAFF_SESSION_SECONDS) },
+  pages: { signIn: '/hyrje', error: '/hyrje' },
+  session: { strategy: 'jwt', maxAge: STAFF_SESSION_SECONDS },
   providers: [],
   callbacks: {
     jwt({ token, user }) {

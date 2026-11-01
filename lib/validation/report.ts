@@ -39,6 +39,7 @@ export const citizenReportShape = z.strictObject({
   description: z.string().max(LIMITS.maxDescription),
   anonymous: z.boolean(),
   contactName: z.string().max(160).optional(),
+  /** Only reports queued offline by an older version of the form have it: accepted, never stored (residents leave no e-mail). */
   contactEmail: z.string().max(200).optional(),
   contactPhone: z.string().max(40).optional(),
   photoKey: uploadKey,
@@ -189,7 +190,8 @@ export const caseNumber = z
 export const nearbySchema = z.strictObject({ requestTypeId: id, latitude, longitude });
 /** Home page search: a street, an area or a problem ("gropë Rinia"). */
 export const placeSearchSchema = z.strictObject({ q: requiredText(3, 100) });
-export const followSchema = z.strictObject({ caseNumber, email: optionalEmail });
+/** "I have this problem too" while reporting: one more supporter (no contact details). */
+export const followSchema = z.strictObject({ caseNumber });
 
 /** The description step of the form: the text and the problem type chosen in step 1. */
 export const descriptionCheckSchema = z.strictObject({

@@ -77,16 +77,12 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
   return <Link href={href} className={active ? 'active' : undefined} aria-current={active ? 'page' : undefined}>{children}</Link>;
 }
 
-/** Signed in: the resident's first name (their account) or "Panel" for staff. Otherwise "Sign in". */
+/** "Panel" for a signed-in staff member. Residents have no accounts, so nobody else gets a sign-in link here (staff: footer). */
 function AccountLink() {
   const { t } = useI18n();
   const viewer = useViewer();
-  if (viewer?.kind === 'staff') return <Link href="/admin" className="account-link"><Icon name="dashboard" size={16} /><span>{t('nav.panel')}</span></Link>;
-  if (viewer?.kind === 'resident') {
-    const first = viewer.name.split(' ')[0] || viewer.name;
-    return <Link href="/llogaria" className="account-link" title={viewer.email}><Icon name="user" size={16} /><span>{first}</span></Link>;
-  }
-  return <Link href="/llogaria/hyr" className="account-link"><Icon name="user" size={16} /><span>{t('nav.signIn')}</span></Link>;
+  if (viewer?.kind !== 'staff') return null;
+  return <Link href="/admin" className="account-link"><Icon name="dashboard" size={16} /><span>{t('nav.panel')}</span></Link>;
 }
 
 export function SiteHeader({ guide = [] }: { guide?: GuideItem[] }) {

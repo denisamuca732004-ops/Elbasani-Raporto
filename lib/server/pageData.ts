@@ -13,7 +13,7 @@ import { config } from './env';
 import { DEFAULT_SETTINGS } from './referenceData';
 import { getCatalog } from './services/catalog';
 import { getPublicSettings } from './services/settings';
-import { getPrincipal, getResident } from './session';
+import { getPrincipal } from './session';
 
 export async function pageSettings(): Promise<PublicSettings> {
   // Every page is rendered per request (never while building), so the database is only touched at run time.
@@ -42,11 +42,9 @@ export async function pageCatalog(): Promise<Catalog> {
   }
 }
 
-/** Who is signed in, for the header and the report form of the public site. Never fails the page. */
+/** A staff member signed in on the public site gets a "Panel" link in the header. Never fails the page. */
 export async function siteViewer(): Promise<Viewer> {
   try {
-    const resident = await getResident();
-    if (resident) return { kind: 'resident', name: resident.name, email: resident.email, phone: resident.phone };
     const staff = await getPrincipal();
     if (staff) return { kind: 'staff', name: staff.name };
   } catch (err) {

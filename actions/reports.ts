@@ -18,7 +18,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { enforceRateLimit } from '@/lib/server/ratelimit';
-import { getResident, requireAdmin, requireStaff } from '@/lib/server/session';
+import { requireAdmin, requireStaff } from '@/lib/server/session';
 import * as publicReports from '@/lib/server/services/publicReport';
 import * as reports from '@/lib/server/services/report';
 import * as transfers from '@/lib/server/services/transfer';
@@ -46,9 +46,7 @@ function refreshPanel(id?: string) {
 export async function createReportAction(input: unknown) {
   return run(async () => {
     await enforceRateLimit('report', await clientIp());
-    // Signed in with a resident account: the report also goes to "my reports" (from the session, never from the form).
-    const resident = await getResident();
-    return publicReports.createCitizenReport(input, { citizenId: resident?.id ?? null });
+    return publicReports.createCitizenReport(input);
   });
 }
 
@@ -94,7 +92,7 @@ export async function followReportAction(input: unknown) {
   return run(async () => {
     await enforceRateLimit('follow', await clientIp());
     const data = parseInput(followSchema, input);
-    return publicReports.followReport(data.caseNumber, data.email);
+    return publicReports.followReport(data.caseNumber);
   });
 }
 

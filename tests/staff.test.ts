@@ -19,7 +19,7 @@ import { viewCount } from '@/lib/shared/reportViews';
 import type { Principal } from '@/lib/shared/types';
 import { dashboardSchema, exportSchema, prioritySchema, reportFiltersSchema, reportListSchema } from '@/lib/validation/report';
 import {
-  adminSession, db, departmentId, drainJobs, jpeg, rejects, setupTestDb, staffSession, submitReport, teardown, typeId, uploadPhoto,
+  adminSession, db, departmentId, drainJobs, jpeg, rejects, setupTestDb, staffSession, submitReport, teardown, typeId, uploadPhoto, withOlderEmail,
 } from './helpers';
 
 let admin: Principal;
@@ -116,7 +116,8 @@ describe('each department sees only its own reports', () => {
     assert.equal(detail.permissions.canRequestTransfer, true);
     assert.equal(detail.permissions.canDelete, false);
     assert.deepEqual(detail.allowedStatuses, ['VERIFIED', 'ASSIGNED', 'IN_PROGRESS', 'REJECTED']);
-    assert.equal(detail.contact.email, 'qytetar@example.com');
+    assert.equal(detail.contact.phone, '069 123 4567');
+    assert.equal(detail.contact.email, null, 'residents leave no e-mail');
     assert.equal((await rejects(() => updateReport(infra, report.id, { priority: 'LOW' }))).status, 403);
     const asAdmin = await getReport(admin, report.id);
     assert.equal(asAdmin.permissions.canEditDetails, true);
@@ -166,7 +167,8 @@ describe('priorities: LOW, MEDIUM and HIGH', () => {
 
 describe('the workflow of a department', () => {
   test('verify → take it → start → resolve with an "after" photo', async () => {
-    const { report, result } = await submitReport({ contactEmail: 'ndjek@example.com' });
+    const { report, result } = await submitReport();
+    await withOlderEmail(report.id, 'ndjek@example.com');
     const verified = await changeStatus(infra, report.id, { status: 'VERIFIED', note: 'U verifikua në vend.', publicNote: true });
     assert.equal(verified.publicStatus, 'OPEN');
 
@@ -228,7 +230,8 @@ describe('the workflow of a department', () => {
   });
 
   test('notes stay internal and messages go to the resident by email', async () => {
-    const { report, result } = await submitReport({ contactEmail: 'mesazh@example.com' });
+    const { report, result } = await submitReport();
+    await withOlderEmail(report.id, 'mesazh@example.com');
     await addNote(infra, report.id, 'Shënim i brendshëm për ekipin');
     await messageCitizen(infra, report.id, 'Do të vijmë nesër në mëngjes.');
     await drainJobs();

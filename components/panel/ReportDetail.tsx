@@ -569,8 +569,9 @@ export default function ReportDetail({ principal, report: initial, assignable, b
             {report.anonymous ? <p className="muted">{t('detail.contact.anonymous')}</p> : (
               <dl className="kv">
                 <dt>{t('detail.contact.name')}</dt><dd>{report.contact.name || '–'}</dd>
-                <dt>{t('detail.contact.email')}</dt><dd>{report.contact.email ? <a href={`mailto:${report.contact.email}`}>{report.contact.email}</a> : '–'}</dd>
                 <dt>{t('detail.contact.phone')}</dt><dd>{report.contact.phone ? <a href={`tel:${report.contact.phone.replace(/\s/g, '')}`}>{report.contact.phone}</a> : '–'}</dd>
+                {/* Residents leave no e-mail any more: shown only for older reports, or one recorded by the admin with it. */}
+                {report.contact.email && <><dt>{t('detail.contact.email')}</dt><dd><a href={`mailto:${report.contact.email}`}>{report.contact.email}</a></dd></>}
               </dl>
             )}
           </Card>

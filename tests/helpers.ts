@@ -85,11 +85,18 @@ export async function citizenData(overrides: Record<string, unknown> = {}) {
     description: 'Gropë e thellë në mes të rrugës, para shkollës.',
     anonymous: false,
     contactName: 'Qytetar Test',
-    contactEmail: 'qytetar@example.com',
-    contactPhone: '',
+    contactPhone: '069 123 4567',
     photoKey: overrides.photoKey === undefined ? await uploadPhoto() : overrides.photoKey,
     ...overrides,
   };
+}
+
+/**
+ * Residents leave no e-mail any more. The e-mails to residents still work for an older
+ * report that has one (or one the admin recorded with it): this gives a report that address.
+ */
+export async function withOlderEmail(reportId: string, email: string) {
+  return db.report.update({ where: { id: reportId }, data: { contactEmail: email, wantsUpdates: true } });
 }
 
 /** Sends a resident report and runs the background check. */

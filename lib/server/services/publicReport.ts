@@ -1,8 +1,9 @@
 /**
- * Everything a resident can do without an account: report a problem (every
- * step is mandatory), check for the same problem nearby, follow a case, track
- * it, browse the map and confirm or reopen a resolved report.
- * Contact details are never returned by these functions.
+ * Everything a resident can do (there are no resident accounts): report a
+ * problem (every step is mandatory), check for the same problem nearby, add
+ * their support to it, track it, browse the map and confirm or reopen a
+ * resolved report. The only contact a resident leaves is a name and phone
+ * number (or nothing: anonymous). Contact details are never returned by these functions.
  */
 import 'server-only';
 import type { z } from 'zod';
@@ -56,9 +57,8 @@ const MESSAGES: Record<string, string> = {
   'description.abusive': 'Përshkrimi ka fjalë fyese ose të papërshtatshme. Përshkruani problemin pa to.',
   'anonymous.required': 'Zgjidhni nëse doni të lini kontakt ose të raportoni anonim.',
   'contactName.required': 'Shkruani emrin tuaj ose zgjidhni "Anonim".',
-  'contactEmail.invalid': 'Emaili nuk është i saktë.',
+  'contactPhone.required': 'Shkruani numrin e telefonit ose zgjidhni "Anonim".',
   'contactPhone.invalid': 'Numri i telefonit nuk është i saktë.',
-  'contactEmail.contact_required': 'Shkruani emailin ose numrin e telefonit, ose zgjidhni "Anonim".',
 };
 
 export type ReportProblem = FieldError & { step: string };
@@ -71,7 +71,6 @@ function problem(field: string, code: string, fallback?: string): ReportProblem 
 const clean = (s: unknown): string => (typeof s === 'string' ? s.trim().replace(/\s+/g, ' ') : '');
 const cleanMultiline = (s: unknown): string => (typeof s === 'string' ? s.trim() : '');
 const phoneDigits = (s: string): number => s.replace(/\D/g, '').length;
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 interface ResolvedLocation {
   latitude: number | null; longitude: number | null; neighbourhoodId: number | null; address: string | null;
@@ -153,10 +152,10 @@ const PHOTO_NOT_A_PHOTO = 'Kjo duket si dokument ose screenshot, jo si foto e ve
 
 /**
  * Creates a resident's report only when EVERY step is complete:
- * type → location (a point on the map, or zone + lagje/village + street) → photo → description → contact (or anonymous).
+ * type → location (a point on the map, or zone + lagje/village + street) → photo → description → name + phone (or anonymous).
  * All problems are returned together, each with the wizard step it belongs to.
  */
-export async function createCitizenReport(raw: unknown, options: { citizenId?: string | null } = {}) {
+export async function createCitizenReport(raw: unknown) {
   const problems: ReportProblem[] = [];
   const parsed = check(citizenReportShape, raw);
   if (!parsed.ok) {
@@ -191,13 +190,12 @@ export async function createCitizenReport(raw: unknown, options: { citizenId?: s
     else if (looksLikeGibberish(description)) problems.push(problem('description', 'gibberish'));
 
     if (!data.anonymous) {
+      // A name and a phone number, so the Municipality can call if it needs more details (no e-mail).
       const name = clean(data.contactName);
-      const email = clean(data.contactEmail);
       const phone = clean(data.contactPhone);
       if (name.length < 2) problems.push(problem('contactName', 'required'));
-      if (email && !EMAIL.test(email)) problems.push(problem('contactEmail', 'invalid'));
-      if (phone && (phoneDigits(phone) < 6 || !/^[0-9 +()-]+$/.test(phone))) problems.push(problem('contactPhone', 'invalid'));
-      if (!email && !phone) problems.push(problem('contactEmail', 'contact_required'));
+      if (!phone) problems.push(problem('contactPhone', 'required'));
+      else if (phoneDigits(phone) < 6 || !/^[0-9 +()-]+$/.test(phone)) problems.push(problem('contactPhone', 'invalid'));
     }
   }
 
@@ -215,7 +213,6 @@ export async function createCitizenReport(raw: unknown, options: { citizenId?: s
 
   const data = parsed.data;
   const anonymous = data.anonymous;
-  const email = anonymous ? '' : clean(data.contactEmail).toLowerCase();
   const phone = anonymous ? '' : clean(data.contactPhone);
   // The same check as the description step of the form (one AI call for both): text that says
   // nothing or is abusive is refused here too, so the report cannot be sent with it.
@@ -246,10 +243,9 @@ export async function createCitizenReport(raw: unknown, options: { citizenId?: s
       locationApproximate: place.approximate ?? false,
       anonymous,
       contactName: anonymous ? null : clean(data.contactName),
-      contactEmail: email || null,
+      contactEmail: null,
       contactPhone: phone || null,
       createdById: null,
-      citizenId: options.citizenId ?? null,
       clientRef: data.clientRef?.trim() || null,
       photoKey: data.photoKey,
     });
@@ -265,12 +261,6 @@ export async function createCitizenReport(raw: unknown, options: { citizenId?: s
     publicStatus: publicStatusOf(created.report.status as Status),
     trackUrl: tpl.trackUrl(created.report.caseNumber),
     duplicateSubmission: created.duplicateSubmission,
-    /**
-     * The number also goes to the resident by e-mail: only when an e-mail address was given AND
-     * e-mails are really sent (MAIL_DRIVER=smtp; with "log" they are only written to the log).
-     * The final screen says "we e-mail it to you" only then, never a promise that is not kept.
-     */
-    emailSent: Boolean(email) && config().mail.driver === 'smtp',
   };
 }
 
@@ -342,12 +332,12 @@ export async function searchOpenByPlace(q: string, limit = 6): Promise<PublicCar
   });
 }
 
-export async function followReport(caseNumber: string, email: string | undefined) {
+export async function followReport(caseNumber: string) {
   const report = await db.report.findUnique({ where: { caseNumber }, select: { id: true, status: true } });
   if (!report) throw notFound('Raportimi nuk u gjet.');
   if (FINAL_STATUSES.includes(report.status)) throw conflict('Ky raportim është mbyllur tashmë.');
   const updated = await db.$transaction(async (tx) => {
-    await tx.reportFollower.create({ data: { reportId: report.id, email: email ?? null } });
+    await tx.reportFollower.create({ data: { reportId: report.id, email: null } });
     await tx.reportEvent.create({ data: { reportId: report.id, type: 'FOLLOWER_ADDED', message: 'Një qytetar tjetër raportoi të njëjtin problem.' } });
     return tx.report.update({ where: { id: report.id }, data: { supportersCount: { increment: 1 } }, select: { caseNumber: true, supportersCount: true } });
   });

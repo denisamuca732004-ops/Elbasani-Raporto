@@ -26,14 +26,15 @@ Ky version është ndërtuar me **Next.js 16** (App Router) dhe **TypeScript**, 
 |---|---|---|
 | `ADMIN` | Administratori kryesor | Gjithçka: të gjitha raportimet, sektorët, llogaritë, llojet, zonat, pamjen, email-et, demon |
 | `MUNICIPALITY_STAFF` | Përgjegjësi i një sektori | Vetëm raportimet e sektorit të vet dhe kërkesat që ka dërguar ai sektor |
-| `USER` | Qytetari me llogari (opsionale) | Vetëm “Llogaria ime” dhe raportimet e veta; nuk ka akses në panel |
 
-Qytetari nuk ka nevojë për llogari, por mund të krijojë një nëse do:
-* **me Google** ("Vazhdo me Google"), ose **me email dhe fjalëkalim**, te `/llogaria/hyr`;
-* me llogari, raportimet e tij dalin te **“Raportimet e mia”** nga çdo pajisje, dhe kontakti plotësohet vetë;
-* stafi nuk e sheh se cila llogari bëri një raportim: raportimet anonime mbeten anonime;
-* qytetari e fshin vetë llogarinë kur të dojë;
-* Google nuk hyn kurrë në llogaritë e stafit, dhe faqja “Përdoruesit” e administratorit tregon vetëm stafin.
+Qytetarët **nuk kanë llogari dhe nuk lënë email**: faqja është vetëm për raportim.
+* Te hapi “Kontakti” zgjedhin **“Anonim”**, ose **“Me emër dhe telefon”** (të dyja të detyrueshme), që sektori
+  t’i telefonojë nëse i duhen më shumë të dhëna. Numri nuk publikohet kurrë dhe nuk i dërgohet AI-së.
+* Në fund marrin **numrin (ID) e raportimit**, me “Kopjo numrin” dhe shënimin “Ruajeni për ta ndjekur”:
+  asgjë nuk u dërgohet me email.
+* Lart në menu nuk ka “Hyr”. Stafi hyn nga fundi i faqes, “Hyrja për stafin” (`/hyrje`).
+* Lidhjet e vjetra `/llogaria…` të çojnë te faqja kryesore. Të dhënat e vjetra nuk fshihen: llogaritë e
+  qytetarëve nga prototipi nuk hyjnë dot më.
 
 Kontrolli bëhet në tre nivele, dhe të tri duhet të kalojnë:
 1. **proxy-ja** kontrollon cookie-n;
@@ -179,9 +180,8 @@ shfaq gjithmonë (nuk ka më çelës "Shfaq të dhënat demo"). Fshijini para p�
    * `AUTH_SECRET`, që krijohet me `npx auth secret`;
    * `ADMIN_EMAIL`;
    * `CRON_SECRET`;
-   * `MAIL_DRIVER=smtp` dhe të dhënat SMTP. Pa to emailet vetëm shkruhen në log dhe nuk i
-     dërgohen askujt; prandaj ekrani i fundit i raportimit i thotë qytetarit “Numrin jua dërgojmë
-     edhe me email” vetëm kur emailet dërgohen vërtet, ndryshe “Ruajeni ID-në”;
+   * `MAIL_DRIVER=smtp` dhe të dhënat SMTP, për emailet e sektorëve dhe të stafit. Pa to emailet
+     vetëm shkruhen në log dhe nuk i dërgohen askujt. Qytetarëve nuk u dërgohet asnjë email;
    * për AI: `AI_ENABLED=true` dhe `AI_API_KEY`.
 5. Bëni **Deploy**. Build-i krijon tabelat (`prisma migrate deploy`), shton të dhënat fillestare
    dhe ndërton faqen.

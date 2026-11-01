@@ -1,7 +1,7 @@
 'use client';
 /**
  * Reporting flow like the BOS:311 app, one step per screen:
- * type → location → photo → description → contact → review → case number.
+ * type → location → photo → description → contact (anonymous, or name + phone) → review → case number.
  * The location is given ONE of two ways: GPS / a tap on the map (the zone is
  * found from the point, no address needed), or by hand: zone → one of THAT
  * zone's lagje or villages → street (optional). So the zone and the place always match.
@@ -25,11 +25,11 @@ import { checkDescriptionAction, checkPhotoAction, createReportAction, findNearb
 import Icon from '@/components/Icon';
 import { LocationPicker } from '@/components/maps';
 import PhotoInput from '@/components/PhotoInput';
-import { useCatalog, useSettings, useViewer } from '@/components/providers';
+import { useCatalog, useSettings } from '@/components/providers';
 import { CategoryIcon, ErrorAlert, Field } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { ActionFailure, call } from '@/lib/client/action';
-import { distanceLabel, EMAIL_RE, insideArea, key, phoneDigits, typeName, type LatLng } from '@/lib/client/format';
+import { distanceLabel, insideArea, key, phoneDigits, typeName, type LatLng } from '@/lib/client/format';
 import { isMine, rememberMine, rememberSupported } from '@/lib/client/myReports';
 import { newClientRef, queueReport } from '@/lib/client/offlineQueue';
 import { uploadPhoto } from '@/lib/client/upload';
@@ -47,7 +47,7 @@ type StepName = (typeof STEPS)[number];
 /** Field (as named by the server) → wizard step. */
 const STEP_OF_FIELD: Record<string, StepName> = {
   requestTypeId: 'type', locationMode: 'location', latitude: 'location', longitude: 'location', address: 'location', neighbourhoodId: 'location', localityId: 'location',
-  photo: 'photo', photoKey: 'photo', description: 'details', anonymous: 'contact', contactName: 'contact', contactEmail: 'contact', contactPhone: 'contact',
+  photo: 'photo', photoKey: 'photo', description: 'details', anonymous: 'contact', contactName: 'contact', contactPhone: 'contact',
 };
 type Errors = Partial<Record<string, string>>;
 
@@ -55,9 +55,6 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const { t, lang } = useI18n();
   const { catalog, typeById, categoryByCode } = useCatalog();
   const { rules } = useSettings();
-  // Signed in with a resident account: the contact is filled in and the report also goes to "my reports".
-  const viewer = useViewer();
-  const resident = !embedded && viewer?.kind === 'resident' ? viewer : null;
   const trackBase = embedded ? '/embed/ndiq' : '/ndiq';
   const initialTypeValid = initialType && typeById(initialType) ? initialType : null;
   const [step, setStep] = useState(initialTypeValid ? 1 : 0);
@@ -79,14 +76,15 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [checkingDescription, setCheckingDescription] = useState(false);
   const [description, setDescription] = useState('');
   const [contactMode, setContactMode] = useState<'contact' | 'anonymous' | null>(null); // null until the resident chooses
-  const [contact, setContact] = useState({ name: resident?.name ?? '', email: resident?.email ?? '', phone: resident?.phone ?? '' });
+  // No e-mail and no account: a name and a phone number, so the Municipality can call if it needs more details.
+  const [contact, setContact] = useState({ name: '', phone: '' });
   const [showErrors, setShowErrors] = useState(false);
   const [serverErrors, setServerErrors] = useState<Errors>({});
   const [duplicates, setDuplicates] = useState<PublicCard[]>([]);
   const [followed, setFollowed] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<ActionFailure | null>(null);
-  const [result, setResult] = useState<{ caseNumber?: string; queued?: boolean; emailSent?: boolean } | null>(null);
+  const [result, setResult] = useState<{ caseNumber?: string; queued?: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
   const [clientRef] = useState(newClientRef);
   const uploaded = useRef<{ photo: Blob; key: string } | null>(null);
@@ -194,12 +192,10 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     if (name === 'contact') {
       if (!contactMode) e.anonymous = t('report.errors.contactChoice');
       if (contactMode === 'contact') {
-        const email = contact.email.trim();
         const phone = contact.phone.trim();
         if (contact.name.trim().length < 2) e.contactName = t('report.errors.name');
-        if (!email && !phone) e.contactEmail = t('report.errors.contactWay');
-        if (email && !EMAIL_RE.test(email)) e.contactEmail = t('report.errors.email');
-        if (phone && phoneDigits(phone) < 6) e.contactPhone = t('report.errors.phone');
+        if (!phone) e.contactPhone = t('report.errors.phoneRequired');
+        else if (phoneDigits(phone) < 6) e.contactPhone = t('report.errors.phone');
       }
     }
     return e;
@@ -260,8 +256,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
 
   async function follow(caseNumber: string) {
     try {
-      const email = contactMode === 'contact' && EMAIL_RE.test(contact.email.trim()) ? contact.email.trim() : undefined;
-      await call(followReportAction({ caseNumber, ...(email ? { email } : {}) }));
+      await call(followReportAction({ caseNumber }));
       rememberSupported(caseNumber);
       setFollowed(caseNumber);
     } catch (err) {
@@ -301,8 +296,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       anonymous,
       ...(anonymous ? {} : {
         contactName: contact.name.trim(),
-        ...(contact.email.trim() ? { contactEmail: contact.email.trim() } : {}),
-        ...(contact.phone.trim() ? { contactPhone: contact.phone.trim() } : {}),
+        contactPhone: contact.phone.trim(),
       }),
       channel: embedded ? 'EMBED' : standalone ? 'APP' : 'WEB',
       clientRef,
@@ -312,7 +306,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       const photoKey = await photoKeyFor(photo);
       const res = await call(createReportAction({ ...data, photoKey }));
       rememberMine(res.caseNumber);
-      setResult({ caseNumber: res.caseNumber, emailSent: res.emailSent });
+      setResult({ caseNumber: res.caseNumber });
     } catch (raw) {
       const err = raw as ActionFailure;
       if (err.code === 'NETWORK') {
@@ -367,7 +361,6 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   }
 
   if (result) {
-    const email = contactMode === 'contact' ? contact.email.trim() : '';
     return (
       <div className="done-box" role="status">
         <Icon name="check" size={48} />
@@ -387,23 +380,13 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             >
               {copied && <Icon name="check" size={16} />}{copied ? t('report.copied') : t('report.copyNumber')}
             </button>
-            {/* With an e-mail that is really sent: it is in their inbox. Otherwise (anonymous, phone only,
-                or e-mails not set up yet): this screen is the only place they get it, so it says so clearly. */}
-            {result.emailSent && email ? (
-              <div className="done-note">
-                <Icon name="mail" size={20} />
-                <p>{t('report.doneEmailSent', { email })}</p>
-              </div>
-            ) : (
-              <div className="done-note keep">
-                <Icon name="alert" size={20} />
-                <p><strong>{t('report.doneKeepTitle')}</strong> {contactMode === 'anonymous' ? t('report.doneKeepAnonymous') : t('report.doneKeepContact')}</p>
-              </div>
-            )}
-            {resident && <p className="small muted">{t('resident.savedToAccount')}</p>}
+            {/* Nothing is e-mailed (residents leave no e-mail): this screen is the only place they get the number. */}
+            <div className="done-note keep">
+              <Icon name="alert" size={20} />
+              <p><strong>{t('report.doneKeepTitle')}</strong> {contactMode === 'anonymous' ? t('report.doneKeepAnonymous') : t('report.doneKeepContact')}</p>
+            </div>
             <div className="row" style={{ justifyContent: 'center' }}>
               <Link className="btn" href={`${trackBase}/${result.caseNumber}`}>{t('report.trackIt')}</Link>
-              {resident && <Link className="btn btn-outline" href="/llogaria">{t('resident.myReports')}</Link>}
               <button type="button" className="btn btn-outline" onClick={() => window.location.assign(embedded ? '/embed' : '/raporto')}>{t('report.another')}</button>
             </div>
           </>
@@ -626,7 +609,6 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             </label>
             {visibleError('anonymous') && <div className="field-error" role="alert"><Icon name="alert" size={14} />{visibleError('anonymous')}</div>}
           </fieldset>
-          {resident && <p className="hint"><Icon name="user" size={14} /> {t('resident.savedToAccount')}</p>}
           {contactMode === 'contact' && (
             <>
               <p className="hint">{t('report.contactRule')}</p>
@@ -634,11 +616,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
                 <Field label={t('report.name')} htmlFor="name" error={visibleError('contactName')} required>
                   <input id="name" type="text" autoComplete="name" value={contact.name} maxLength={160} aria-required="true" onChange={(e) => setContact({ ...contact, name: e.target.value })} />
                 </Field>
-                <Field label={t('report.email')} hint={t('report.emailHint')} htmlFor="email" error={visibleError('contactEmail')}>
-                  <input id="email" type="email" autoComplete="email" value={contact.email} maxLength={200} onChange={(e) => setContact({ ...contact, email: e.target.value })} />
-                </Field>
-                <Field label={t('report.phone')} htmlFor="phone" error={visibleError('contactPhone')}>
-                  <input id="phone" type="tel" autoComplete="tel" value={contact.phone} maxLength={40} onChange={(e) => setContact({ ...contact, phone: e.target.value.replace(/[^0-9 +()-]/g, '') })} />
+                <Field label={t('report.phone')} hint={t('report.phoneHint')} htmlFor="phone" error={visibleError('contactPhone')} required>
+                  <input id="phone" type="tel" inputMode="tel" autoComplete="tel" value={contact.phone} maxLength={40} aria-required="true" onChange={(e) => setContact({ ...contact, phone: e.target.value.replace(/[^0-9 +()-]/g, '') })} />
                 </Field>
               </div>
             </>
@@ -657,7 +636,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               ['details', description.trim()],
               ['contact', contactMode === 'anonymous'
                 ? t('report.anonymousShort')
-                : [contact.name.trim(), contact.email.trim(), contact.phone.trim()].filter(Boolean).join(' · ')],
+                : [contact.name.trim(), contact.phone.trim()].filter(Boolean).join(' · ')],
             ] as Array<[StepName, string]>).map(([s, value]) => (
               <div className="review-row" key={s}>
                 <dt>{t(`report.steps.${s}`)}</dt>

@@ -12,9 +12,9 @@ export const CACHE_KEYS = {
   catalog: 'catalog:v2', // v2: zones carry their code and their lagje/villages
   departments: 'departments:active:v1',
   settings: 'settings:v1',
-  guide: 'guide:active:v1',
+  guide: 'guide:active:v2', // v2: answers without accounts or e-mails
   publicStats: 'stats:public:v1',
-  userState: (userId: string) => `user:${userId}:state:v2`, // v2: hasPassword / hasGoogle
+  userState: (userId: string) => `user:${userId}:state:v3`,
 } as const;
 
 let redis: Redis | null | undefined;

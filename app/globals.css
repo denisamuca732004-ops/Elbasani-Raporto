@@ -273,7 +273,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand-button); o
 .photo-preview img { border-radius: var(--radius); border: 1px solid var(--line); }
 .done-box { text-align: center; padding: 40px 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-tint); }
 .done-box .case-number { font-size: clamp(1.8rem, 6vw, 2.8rem); color: var(--brand-button); margin: 8px 0 6px; display: block; }
-/* Under the number: where the resident finds it again (their e-mail), or "keep it". */
+/* Under the number: "keep it" (nothing is e-mailed to residents). */
 .done-note { display: flex; gap: 12px; align-items: flex-start; text-align: left; max-width: 560px; margin: 0 auto 18px; padding: 14px 16px; border-radius: var(--radius); background: #fff; border: 1px solid var(--line); }
 .done-note p { margin: 0; }
 .done-note svg { flex: none; margin-top: 2px; color: var(--brand-button); }
@@ -593,11 +593,6 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .sector-go { margin-top: auto; display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-head); font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--brand-button); }
 @media (prefers-reduced-motion: reduce) { .sector-card { transition: none; } }
 
-/* Residents' accounts */
-.btn-google { background: #fff; color: var(--ink); border-color: var(--line); }
-.btn-google:hover, .btn-google:focus-visible { background: var(--bg-soft); color: var(--ink); border-color: var(--ink-soft); }
-.or-line { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--muted); font-family: var(--font-head); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
-.or-line::before, .or-line::after { content: ''; flex: 1; border-top: 1px solid var(--line); }
 .danger-zone { border-color: #E8B4B4; }
 
 /* Map legend: an approximate point (address typed by hand) */

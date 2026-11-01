@@ -10,7 +10,7 @@ controls everything. The interface is the green v2 design, unchanged.
 | Framework | Next.js 16 (App Router, Server Components, Server Actions, Route Handlers), React 19, TypeScript (strict) |
 | Database | **PostgreSQL** through **Prisma 7** (`@prisma/adapter-pg`), strict foreign keys and `CHECK` constraints |
 | Auth | Auth.js v5: email + password, encrypted JWT session (JWE) in an HTTP-only cookie |
-| Roles | `USER` (a resident's own, optional account), `MUNICIPALITY_STAFF` (department head), `ADMIN` |
+| Roles | `MUNICIPALITY_STAFF` (department head), `ADMIN`. Residents have **no accounts** (see below) |
 | Photos | Vercel Blob, private, one-file client upload tokens, re-encoded on the server (EXIF/GPS removed) |
 | Cache and rate limits | Upstash Redis (in-memory fallback for development and tests) |
 | Background jobs | Upstash QStash (signed callbacks), or Next.js `after()` when QStash is not configured |
@@ -69,9 +69,9 @@ Every request is checked in layers.
 
 | Who | What |
 |---|---|
-| Resident (no account) | **Ask or search** on the home page: a question ("si raportoj", "sa zgjat") gets a short answer with a button, "zjarr" or "aksident" gets the emergency numbers first, a report number opens its progress, a problem opens its report type, a street lists the open reports there. **Report** in six steps: type → location (either GPS / a tap on the map, with the zone found from the zone borders and no address needed, or by hand: zone → one of its lagje or villages → street, optional) → photo → description (10+ characters) → contact or anonymous → review. Nothing can be skipped, and the server rejects incomplete reports and names the step to go back to. Works offline (queued on the phone). **Also:** track by case number, map, public statistics, confirm or reopen from the "resolved" email. |
-| System | Routes each report to the department of its type and checks it (AI when enabled, keyword rules otherwise). Emails the department and the resident in the background. |
-| Department head (`MUNICIPALITY_STAFF`) | Sees only their department, split into **High / Medium / Low** priority tabs. **Can:** verify, assign, start work, resolve with an "after" photo, reject with a reason, add notes and message the resident. **"Not our department":** sends a review request to the admin. |
+| Resident (no account) | **Ask or search** on the home page: a question ("si raportoj", "sa zgjat") gets a short answer with a button, "zjarr" or "aksident" gets the emergency numbers first, a report number opens its progress, a problem opens its report type, a street lists the open reports there. **Report** in six steps: type → location (either GPS / a tap on the map, with the zone found from the zone borders and no address needed, or by hand: zone → one of its lagje or villages → street, optional) → photo → description (10+ characters) → contact (name + phone number) or anonymous → review. Nothing can be skipped, and the server rejects incomplete reports and names the step to go back to. Works offline (queued on the phone). **Also:** track by case number, map, public statistics. |
+| System | Routes each report to the department of its type and checks it (AI when enabled, keyword rules otherwise). Emails the department in the background (residents leave no email). |
+| Department head (`MUNICIPALITY_STAFF`) | Sees only their department, split into **High / Medium / Low** priority tabs. **Can:** verify, assign, start work, resolve with an "after" photo, reject with a reason, add notes, and call the resident when they left a phone number. **"Not our department":** sends a review request to the admin. |
 | Admin (`ADMIN`) | Dashboard for **week / month / year**, starting with **a card per department** (its number of reports, open, high priority, overdue): a click opens that department's reports with the **number in each status** on the status tabs, and each report opens for editing. The platform and municipality names follow the language too ("Elbasani Raporton / Bashkia Elbasan" ↔ "Elbasan Reports / Municipality of Elbasan", also in the tab title); all four are set at `/admin/appearance` (`lib/shared/branding.ts`). The same cards are the menu's **Departamentet** page (`/admin/sectors`): the menu no longer lists every department or "all reports", and a department's reports keep that item highlighted, with a link back. Reports without a department get a red card while any are open. Also the review requests ("not our department" → the admin moves the report to the right department). **Can:** set any status, edit any detail, move or delete reports. The menu keeps only daily work plus *Zonat, Emailet, Integrimi, Të dhëna demo*; the logo at the top leads to the public home page. **Not in the menu, but still at their address:** departments `/admin/departments`, accounts `/admin/users`, report types `/admin/report-types`, the search guide `/admin/guide`, appearance `/admin/appearance`, and a report entered by staff `/admin/reports/new`; the dashboard's "first steps" card links to the first three. |
 
 Statuses (PostgreSQL enum):
@@ -125,35 +125,18 @@ The tests cover:
 - admin PATCH semantics;
 - the search guide (what residents get for typical questions, emergencies first, admin edits, seed never overwrites them);
 - the location (zone borders, GPS without an address, zone ↔ lagje/village always matching, phone reports and demo data in the right zone);
-- residents' accounts (sign-up, Google linking rules, staff kept apart, my reports, account deletion, session limits).
+- residents' contact (a name and phone number or anonymous, no email stored, nothing emailed to them).
 
-## Residents' accounts (optional)
+## Residents: no accounts, no email
 
-Reporting never needs an account. A resident who wants one signs up and signs in at `/llogaria/hyr`, in one of two ways:
-- **"Vazhdo me Google".** Needs `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`; without them the button is hidden.
-- **Email + password.**
+The public site is only for reporting. Residents never sign up or sign in, and leave no email:
+- **Contact step:** "Anonim" (nothing), or "Me emër dhe telefon": a name and a phone number, both required, so the department can call if it needs more details. The number is never published and never sent to the AI.
+- **Final screen:** the report number (ID), with "Kopjo numrin" and a clear note to keep it: nothing is emailed, so the number is how the report is tracked (`/ndiq`, or the search box).
+- **"I have this problem too"** while reporting adds one supporter, with no contact details.
+- **The header** has no sign-in link. Staff sign in from the footer ("Hyrja për stafin", `/hyrje`); a signed-in staff member sees "Paneli" in the header.
+- **Old links** to the former account pages (`/llogaria…`) land on the home page.
 
-With an account:
-- reports made while signed in appear in **"Raportimet e mia"** (`/llogaria`) on any device;
-- the contact step is filled in.
-
-The account page also has the profile, setting or changing the password, signing out and deleting the account.
-
-Rules (`lib/server/services/residents.ts`):
-- **Kept apart from the panel.**
-  - A resident account (`USER`) never opens the panel.
-  - Google never signs in to a staff account, and staff cannot use the residents' sign-in page.
-  - The admin's "Users" page lists staff only and cannot give a resident a password.
-- **Google proves who owns the email.**
-  - Google sign-in needs an email Google has verified.
-  - If someone registered that email earlier with a password, Google sign-in links the account, removes that password and ends its other sessions. So whoever registered someone else's email loses access.
-- **Anonymous stays anonymous.** `reports.citizen_id` is only used for "my reports". Staff never see which account made a report.
-- **Session lengths.** Residents stay signed in for `RESIDENT_SESSION_DAYS` (30). Staff sessions still end `SESSION_MAX_AGE_HOURS` (12) after signing in, checked in the proxy and on the server.
-
-Google setup: Google Cloud Console → *APIs & Services*.
-- *OAuth consent screen*: app name, support email, and the privacy page `https://<domain>/privatesia`.
-- *Credentials → OAuth client ID*: type *Web application*, authorized redirect URI `https://<domain>/api/auth/callback/google`.
-- Put the two values in Vercel's environment variables and redeploy.
+Older data is kept as it is (no schema change, nothing deleted): accounts with role `USER` from the prototype cannot sign in, and an older report that has an email still gets the status and "was it fixed?" emails. A report the admin records at `/admin/reports/new` can still carry an email.
 
 ## Location: GPS or address, zone always right
 
