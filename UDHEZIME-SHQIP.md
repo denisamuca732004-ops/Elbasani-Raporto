@@ -179,7 +179,9 @@ shfaq gjithmonë (nuk ka më çelës "Shfaq të dhënat demo"). Fshijini para p�
    * `AUTH_SECRET`, që krijohet me `npx auth secret`;
    * `ADMIN_EMAIL`;
    * `CRON_SECRET`;
-   * `MAIL_DRIVER=smtp` dhe të dhënat SMTP;
+   * `MAIL_DRIVER=smtp` dhe të dhënat SMTP. Pa to emailet vetëm shkruhen në log dhe nuk i
+     dërgohen askujt; prandaj ekrani i fundit i raportimit i thotë qytetarit “Numrin jua dërgojmë
+     edhe me email” vetëm kur emailet dërgohen vërtet, ndryshe “Ruajeni ID-në”;
    * për AI: `AI_ENABLED=true` dhe `AI_API_KEY`.
 5. Bëni **Deploy**. Build-i krijon tabelat (`prisma migrate deploy`), shton të dhënat fillestare
    dhe ndërton faqen.

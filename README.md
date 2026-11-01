@@ -239,7 +239,7 @@ The search box sits at the right of the menu bar on every page (on phones, under
    - `AUTH_SECRET` (`npx auth secret`)
    - `ADMIN_EMAIL`
    - `CRON_SECRET`
-   - `MAIL_DRIVER=smtp` with the SMTP settings
+   - `MAIL_DRIVER=smtp` with the SMTP settings (without it e-mails are only logged; the final screen of the form then tells residents to keep their number instead of "we e-mail it to you")
    - optionally `AI_ENABLED=true` with `AI_API_KEY`
 5. Deploy. The build runs `prisma migrate deploy`, then the idempotent seed, then `next build`.
 6. Open `https://<domain>/hyrje/konfigurimi` and create the first admin with `ADMIN_EMAIL`.

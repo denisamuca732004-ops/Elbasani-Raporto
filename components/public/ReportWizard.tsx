@@ -86,7 +86,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [followed, setFollowed] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<ActionFailure | null>(null);
-  const [result, setResult] = useState<{ caseNumber?: string; queued?: boolean } | null>(null);
+  const [result, setResult] = useState<{ caseNumber?: string; queued?: boolean; emailSent?: boolean } | null>(null);
+  const [copied, setCopied] = useState(false);
   const [clientRef] = useState(newClientRef);
   const uploaded = useRef<{ photo: Blob; key: string } | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -311,7 +312,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       const photoKey = await photoKeyFor(photo);
       const res = await call(createReportAction({ ...data, photoKey }));
       rememberMine(res.caseNumber);
-      setResult({ caseNumber: res.caseNumber });
+      setResult({ caseNumber: res.caseNumber, emailSent: res.emailSent });
     } catch (raw) {
       const err = raw as ActionFailure;
       if (err.code === 'NETWORK') {
@@ -378,9 +379,28 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
         ) : (
           <>
             <h2>{t('report.doneTitle')}</h2>
-            <p>{t('report.doneText')}</p>
+            <p>{t('report.doneIdLabel')}</p>
             <span className="case-number">{result.caseNumber}</span>
-            <p className="small muted">{email ? t('report.doneEmail', { email }) : t('report.doneNoEmail')}</p>
+            <button
+              type="button" className="btn btn-sm btn-ghost" style={{ marginBottom: 14 }}
+              onClick={() => navigator.clipboard?.writeText(result.caseNumber ?? '').then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {})}
+            >
+              {copied && <Icon name="check" size={16} />}{copied ? t('report.copied') : t('report.copyNumber')}
+            </button>
+            {/* With an e-mail that is really sent: it is in their inbox. Otherwise (anonymous, phone only,
+                or e-mails not set up yet): this screen is the only place they get it, so it says so clearly. */}
+            {result.emailSent && email ? (
+              <div className="done-note">
+                <Icon name="mail" size={20} />
+                <p>{t('report.doneEmailSent', { email })}</p>
+              </div>
+            ) : (
+              <div className="done-note keep">
+                <Icon name="alert" size={20} />
+                <p><strong>{t('report.doneKeepTitle')}</strong> {contactMode === 'anonymous' ? t('report.doneKeepAnonymous') : t('report.doneKeepContact')}</p>
+              </div>
+            )}
+            {resident && <p className="small muted">{t('resident.savedToAccount')}</p>}
             <div className="row" style={{ justifyContent: 'center' }}>
               <Link className="btn" href={`${trackBase}/${result.caseNumber}`}>{t('report.trackIt')}</Link>
               {resident && <Link className="btn btn-outline" href="/llogaria">{t('resident.myReports')}</Link>}

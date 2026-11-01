@@ -265,6 +265,12 @@ export async function createCitizenReport(raw: unknown, options: { citizenId?: s
     publicStatus: publicStatusOf(created.report.status as Status),
     trackUrl: tpl.trackUrl(created.report.caseNumber),
     duplicateSubmission: created.duplicateSubmission,
+    /**
+     * The number also goes to the resident by e-mail: only when an e-mail address was given AND
+     * e-mails are really sent (MAIL_DRIVER=smtp; with "log" they are only written to the log).
+     * The final screen says "we e-mail it to you" only then, never a promise that is not kept.
+     */
+    emailSent: Boolean(email) && config().mail.driver === 'smtp',
   };
 }
 

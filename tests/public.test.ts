@@ -78,6 +78,8 @@ describe('strict reporting: a report is created only when every step is complete
     const mail = await db.emailLog.findFirst({ where: { template: 'request_received', reportId: report.id } });
     assert.ok(mail);
     assert.match(mail.bodyText, new RegExp(result.caseNumber));
+    // Here e-mails are only logged (MAIL_DRIVER=log): the final screen must not say "we e-mailed it to you".
+    assert.equal(result.emailSent, false);
     assert.equal(mail.status, 'LOGGED', 'the background job delivered it (MAIL_DRIVER=log)');
   });
 
@@ -333,5 +335,24 @@ describe('home page search: open reports on a street', () => {
     const card = (await searchOpenByPlace('skenderbej')).find((c) => c.caseNumber === verified.result.caseNumber)!;
     assert.equal(card.address, 'Sheshi Skënderbej 4');
     assert.equal('contactEmail' in card, false);
+  });
+});
+
+describe('the number on the final screen', () => {
+  test('"we e-mail it to you" only with an e-mail address AND real sending; anonymous: never', async () => {
+    const { resetConfigForTests } = await import('@/lib/server/env');
+    process.env.MAIL_DRIVER = 'smtp';
+    process.env.SMTP_HOST = 'smtp.invalid';
+    resetConfigForTests();
+    try {
+      assert.equal((await createCitizenReport(await citizenData())).emailSent, true);
+      assert.equal((await createCitizenReport(await citizenData({ anonymous: true, contactName: undefined, contactEmail: undefined }))).emailSent, false);
+      assert.equal((await createCitizenReport(await citizenData({ contactEmail: '', contactPhone: '069 123 4567' }))).emailSent, false, 'phone only');
+    } finally {
+      process.env.MAIL_DRIVER = 'log';
+      delete process.env.SMTP_HOST;
+      resetConfigForTests();
+      await db.emailLog.deleteMany({ where: { status: 'QUEUED' } }); // never try to send them
+    }
   });
 });
