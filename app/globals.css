@@ -228,6 +228,19 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand-button); o
 .category-tile:hover, .category-tile.selected { background: var(--bg-tint); color: var(--ink); }
 .category-tile.selected { outline: 3px solid var(--brand-button); outline-offset: -3px; }
 .category-tile svg { color: var(--brand-button); }
+/* Report form, step 1: the chosen category alone, large, with "Ndrysho kategorinë". */
+.category-chosen { display: flex; align-items: center; gap: 18px; padding: 20px 22px; margin-bottom: 18px; border: 2px solid var(--brand-button); border-radius: var(--radius); background: var(--bg-tint); }
+.category-chosen-icon { width: 76px; height: 76px; flex: none; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; color: var(--brand-button); border: 1px solid var(--line); }
+.category-chosen-name { min-width: 0; }
+.category-chosen-name .label { margin: 0; }
+.category-chosen-name h3 { margin: 2px 0 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.category-chosen > .btn { margin-left: auto; flex: none; }
+@media (max-width: 560px) {
+  .category-chosen { flex-wrap: wrap; padding: 16px; gap: 14px; }
+  .category-chosen-icon { width: 60px; height: 60px; }
+  .category-chosen-name h3 { font-size: 1.25rem; }
+  .category-chosen > .btn { margin-left: 0; width: 100%; justify-content: center; }
+}
 .section { padding: 36px 0; }
 .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 3px solid var(--brand-header); padding-bottom: 8px; margin-bottom: 20px; }
 .section-title h2 { margin: 0; }

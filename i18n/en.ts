@@ -119,6 +119,7 @@ const en = {
     steps: { type: 'Type', location: 'Location', photo: 'Photo', details: 'Description', contact: 'Contact', review: 'Review' },
     completeStep: 'Complete this step to continue.',
     chooseType: 'What would you like to report?',
+    categoryLabel: 'Category', changeCategory: 'Change category', chooseProblem: 'Choose the problem:',
     whereTitle: 'Where is it?',
     whereIntro: 'Choose one way: your location on the map, or the address.',
     whereChoose: 'How do you want to show the place?',

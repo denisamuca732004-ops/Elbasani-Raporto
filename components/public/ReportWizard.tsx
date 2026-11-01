@@ -374,16 +374,29 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       {stepName === 'type' && (
         <section>
           <h2>{t('report.chooseType')}</h2>
-          <div className="category-grid" style={{ marginBottom: 20 }}>
-            {catalog.categories.map((c) => (
-              <button key={c.code} type="button" className={`category-tile${category?.code === c.code ? ' selected' : ''}`} aria-pressed={category?.code === c.code} onClick={() => { setCategoryCode(c.code); setTypeId(null); }}>
-                <CategoryIcon icon={c.icon} size={30} />{lang === 'en' ? c.nameEn : c.nameSq}
-              </button>
-            ))}
-          </div>
+          {/* Before a choice: every category. After it: only the chosen one, large, with its problems under it. */}
+          {!category && (
+            <div className="category-grid" style={{ marginBottom: 20 }}>
+              {catalog.categories.map((c) => (
+                <button key={c.code} type="button" className="category-tile" onClick={() => { setCategoryCode(c.code); setTypeId(null); }}>
+                  <CategoryIcon icon={c.icon} size={30} />{lang === 'en' ? c.nameEn : c.nameSq}
+                </button>
+              ))}
+            </div>
+          )}
           {category && (
             <>
-              <h3>{lang === 'en' ? category.nameEn : category.nameSq}</h3>
+              <div className="category-chosen">
+                <span className="category-chosen-icon"><CategoryIcon icon={category.icon} size={44} /></span>
+                <div className="category-chosen-name">
+                  <span className="label">{t('report.categoryLabel')}</span>
+                  <h3>{lang === 'en' ? category.nameEn : category.nameSq}</h3>
+                </div>
+                <button type="button" className="btn btn-sm btn-outline" onClick={() => { setCategoryCode(null); setTypeId(null); }}>
+                  <Icon name="arrowLeft" size={16} />{t('report.changeCategory')}
+                </button>
+              </div>
+              <p className="muted" style={{ margin: '0 0 8px' }}>{t('report.chooseProblem')}</p>
               <ul className="type-list">
                 {category.types.map((ty) => (
                   <li key={ty.id}>

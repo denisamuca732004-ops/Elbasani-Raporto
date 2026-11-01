@@ -119,6 +119,7 @@ const sq = {
     steps: { type: 'Lloji', location: 'Vendndodhja', photo: 'Foto', details: 'Përshkrimi', contact: 'Kontakti', review: 'Kontrolli' },
     completeStep: 'Plotësoni këtë hap për të vazhduar.',
     chooseType: 'Çfarë dëshironi të raportoni?',
+    categoryLabel: 'Kategoria', changeCategory: 'Ndrysho kategorinë', chooseProblem: 'Zgjidhni problemin:',
     whereTitle: 'Ku ndodhet?',
     whereIntro: 'Zgjidhni njërën mënyrë: vendndodhja juaj në hartë, ose adresa.',
     whereChoose: 'Si doni ta tregoni vendin?',
