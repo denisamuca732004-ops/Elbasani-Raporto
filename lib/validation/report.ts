@@ -193,6 +193,29 @@ export const placeQuerySchema = z.strictObject({ q: requiredText(3, 100) });
 export const pointSchema = z.strictObject({ latitude, longitude });
 /** Home page search: a street, an area or a problem ("gropë Rinia"). */
 export const placeSearchSchema = z.strictObject({ q: requiredText(3, 100) });
+/**
+ * "Ndiq raportimin" without the number: the day of the report, its zone, its category, or the name AND
+ * phone number left on it (a name alone is never enough). At least one of them.
+ */
+export const trackSearchSchema = z
+  .strictObject({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data nuk është e saktë.').optional(),
+    zoneId: id.optional(),
+    category: z.string().regex(/^[a-z0-9_.-]{1,60}$/).optional(),
+    name: z.string().trim().max(160).optional(),
+    phone: z.string().trim().max(40).optional(),
+  })
+  .transform((v) => ({ ...v, name: v.name || undefined, phone: v.phone || undefined }))
+  .refine((v) => Boolean(v.date || v.zoneId || v.category || v.name || v.phone), {
+    path: ['date'], message: 'Zgjidhni datën, zonën ose kategorinë, ose shkruani emrin dhe telefonin.',
+  })
+  .refine((v) => Boolean(v.name) === Boolean(v.phone), {
+    path: ['phone'], message: 'Për të kërkuar me emër duhen të dyja: emri dhe numri i telefonit që keni lënë.',
+  })
+  .refine((v) => !v.phone || v.phone.replace(/\D/g, '').length >= 8, { path: ['phone'], message: 'Numri i telefonit nuk është i plotë.' })
+  .refine((v) => !v.name || v.name.length >= 2, { path: ['name'], message: 'Shkruani emrin që keni lënë.' });
+export type TrackSearch = z.output<typeof trackSearchSchema>;
+
 /** "I have this problem too" while reporting: one more supporter (no contact details). */
 export const followSchema = z.strictObject({ caseNumber });
 

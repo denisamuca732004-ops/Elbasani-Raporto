@@ -9,7 +9,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   const [catalog, viewer, guide] = await Promise.all([
     pageCatalog(),
     siteViewer(),
-    // Without the guide the search box still finds report numbers, problems and streets.
+    // Without the guide the help chat still finds report numbers, problems and streets.
     getGuide().catch((err: unknown): GuideItem[] => {
       console.error('[site] guide unavailable', err);
       return [];

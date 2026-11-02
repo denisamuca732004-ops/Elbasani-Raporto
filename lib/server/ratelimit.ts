@@ -21,6 +21,8 @@ const RULES = {
   follow: () => ({ limit: 30, windowSeconds: 3600 }),
   search: () => ({ limit: 120, windowSeconds: 600 }),
   geocode: () => ({ limit: 300, windowSeconds: 600 }),
+  // "Ndiq raportimin" by name + phone: few tries, so a phone number cannot be guessed.
+  trackContact: () => ({ limit: 20, windowSeconds: 3600 }),
   feedback: () => ({ limit: 20, windowSeconds: 3600 }),
   setup: () => ({ limit: 10, windowSeconds: 3600 }),
   register: () => ({ limit: 10, windowSeconds: 3600 }),

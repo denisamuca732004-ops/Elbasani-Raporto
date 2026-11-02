@@ -77,7 +77,7 @@ small, .small { font-size: 0.85rem; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
 
 /* ── Header ── */
-.site-header { background: var(--brand-header); color: #fff; position: sticky; top: 0; z-index: 1100; } /* above the map buttons (Leaflet: 1000), so the search list covers them */
+.site-header { background: var(--brand-header); color: #fff; position: sticky; top: 0; z-index: 1100; } /* above the map buttons (Leaflet: 1000) */
 .site-header a { color: #fff; text-decoration: none; }
 .header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 68px; }
 .brand { display: flex; align-items: center; gap: 12px; }
@@ -102,12 +102,11 @@ small, .small { font-size: 0.85rem; }
 
 @media (max-width: 760px) {
   .menu-btn { display: inline-flex; }
-  /* The search stays visible; the links open with the menu button, under it. */
-  .nav-row { flex-direction: column; align-items: stretch; gap: 0; padding-top: 8px; padding-bottom: 8px; }
-  .nav-links { display: none; flex-direction: column; }
-  .main-nav.open .nav-links { display: flex; margin-top: 6px; }
-  .site-search { width: 100%; order: -1; }
-  .site-search .search-results { left: 0; right: 0; width: auto; max-height: calc(100vh - 150px); }
+  /* The links open with the menu button, under it. */
+  .main-nav { display: none; }
+  .main-nav.open { display: block; }
+  .nav-row { flex-direction: column; align-items: stretch; gap: 0; padding-top: 6px; padding-bottom: 8px; }
+  .nav-links { flex-direction: column; }
   .header-actions .staff-link { display: none; }
   .brand-name { font-size: 0.92rem; }
   .logo-badge img { height: 34px; }
@@ -179,37 +178,54 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand-button); o
 
 /* ── Home ── */
 .hero { background: var(--bg-tint); border-bottom: 1px solid var(--line-soft); padding: 28px 0; }
-/* Search box in the menu bar (components/site/SiteSearch.tsx); the results open under it. */
-.site-search { position: relative; width: 340px; flex: none; padding: 6px 0; color: var(--ink); }
-.site-search input { width: 100%; height: 38px; padding: 6px 38px 6px 12px; font-size: 0.95rem; border: 0; border-radius: var(--radius); background: #fff; color: var(--ink); }
-.site-search input:focus-visible { outline: 3px solid #fff; outline-offset: 1px; }
-.site-search .search-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); pointer-events: none; }
-.search-results { position: absolute; right: 0; top: calc(100% + 2px); width: min(460px, calc(100vw - 32px)); background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 10px 28px rgba(0,0,0,0.18); z-index: 30; overflow: auto; list-style: none; margin: 0; padding: 0; text-align: left; }
-.search-results button { width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line-soft); padding: 12px 16px; font: inherit; color: inherit; cursor: pointer; }
-.search-results button:hover, .search-results button:focus { background: var(--bg-tint); }
-.search-results { max-height: min(520px, calc(100vh - 140px)); }
-.search-results .group-title { font-family: var(--font-head); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); padding: 10px 16px 6px; background: var(--bg-soft); border-bottom: 1px solid var(--line-soft); }
-.search-results .search-note { padding: 10px 16px; font-size: 0.85rem; color: var(--muted); border-bottom: 1px solid var(--line-soft); }
-.search-results a.search-hit { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); color: var(--ink); text-decoration: none; }
-.search-results a.search-hit:hover, .search-results a.search-hit:focus { background: var(--bg-tint); }
-.search-results a.search-hit .where { display: block; font-size: 0.85rem; color: var(--muted); }
-.search-results button.track-hit { display: flex; gap: 10px; align-items: center; font-weight: 600; }
-
-/* "Ask or search": answers from the guide (home search box) */
-.search-results .guide-hit > button { display: flex; gap: 10px; align-items: center; }
-.search-results .guide-hit > button svg { flex: none; color: var(--brand-button); }
-.search-results .guide-hit .chevron { margin-left: auto; color: var(--ink-soft); transition: transform 0.15s; }
-.search-results .guide-hit.open .chevron { transform: rotate(180deg); }
-.search-results .guide-hit.open > button { border-bottom: 0; background: var(--bg-tint); }
-.search-results .guide-hit .guide-answer { padding: 0 16px 14px 44px; background: var(--bg-tint); border-bottom: 1px solid var(--line-soft); }
-.search-results .guide-hit.urgent > button, .search-results .guide-hit.urgent > button svg { color: var(--danger); }
-.search-results .guide-hit.urgent.open > button, .search-results .guide-hit.urgent .guide-answer { background: var(--danger-bg); }
-.search-results button.more-hit { font-family: var(--font-head); font-weight: 700; font-size: 0.8rem; color: var(--brand-button); padding-left: 44px; }
-.search-results .guide-hit.emergency .guide-title { display: flex; gap: 10px; align-items: center; padding: 12px 16px; color: var(--danger); background: var(--danger-bg); }
-.search-results .guide-hit.emergency .guide-title svg { flex: none; }
-.search-results .guide-hit.emergency .guide-answer { background: var(--danger-bg); }
-.search-results .search-note a { font-family: var(--font-head); font-weight: 700; font-size: 0.8rem; }
+/* Answers of the guide (help chat, admin preview) */
 .guide-answer p { white-space: pre-line; margin: 0 0 10px; }
+
+/* "Ndiq raportimin" without the number */
+.track-search h2 { font-size: 1.15rem; margin-bottom: 4px; }
+.track-or { margin: 6px 0 10px; font-family: var(--font-head); font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); }
+.track-results { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+
+/* Help chat: the button at the bottom right and its window (every page of the public site) */
+.chat-fab { position: fixed; right: 18px; bottom: 18px; z-index: 1150; display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border: 0; border-radius: 999px; background: var(--brand-button); color: #fff; font-family: var(--font-head); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); cursor: pointer; }
+.chat-fab:hover { background: var(--brand-button-hover); }
+.chat-panel { position: fixed; right: 18px; bottom: 18px; z-index: 1200; width: 390px; height: min(620px, calc(100vh - 36px)); display: flex; flex-direction: column; background: #fff; border-radius: 14px; box-shadow: 0 14px 44px rgba(0, 0, 0, 0.3); overflow: hidden; }
+.chat-head { display: flex; align-items: center; gap: 10px; padding: 14px 14px 14px 16px; background: var(--brand-header); color: #fff; }
+.chat-head strong { flex: 1; font-family: var(--font-head); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.chat-head button { display: inline-flex; padding: 6px; border: 0; border-radius: 6px; background: transparent; color: #fff; cursor: pointer; }
+.chat-head button:hover { background: rgba(255, 255, 255, 0.15); }
+.chat-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--bg-soft); }
+.chat-msg { max-width: 90%; padding: 11px 14px; border-radius: 14px; line-height: 1.45; font-size: 0.95rem; }
+.chat-msg p { margin: 0 0 8px; }
+.chat-msg > :last-child, .chat-msg .guide-answer > :last-child { margin-bottom: 0; }
+.chat-msg.bot { align-self: flex-start; background: #fff; border: 1px solid var(--line); border-bottom-left-radius: 4px; display: flex; flex-direction: column; gap: 10px; }
+.chat-msg.user { align-self: flex-end; background: var(--brand-button); color: #fff; border-bottom-right-radius: 4px; white-space: pre-wrap; word-break: break-word; }
+.chat-answer strong, .chat-urgent strong { display: block; margin-bottom: 4px; }
+.chat-urgent { padding: 10px 12px; border-radius: 10px; background: var(--danger-bg); color: var(--danger); }
+.chat-urgent .guide-answer p { color: var(--ink); }
+.chat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chat-chips button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--brand-button); border-radius: 999px; background: #fff; color: var(--brand-button); font: inherit; font-size: 0.86rem; line-height: 1.3; text-align: left; cursor: pointer; }
+.chat-chips button:hover { background: var(--bg-tint); }
+.chat-chips button.urgent { border-color: var(--danger); color: var(--danger); }
+.chat-chips button.more { border-style: dashed; }
+.chat-links { list-style: none; display: flex; flex-direction: column; gap: 6px; margin: 6px 0 0; padding: 0; }
+.chat-links a { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; }
+.chat-links a > svg { flex: none; color: var(--brand-button); }
+/* The text takes the line; the status badges move under it when there is no room. */
+.chat-links a > span:first-of-type { flex: 1 1 210px; min-width: 0; }
+.chat-links a:hover, .chat-links a:focus-visible { border-color: var(--brand-button); background: var(--bg-tint); }
+.chat-links .where { display: block; font-size: 0.82rem; color: var(--muted); }
+.chat-form { display: flex; gap: 8px; padding: 10px 10px 6px; border-top: 1px solid var(--line); background: #fff; }
+.chat-form input { flex: 1; min-width: 0; height: 46px; }
+.chat-form button { flex: none; width: 46px; height: 46px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: var(--brand-button); color: #fff; cursor: pointer; }
+.chat-form button:disabled { opacity: 0.45; cursor: default; }
+.chat-note { margin: 0; padding: 0 12px 10px; background: #fff; text-align: center; font-size: 0.75rem; color: var(--muted); }
+@media (max-width: 560px) {
+  .chat-fab { right: 14px; bottom: 14px; padding: 15px; }
+  .chat-fab span { display: none; }
+  /* On phones the window takes the whole screen. */
+  .chat-panel { inset: 0; width: auto; height: auto; border-radius: 0; }
+}
 
 
 /* Admin: search guide */
@@ -269,14 +285,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand-button); o
 @media (prefers-reduced-motion: reduce) { .switch-track, .switch-track::after { transition: none; } }
 .frequent-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 640px) { .frequent-list { grid-template-columns: 1fr 1fr; } }
-.frequent-list a { display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink); text-decoration: none; }
-.frequent-list a:hover, .frequent-list a:focus-visible { border-color: var(--brand-button); background: var(--bg-tint); color: var(--ink); }
+.frequent-list li { display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
 .frequent-icon { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg-tint); color: var(--brand-button); display: flex; align-items: center; justify-content: center; }
 .frequent-name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .frequent-name strong { font-size: 1.05rem; line-height: 1.3; }
 .frequent-name span { font-size: 0.85rem; color: var(--muted); }
-.frequent-list a > svg:last-child { flex: none; color: var(--muted); }
-.frequent-all { margin-top: 18px; text-align: center; }
+.frequent-count { flex: none; max-width: 40%; text-align: right; font-size: 0.82rem; line-height: 1.3; color: var(--ink-soft); }
 .case-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .case-card { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff; display: flex; flex-direction: column; text-decoration: none; color: var(--ink); }
 .case-card:hover { border-color: var(--brand-button); color: var(--ink); }

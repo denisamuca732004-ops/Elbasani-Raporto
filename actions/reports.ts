@@ -28,7 +28,7 @@ import { checkPhoto } from '@/lib/server/services/photoCheck';
 import { extractFromText } from '@/lib/server/services/triage';
 import {
   assignSchema, descriptionCheckSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoCheckSchema,
-  photoVisibilitySchema, placeQuerySchema, placeSearchSchema, pointSchema,
+  photoVisibilitySchema, placeQuerySchema, placeSearchSchema, pointSchema, trackSearchSchema,
   prioritySchema, rejectSchema, reportUpdateSchema, resolveSchema, staffReportSchema, statusChangeSchema, testFlagSchema,
   transferDecisionSchema, transferRequestSchema,
 } from '@/lib/validation/report';
@@ -95,6 +95,17 @@ export async function placeAtAction(input: unknown) {
     await enforceRateLimit('geocode', await clientIp());
     const { latitude, longitude } = parseInput(pointSchema, input);
     return placeAt(latitude, longitude);
+  });
+}
+
+/** "Ndiq raportimin" without the number: by date, zone, category, or name + phone. */
+export async function findReportsAction(input: unknown) {
+  return run(async () => {
+    const ip = await clientIp();
+    await enforceRateLimit('search', ip);
+    const query = parseInput(trackSearchSchema, input);
+    if (query.name && query.phone) await enforceRateLimit('trackContact', ip);
+    return publicReports.findReports(query);
   });
 }
 

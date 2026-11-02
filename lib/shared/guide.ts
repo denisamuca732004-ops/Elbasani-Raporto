@@ -22,7 +22,7 @@ export interface GuideItem {
   emergency: boolean;
 }
 
-/** How many common questions the search box lists when it is clicked, before anything is typed. */
+/** How many common questions the help chat offers as buttons when it opens. */
 export const COMMON_COUNT = 6;
 
 /**

@@ -10,7 +10,7 @@ import type { z } from 'zod';
 import { FINAL_STATUSES, LIMITS, OPEN_STATUSES, PUBLIC_LISTED_STATUSES, isOtherChoice, publicStatusOf, type Status } from '@/lib/shared/domain';
 import type { FieldError } from '@/lib/shared/result';
 import type { MapPoint, PublicCard, PublicCase } from '@/lib/shared/types';
-import { citizenReportShape, type FeedbackInput, type MapQuery, type RecentQuery } from '@/lib/validation/report';
+import { citizenReportShape, type FeedbackInput, type MapQuery, type RecentQuery, type TrackSearch } from '@/lib/validation/report';
 import { check } from '@/lib/validation/zod';
 import type { RequestType } from '@/lib/generated/prisma/client';
 import { CACHE_KEYS, cached } from '../cache';
@@ -331,6 +331,49 @@ export async function searchOpenByPlace(q: string, limit = 6): Promise<PublicCar
   });
 }
 
+/** How many reports "Ndiq raportimin" lists at most (the newest). */
+export const TRACK_SEARCH_LIMIT = 20;
+
+/**
+ * "Ndiq raportimin" without the number: reports by the day they were made (Albanian time), their zone,
+ * their category, or the name AND phone number left on them; criteria combine. Only what the public may
+ * see is returned (never the contact). Without the name and phone, only what the public map shows
+ * (no rejected reports); with them, the resident's own reports in any status. A name alone is never
+ * accepted (trackSearchSchema), or anyone could find who reported what: the phone must match too
+ * (its last 9 digits, so "069…" and "+355 69…" are the same), and every word of the name.
+ */
+export async function findReports(q: TrackSearch): Promise<PublicCard[]> {
+  const byContact = Boolean(q.name && q.phone);
+  const conditions: Prisma.Sql[] = [];
+  if (!byContact) conditions.push(Prisma.sql`r.status::text IN (${Prisma.join([...PUBLIC_LISTED_STATUSES])})`);
+  if (q.date) conditions.push(Prisma.sql`(r.created_at AT TIME ZONE ${config().rules.timezone}::text)::date = ${q.date}::date`);
+  if (q.zoneId) conditions.push(Prisma.sql`r.neighbourhood_id = ${q.zoneId}`);
+  if (q.category) conditions.push(Prisma.sql`c.code = ${q.category}`);
+  if (byContact) {
+    const digits = q.phone!.replace(/\D/g, '');
+    const tail = digits.slice(-9);
+    conditions.push(Prisma.sql`r.anonymous = false`);
+    conditions.push(Prisma.sql`right(regexp_replace(coalesce(r.contact_phone, ''), '[^0-9]', '', 'g'), ${tail.length}) = ${tail}`);
+    const words = [...new Set(plainText(q.name!).split(/[^a-z0-9]+/).filter((w) => w.length >= 2))].slice(0, 5);
+    if (!words.length) return [];
+    for (const w of words) conditions.push(Prisma.sql`${plainSql(Prisma.sql`r.contact_name`)} LIKE ${`%${likeEscape(w)}%`} ESCAPE '\'`);
+  }
+  if (!conditions.length) return [];
+  const rows = await db.$queryRaw<Array<{ id: string }>>`
+    SELECT r.id FROM reports r
+    JOIN categories c ON c.id = r.category_id
+    WHERE ${Prisma.join(conditions, ' AND ')}
+    ORDER BY r.created_at DESC
+    LIMIT ${TRACK_SEARCH_LIMIT}`;
+  if (!rows.length) return [];
+  const found = await db.report.findMany({ where: { id: { in: rows.map((r) => r.id) } }, include: publicInclude });
+  const byId = new Map(found.map((r) => [r.id, r]));
+  return rows.flatMap((r) => {
+    const report = byId.get(r.id);
+    return report ? [toPublicCard(report)] : [];
+  });
+}
+
 export async function followReport(caseNumber: string) {
   const report = await db.report.findUnique({ where: { caseNumber }, select: { id: true, status: true } });
   if (!report) throw notFound('Raportimi nuk u gjet.');
@@ -366,12 +409,12 @@ export const FREQUENT_COUNT = 4;
 const COMMON_TYPES = ['waste.overflowing_bin', 'streets.pothole', 'lighting.light_out', 'animals.stray_dog', 'waste.illegal_dumping', 'water.leak'];
 
 /**
- * "Raportohen më shpesh" on the home page: the report types reported most in the last 90 days
- * (rejected reports not counted), each a shortcut straight into the form. While there are few
- * reports the list is completed with common problems. Never a "Tjetër" choice or a type that is
- * hidden. Cached for 10 minutes.
+ * "Raportohen më shpesh" on the home page, for information only (reports start from a category):
+ * the report types reported most in the last 90 days (rejected reports not counted), with how many.
+ * While there are few reports the list is completed with common problems (count 0). Never a
+ * "Tjetër" choice or a type that is hidden. Cached for 10 minutes.
  */
-export async function frequentTypeIds(): Promise<number[]> {
+export async function frequentTypes(): Promise<Array<{ id: number; count: number }>> {
   return cached(CACHE_KEYS.frequentTypes, 600, async () => {
     const since = new Date(Date.now() - 90 * 86_400_000);
     const [counts, types] = await Promise.all([
@@ -385,12 +428,12 @@ export async function frequentTypeIds(): Promise<number[]> {
       db.requestType.findMany({ where: { active: true, category: { active: true } }, select: { id: true, code: true, category: { select: { code: true } } } }),
     ]);
     const usable = new Map(types.filter((t) => !isOtherChoice(t.code) && t.category.code !== 'other').map((t) => [t.id, t]));
-    const ids = counts.map((c) => c.requestTypeId).filter((id) => usable.has(id));
+    const list = counts.filter((c) => usable.has(c.requestTypeId)).map((c) => ({ id: c.requestTypeId, count: c._count._all }));
     for (const code of COMMON_TYPES) {
       const type = types.find((t) => t.code === code);
-      if (type && usable.has(type.id) && !ids.includes(type.id)) ids.push(type.id);
+      if (type && usable.has(type.id) && !list.some((l) => l.id === type.id)) list.push({ id: type.id, count: 0 });
     }
-    return ids.slice(0, FREQUENT_COUNT);
+    return list.slice(0, FREQUENT_COUNT);
   });
 }
 

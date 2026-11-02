@@ -56,13 +56,15 @@ describe('the default guide', () => {
     assert.deepEqual(list.map((g) => codeOf.get(g.id)).slice(0, 3), ['how_to_report', 'how_long', 'privacy']);
   });
 
-  test('no starting answer sends residents to the removed "Ndiq raportimin" page', () => {
+  test('the answers lead to what exists: "Ndiq raportimin" and the chat, never the old search box', () => {
     for (const g of guide) {
-      assert.notEqual(g.action, 'TRACK', g.questionSq);
-      assert.doesNotMatch(`${g.answerSq} ${g.answerEn}`, /Ndiq raportimin|Track a report/);
+      assert.doesNotMatch(`${g.answerSq} ${g.answerEn}`, /kutinë e kërkimit|këtë kuti|search box|this box/, g.questionSq);
       // Nor to the "I have this problem too" button, which the report page no longer has.
       assert.doesNotMatch(`${g.answerSq} ${g.answerEn}`, /Edhe unë e kam|I have this problem too/);
     }
+    const byCode = (code: string) => guide.find((g) => codeOf.get(g.id) === code)!;
+    assert.equal(byCode('track').action, 'TRACK');
+    assert.equal(byCode('lost_number').action, 'TRACK');
   });
 });
 

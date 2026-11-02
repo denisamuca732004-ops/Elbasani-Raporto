@@ -198,16 +198,20 @@ When "Vazhdo" is pressed at the description step ([`lib/server/services/descript
 
 E-mail addresses and phone numbers are masked before the text goes to the AI. One call per text and type, cached; rate limit `textCheck` per IP.
 
-## Search guide ("Ask or search")
+## Help chat (the guide)
 
-The search box sits at the right of the menu bar on every page (on phones, under the logo). It answers questions as well as finding reports. The menu has no "Track a report" or "Help" item: a report is tracked with the "Ndiq raportimin" button on the home page (`/ndiq`) or by typing its number in this box.
+A round **chat button** sits at the bottom right of every page of the public site ([`components/site/ChatHelp.tsx`](components/site/ChatHelp.tsx)); on phones the chat takes the whole screen. It replaced the search box of the menu. It answers, instantly and without AI:
+- a **question** ("si raportoj", "sa zgjat") with the guide's answer and its button; emergencies ("zjarr") show the numbers first;
+- a **report number** (EL-2026-00042) with a link to its progress;
+- a **problem** ("gropë") with its category, where the report starts (reports start only from a category);
+- a **street or area** ("Rinia") with the OPEN reports there, so a problem is not reported twice.
 
-- **Where the answers live.** In the database (`guide_entries`), in Albanian and English. The seed adds 17 starting questions, including the emergency numbers (112, 127, 128, 129). The admin edits them at `/admin/guide` (not in the menu): add, edit, order, hide, and try the search as a resident would. Running the seed again never overwrites those changes.
+When it opens it offers the common questions as buttons: the first `COMMON_COUNT` (6) active non-emergency questions in the admin's order, "All questions", then the emergency entry. They are offered again when nothing was found.
+
+- **Where the answers live.** In the database (`guide_entries`), in Albanian and English. The seed adds 17 starting questions, including the emergency numbers (112, 127, 128, 129). The admin edits them at `/admin/guide` (not in the menu): add, edit, order, hide, and try them as a resident would. Running the seed again never overwrites those changes.
 - **How matching works.** [`lib/shared/guide.ts`](lib/shared/guide.ts) runs in the browser: no AI, no request, instant. It ignores accents and common words ("si", "a", "një"), and accepts different word endings ("gropa" / "gropë").
-  - Emergencies always come first, already open.
-  - When the text names a problem ("si raportoj një gropë"), the report type comes before the answers.
 - **Buttons under answers.** Each answer has one button from a fixed list: report, track, map, statistics, privacy, call 112, or none. The admin cannot type a link, and answers are plain text, never HTML.
-- **Where answers show.** Only in the search box. Clicked before anything is typed, it lists the common questions: the first `COMMON_COUNT` (6) active non-emergency questions in the admin's order, "See all questions", then the emergency entry; each opens its answer in place. The admin page marks those 6. While typing, the matching answers show. `/ndihme` (the old Help page) redirects to the home page; `/ndiq` and `/ndiq/EL-…` still work for old links and emails. Migration `20261030120000_search_in_menu` removes the "Track" button from the starting answers, unless the admin changed them.
+- `/ndihme` (the old Help page) redirects to the home page. Migration `20261102140000_help_chat` rewords the starting answers that spoke of the search box, unless the admin changed them.
 - **AI later (phase 2).** An AI assistant could answer free questions using only these answers, after the Municipality approves it and with `AI_API_KEY` in Vercel.
 
 ## Deploy on Vercel

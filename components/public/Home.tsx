@@ -1,10 +1,9 @@
 'use client';
 /**
- * Home page: the "Report a problem" and "Track a report" buttons, the
- * categories, the latest public reports, the problems reported most often
- * (each a shortcut straight into the form) and how it works. Questions, report numbers, problems and streets are also
- * searched in the box at the top right of the menu
- * (components/site/SiteSearch.tsx), on every page.
+ * Home page: the "Track a report" button, the categories (a report starts
+ * ONLY by choosing one), the latest public reports, the problems reported
+ * most often (for information, not links) and how it works. Questions are
+ * answered by the help chat at the bottom right (components/site/ChatHelp.tsx).
  */
 import Link from 'next/link';
 import Icon from '@/components/Icon';
@@ -14,19 +13,18 @@ import { useI18n } from '@/i18n';
 import type { PublicCard } from '@/lib/shared/types';
 import { CaseCard } from './Cases';
 
-export default function Home({ recent, frequent = [] }: { recent: PublicCard[] | null; frequent?: number[] }) {
+export default function Home({ recent, frequent = [] }: { recent: PublicCard[] | null; frequent?: Array<{ id: number; count: number }> }) {
   const { t, lang } = useI18n();
   const { catalog, typeById } = useCatalog();
   // Only types still in the catalogue (active), in the order the server counted them.
-  const frequentTypes = frequent.map((id) => typeById(id)).filter((ty) => ty !== undefined);
+  const frequentTypes = frequent.flatMap(({ id, count }) => { const ty = typeById(id); return ty ? [{ ty, count }] : []; });
 
   return (
     <>
       <section className="hero">
         <div className="container">
           <div className="hero-actions">
-            <Link href="/raporto" className="btn btn-lg"><Icon name="plus" size={20} />{t('home.reportButton')}</Link>
-            <Link href="/ndiq" className="btn btn-lg btn-outline"><Icon name="search" size={20} />{t('home.trackButton')}</Link>
+            <Link href="/ndiq" className="btn btn-lg"><Icon name="search" size={20} />{t('home.trackButton')}</Link>
           </div>
         </div>
       </section>
@@ -62,23 +60,19 @@ export default function Home({ recent, frequent = [] }: { recent: PublicCard[] |
         <section className="section">
           <div className="container">
             <div className="section-title"><h2>{t('home.frequent')}</h2></div>
+            {/* Information only: a report starts by choosing a category above. */}
             <ul className="frequent-list">
-              {frequentTypes.map((ty) => (
+              {frequentTypes.map(({ ty, count }) => (
                 <li key={ty.id}>
-                  <Link href={`/raporto?kategoria=${ty.category.code}&lloji=${ty.id}`}>
-                    <span className="frequent-icon" aria-hidden="true"><CategoryIcon icon={ty.category.icon} size={24} /></span>
-                    <span className="frequent-name">
-                      <strong>{lang === 'en' ? ty.nameEn : ty.nameSq}</strong>
-                      <span>{lang === 'en' ? ty.category.nameEn : ty.category.nameSq}</span>
-                    </span>
-                    <Icon name="chevronRight" size={20} />
-                  </Link>
+                  <span className="frequent-icon" aria-hidden="true"><CategoryIcon icon={ty.category.icon} size={24} /></span>
+                  <span className="frequent-name">
+                    <strong>{lang === 'en' ? ty.nameEn : ty.nameSq}</strong>
+                    <span>{lang === 'en' ? ty.category.nameEn : ty.category.nameSq}</span>
+                  </span>
+                  {count > 0 && <span className="frequent-count">{t('home.frequentCount', { n: count })}</span>}
                 </li>
               ))}
             </ul>
-            <div className="frequent-all">
-              <Link href="/raporto" className="btn btn-outline">{t('home.allCategories')}</Link>
-            </div>
           </div>
         </section>
       )}

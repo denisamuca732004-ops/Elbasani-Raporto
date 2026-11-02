@@ -12,9 +12,9 @@ export const CACHE_KEYS = {
   catalog: 'catalog:v4', // v4: lagje and villages carry their point (the "Vendndodhja" search)
   departments: 'departments:active:v1',
   settings: 'settings:v1',
-  guide: 'guide:active:v3', // v3: the "Përfshi kontaktin" switch
+  guide: 'guide:active:v4', // v4: answers for the help chat and the wider "Ndiq raportimin"
   publicStats: 'stats:public:v1',
-  frequentTypes: 'home:frequent-types:v1',
+  frequentTypes: 'home:frequent-types:v2', // v2: with the number of reports
   userState: (userId: string) => `user:${userId}:state:v3`,
 } as const;
 

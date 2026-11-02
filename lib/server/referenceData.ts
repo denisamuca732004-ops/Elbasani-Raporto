@@ -198,7 +198,7 @@ export const ZONES: Array<{ code: string; name: string; localities: string[] }> 
 ];
 
 /**
- * The guide of the search box ("Ask or search") at the top of the menu. A
+ * The guide of the help chat (the button at the bottom right of every page). A
  * starting set: the admin edits, hides or adds questions in
  * Administrimi → Udhëzuesi, and the seed never overwrites those changes.
  * Answers are plain text; a line break starts a new line.
@@ -219,8 +219,8 @@ export const GUIDE_ENTRIES: Array<{
     code: 'how_to_report', sortOrder: 10, action: 'REPORT',
     questionSq: 'Si raportoj një problem?',
     questionEn: 'How do I report a problem?',
-    answerSq: 'Shtypni “Raporto një problem” dhe ndiqni 6 hapat: lloji i problemit, vendi në hartë, fotoja, përshkrimi, kontakti (ose anonim) dhe kontrolli. Në fund merrni një numër raportimi, p.sh. EL-2026-00042, me të cilin e ndiqni.',
-    answerEn: 'Press “Report a problem” and follow the 6 steps: type of problem, place on the map, photo, description, contact (or anonymous) and review. At the end you get a report number, e.g. EL-2026-00042, to follow it.',
+    answerSq: 'Zgjidhni kategorinë e problemit në faqen kryesore dhe ndiqni 6 hapat: lloji i problemit, vendi në hartë, fotoja, përshkrimi, kontakti (ose anonim) dhe kontrolli. Në fund merrni një numër raportimi, p.sh. EL-2026-00042, me të cilin e ndiqni.',
+    answerEn: 'Choose the category of the problem on the home page and follow the 6 steps: type of problem, place on the map, photo, description, contact (or anonymous) and review. At the end you get a report number, e.g. EL-2026-00042, to follow it.',
     keywords: 'raportoj, raportim, raporto, dërgoj, ankesë, ankohem, denoncoj, sinjalizoj, report, complaint, submit',
   },
   {
@@ -256,11 +256,11 @@ export const GUIDE_ENTRIES: Array<{
     keywords: 'llogari, regjistrim, regjistrohem, fjalëkalim, profil, email, emaili, hyr, falas, paguaj, pagesë, kushton, account, register, sign up, sign in, password, login, free, pay, cost',
   },
   {
-    code: 'track', sortOrder: 60, action: 'NONE',
+    code: 'track', sortOrder: 60, action: 'TRACK',
     questionSq: 'Si e ndjek raportimin tim?',
     questionEn: 'How do I follow my report?',
-    answerSq: 'Shkruani numrin e raportimit (p.sh. EL-2026-00042) në kutinë e kërkimit, lart në menu. Hapet raportimi me statusin, sektorin dhe historikun.',
-    answerEn: 'Type the report number (e.g. EL-2026-00042) in the search box at the top of the menu. The report opens with its status, the department and the history.',
+    answerSq: 'Shtypni “Ndiq raportimin” në faqen kryesore dhe shkruani numrin e raportimit (p.sh. EL-2026-00042), ose shkruajeni këtu në chat. Hapet raportimi me statusin, sektorin dhe historikun.',
+    answerEn: 'Press “Track a report” on the home page and type the report number (e.g. EL-2026-00042), or type it here in the chat. The report opens with its status, the department and the history.',
     keywords: 'ndjek, ndiq, ndjekje, ecuria, ecurinë, gjendja, statusi, gjurmoj, njoftim, track, follow, progress, status, notification',
   },
   {
@@ -299,16 +299,16 @@ export const GUIDE_ENTRIES: Array<{
     code: 'already_reported', sortOrder: 110, action: 'MAP',
     questionSq: 'Problemi është raportuar tashmë. Çfarë bëj?',
     questionEn: 'The problem is already reported. What do I do?',
-    answerSq: 'Shkruani rrugën në këtë kuti ose shikoni hartën. Nëse e gjeni problemin, nuk ka nevojë ta raportoni përsëri: hapeni dhe ndiqni ecurinë e tij.',
-    answerEn: 'Type the street in this box or look at the map. If you find the problem, there is no need to report it again: open it and follow its progress.',
+    answerSq: 'Shkruani rrugën këtu në chat ose shikoni hartën. Nëse e gjeni problemin, nuk ka nevojë ta raportoni përsëri: hapeni dhe ndiqni ecurinë e tij.',
+    answerEn: 'Type the street here in the chat or look at the map. If you find the problem, there is no need to report it again: open it and follow its progress.',
     keywords: 'tashmë, njëjti, njëjtin, dyfishtë, dublikatë, mbështes, edhe unë, dikush tjetër, already, same, duplicate, someone else, support',
   },
   {
-    code: 'lost_number', sortOrder: 120, action: 'MAP',
+    code: 'lost_number', sortOrder: 120, action: 'TRACK',
     questionSq: 'Humba numrin e raportimit. Çfarë bëj?',
     questionEn: 'I lost my report number. What can I do?',
-    answerSq: 'Shkruani rrugën në këtë kuti ose kërkojeni në hartë: raportimet e verifikuara shfaqen aty me numrin e tyre. Herën tjetër kopjojeni numrin ose bëni një screenshot të ekranit të fundit.',
-    answerEn: 'Type the street in this box or look on the map: verified reports are shown there with their number. Next time, copy the number or take a screenshot of the last screen.',
+    answerSq: 'Te “Ndiq raportimin” kërkojeni sipas datës kur e raportuat, zonës ose kategorisë, ose me emrin dhe numrin e telefonit që keni lënë. Herën tjetër kopjojeni numrin ose bëni një screenshot të ekranit të fundit.',
+    answerEn: 'Under “Track a report”, look for it by the date you reported it, the area or the category, or with the name and phone number you left. Next time, copy the number or take a screenshot of the last screen.',
     keywords: 'humba, humbur, harrova, numrin, numri, kodi, lost, forgot, number, code',
   },
   {

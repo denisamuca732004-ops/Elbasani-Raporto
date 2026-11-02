@@ -1,9 +1,9 @@
 'use client';
 /**
  * Admin: the search guide. The questions and answers residents get while
- * typing in the search box at the top of the menu. The admin adds, edits,
+ * typing in the help chat (the button at the bottom right). The admin adds, edits,
  * orders and hides them, and can try the search exactly as a resident
- * would (same matching code as the search box).
+ * would (same matching code as the chat).
  */
 import { useMemo, useState, type FormEvent } from 'react';
 import { createGuideEntryAction, updateGuideEntryAction } from '@/actions/admin';
@@ -129,7 +129,7 @@ export default function Guide({ items }: { items: GuideAdminRow[] }) {
   const { busy, error, notice, run } = useAdminAction();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
-  // Listed when a resident clicks the search box (same rule as the box itself).
+  // Offered as buttons when a resident opens the chat (same rule as the chat itself).
   const listed = new Set(commonQuestions(items).map((i) => i.id));
   const nextOrder = String(Math.min(9999, Math.max(0, ...items.map((i) => i.sortOrder)) + 10));
 

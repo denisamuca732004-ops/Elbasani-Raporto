@@ -1,6 +1,6 @@
 /**
  * The search guide ("Ask or search"): the questions and answers residents
- * get while typing in the search box at the top of the menu, on every page.
+ * get in the help chat (the button at the bottom right), on every page.
  * The public list (active entries only) is cached; every admin change clears
  * the cache, so an edit or a hidden question shows on the site at once.
  */

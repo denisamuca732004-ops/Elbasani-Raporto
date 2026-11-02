@@ -7,7 +7,7 @@ import { isOtherChoice } from '@/lib/shared/domain';
 import { getPublicSettings } from '@/lib/server/services/settings';
 import { brandNames } from '@/lib/shared/branding';
 import {
-  FREQUENT_COUNT, createCitizenReport, findNearbyOpen, followReport, frequentTypeIds, getFeedbackInfo, getPublicCase, getPublicPhoto, listRecent, mapPoints,
+  FREQUENT_COUNT, createCitizenReport, findNearbyOpen, findReports, followReport, frequentTypes, getFeedbackInfo, getPublicCase, getPublicPhoto, listRecent, mapPoints,
   searchOpenByPlace, submitCitizenFeedback,
 } from '@/lib/server/services/publicReport';
 import { changeStatus, getReport, rejectReport, resolveReport } from '@/lib/server/services/report';
@@ -15,7 +15,7 @@ import { publicStats } from '@/lib/server/services/stats';
 import { runDaily } from '@/lib/server/services/maintenance';
 import { openStoredImage } from '@/lib/server/storage';
 import { invalidate, CACHE_KEYS } from '@/lib/server/cache';
-import { caseNumber as caseNumberSchema, mapSchema, recentSchema } from '@/lib/validation/report';
+import { caseNumber as caseNumberSchema, mapSchema, recentSchema, trackSearchSchema } from '@/lib/validation/report';
 import type { Principal } from '@/lib/shared/types';
 import {
   adminSession, citizenData, db, drainJobs, ELBASAN, jpeg, rejects, setupTestDb, submitReport, teardown, typeId, uploadPhoto, withOlderEmail,
@@ -366,7 +366,7 @@ describe('home page search: open reports on a street', () => {
   });
 });
 
-describe('"Raportohen më shpesh" on the home page', () => {
+describe('"Raportohen më shpesh" on the home page (information only)', () => {
   test('the types reported most come first, completed with common problems; never "Tjetër", a rejected or a hidden one', async () => {
     const lightOut = await typeId('lighting.light_out');
     const stray = await typeId('animals.stray_dog');
@@ -380,8 +380,11 @@ describe('"Raportohen më shpesh" on the home page', () => {
     }
 
     await invalidate(CACHE_KEYS.frequentTypes);
-    const ids = await frequentTypeIds();
+    const list = await frequentTypes();
+    const ids = list.map((f) => f.id);
     assert.equal(ids.length, FREQUENT_COUNT);
+    assert.equal(list.find((f) => f.id === stray)?.count, 3, 'with how many times it was reported');
+    assert.equal(list.find((f) => f.id === lightOut)?.count, 0, 'a common problem added to fill the list has no reports');
     assert.equal(new Set(ids).size, ids.length, 'no type twice');
     const pothole = await typeId('streets.pothole'); // the type of most reports in this file
     assert.deepEqual(ids.slice(0, 2), [pothole, stray], 'most reported first');
@@ -392,10 +395,53 @@ describe('"Raportohen më shpesh" on the home page', () => {
     await db.requestType.update({ where: { id: stray }, data: { active: false } });
     try {
       await invalidate(CACHE_KEYS.frequentTypes);
-      assert.ok(!(await frequentTypeIds()).includes(stray), 'a hidden type is never offered');
+      assert.ok(!(await frequentTypes()).some((f) => f.id === stray), 'a hidden type is never offered');
     } finally {
       await db.requestType.update({ where: { id: stray }, data: { active: true } });
       await invalidate(CACHE_KEYS.frequentTypes);
     }
+  });
+});
+
+describe('"Ndiq raportimin" without the number', () => {
+  const search = (input: Record<string, unknown>) => findReports(trackSearchSchema.parse(input));
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Tirane' }).format(new Date());
+
+  test('by day, zone and category (combined), only what the public map shows; never the contact', async () => {
+    const mine = await submitReport({ requestTypeId: await typeId('waste.overflowing_bin'), contactName: 'Arta Hoxhë', contactPhone: '069 222 3344', description: 'Kontejneri është plot prej tri ditësh.' });
+    const other = await submitReport({ anonymous: true, contactName: undefined, contactPhone: undefined });
+    const city = await db.neighbourhood.findFirstOrThrow({ where: { code: 'elbasan' } });
+
+    const byDayAndCategory = (await search({ date: today, category: 'waste' })).map((c) => c.caseNumber);
+    assert.ok(byDayAndCategory.includes(mine.result.caseNumber));
+    assert.ok(!byDayAndCategory.includes(other.result.caseNumber), 'another category');
+    const byZone = (await search({ zoneId: city.id })).map((c) => c.caseNumber);
+    assert.ok(byZone.includes(mine.result.caseNumber) && byZone.includes(other.result.caseNumber));
+    assert.deepEqual(await search({ date: '2020-01-01' }), [], 'nothing reported that day');
+    const text = JSON.stringify(await search({ date: today }));
+    assert.ok(!text.includes('222 3344') && !text.includes('Hoxh'), 'the contact is never returned');
+
+    await rejectReport(admin, other.report.id, { reason: 'Raportim i dyfishtë.' });
+    assert.ok(!(await search({ zoneId: city.id })).some((c) => c.caseNumber === other.result.caseNumber), 'a rejected report is not public');
+  });
+
+  test('by name AND phone: the resident’s own reports, any status, phone in any format; a name alone is refused', async () => {
+    const first = await submitReport({ contactName: 'Besnik Çela', contactPhone: '068 555 1122' });
+    const rejected = await submitReport({ contactName: 'Besnik Çela', contactPhone: '+355 68 555 1122' });
+    await rejectReport(admin, rejected.report.id, { reason: 'Nuk është problem publik.' });
+    const stranger = await submitReport({ contactName: 'Besnik Çela', contactPhone: '069 000 1111' });
+
+    const found = (await search({ name: 'besnik cela', phone: '+355685551122' })).map((c) => c.caseNumber);
+    assert.ok(found.includes(first.result.caseNumber));
+    assert.ok(found.includes(rejected.result.caseNumber), 'also a rejected one: it is theirs');
+    assert.ok(!found.includes(stranger.result.caseNumber), 'the same name with another phone is someone else');
+    assert.deepEqual((await search({ name: 'Besnik', phone: '068 555 1122' })).length, 2, 'the first name is enough with the phone');
+    assert.deepEqual(await search({ name: 'Arben Çela', phone: '068 555 1122' }), [], 'every word of the name must match');
+    assert.deepEqual(await search({ name: 'Besnik Çela', phone: '068 555 9999' }), []);
+
+    assert.equal(trackSearchSchema.safeParse({ name: 'Besnik Çela' }).success, false, 'a name alone is never accepted');
+    assert.equal(trackSearchSchema.safeParse({ phone: '068 555 1122' }).success, false, 'nor a phone alone');
+    assert.equal(trackSearchSchema.safeParse({ name: 'Besnik', phone: '555' }).success, false, 'a phone that is too short');
+    assert.equal(trackSearchSchema.safeParse({}).success, false, 'at least one criterion');
   });
 });

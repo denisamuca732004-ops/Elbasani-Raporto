@@ -1,7 +1,7 @@
 'use client';
 /**
- * Public site frame: green header like elbasani.gov.al (menu on the left, the
- * search box on the right, on every page), dark green footer, offline bar.
+ * Public site frame: green header like elbasani.gov.al, dark green footer,
+ * offline bar, and the help chat (the button at the bottom right, every page).
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -12,7 +12,7 @@ import { useI18n } from '@/i18n';
 import { flushQueue, pendingCount } from '@/lib/client/offlineQueue';
 import { brandNames } from '@/lib/shared/branding';
 import type { GuideItem } from '@/lib/shared/guide';
-import SiteSearch from './SiteSearch';
+import ChatHelp from './ChatHelp';
 
 /** The platform's and the municipality's names in the language chosen (EN / SQ). */
 export function useBrandNames() {
@@ -85,7 +85,7 @@ function AccountLink() {
   return <Link href="/admin" className="account-link"><Icon name="dashboard" size={16} /><span>{t('nav.panel')}</span></Link>;
 }
 
-export function SiteHeader({ guide = [] }: { guide?: GuideItem[] }) {
+export function SiteHeader() {
   const { t } = useI18n();
   const names = useBrandNames();
   const [open, setOpen] = useState(false);
@@ -117,7 +117,6 @@ export function SiteHeader({ guide = [] }: { guide?: GuideItem[] }) {
             {links.map(([to, label]) => <li key={to}><NavLink href={to}>{label}</NavLink></li>)}
             {open && <li><NavLink href="/hyrje">{t('nav.staff')}</NavLink></li>}
           </ul>
-          <SiteSearch guide={guide} />
         </div>
       </nav>
     </header>
@@ -161,16 +160,17 @@ export function SiteFooter() {
   );
 }
 
-/** guide: the questions the search box answers (empty on the "page not found" page: it still finds report numbers, problems and streets). */
+/** guide: the questions the help chat answers (empty on the "page not found" page: it still finds report numbers, problems and streets). */
 export default function SiteFrame({ children, guide }: { children: ReactNode; guide?: GuideItem[] }) {
   const { t } = useI18n();
   return (
     <>
       <a href="#main" className="sr-only">{t('common.skip')}</a>
-      <SiteHeader guide={guide} />
+      <SiteHeader />
       <OfflineBar />
       <main id="main">{children}</main>
       <SiteFooter />
+      <ChatHelp guide={guide ?? []} />
     </>
   );
 }

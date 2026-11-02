@@ -1,5 +1,5 @@
 import Home from '@/components/public/Home';
-import { frequentTypeIds, listRecent } from '@/lib/server/services/publicReport';
+import { frequentTypes, listRecent } from '@/lib/server/services/publicReport';
 import type { PublicCard } from '@/lib/shared/types';
 import { recentSchema } from '@/lib/validation/report';
 
@@ -10,7 +10,7 @@ export default async function HomePage() {
       return null;
     }),
     // Without it the home page simply has no "Raportohen më shpesh".
-    frequentTypeIds().catch((err: unknown): number[] => {
+    frequentTypes().catch((err: unknown): Array<{ id: number; count: number }> => {
       console.error('[home] frequent types unavailable', err);
       return [];
     }),
