@@ -2,9 +2,11 @@
 /**
  * Reporting flow like the BOS:311 app, one step per screen:
  * type → location → photo → description → contact (anonymous, or name + phone) → review → case number.
- * The location is given ONE of two ways: GPS / a tap on the map (the zone is
- * found from the point, no address needed), or by hand: zone → one of THAT
- * zone's lagje or villages → street (optional). So the zone and the place always match.
+ * The location, as on BOS:311: one "Vendndodhja" field to search a street, a
+ * lagje or a village, and a map whose pin can be tapped, dragged or set by
+ * GPS; moving the pin fills the field with the street there. The zone always
+ * comes from the point. A lagje / village chosen in the search and not moved
+ * is saved as that place (an approximate point), never as an exact one.
  * EVERY step is mandatory: the next step opens only when the current one is
  * complete, and the server (createReportAction) refuses incomplete reports
  * anyway, telling the wizard which step to go back to.
@@ -21,7 +23,9 @@
  */
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { checkDescriptionAction, checkPhotoAction, createReportAction, findNearbyAction, followReportAction } from '@/actions/reports';
+import {
+  checkDescriptionAction, checkPhotoAction, createReportAction, findNearbyAction, followReportAction, placeAtAction, searchPlacesAction,
+} from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { LocationPicker } from '@/components/maps';
 import PhotoInput from '@/components/PhotoInput';
@@ -35,8 +39,9 @@ import { newClientRef, queueReport } from '@/lib/client/offlineQueue';
 import { uploadPhoto } from '@/lib/client/upload';
 import { LIMITS, isOtherChoice } from '@/lib/shared/domain';
 import { looksLikeGibberish } from '@/lib/shared/text';
+import { plainWords, searchLocalities, type PlaceSuggestion } from '@/lib/shared/places';
 import type { PublicCard } from '@/lib/shared/types';
-import { otherZonePlace, zoneCenter, zoneCodeAt } from '@/lib/shared/zones';
+import { zoneCodeAt } from '@/lib/shared/zones';
 
 const STEPS = ['type', 'location', 'photo', 'details', 'contact', 'review'] as const;
 /** The check of the description for the chosen type, made when "Vazhdo" is pressed. */
@@ -60,14 +65,18 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [step, setStep] = useState(initialTypeValid ? 1 : 0);
   const [categoryCode, setCategoryCode] = useState<string | null>(initialCategory ?? null);
   const [typeId, setTypeId] = useState<number | null>(initialTypeValid);
-  const [locationMode, setLocationMode] = useState<'map' | 'address' | null>(null);
+  // "Vendndodhja" (as on BOS:311): one field to search a street, lagje or village, and the pin on the map.
   const [location, setLocation] = useState<LatLng | null>(null);
-  const [reference, setReference] = useState(''); // map mode: optional landmark
-  const [neighbourhoodId, setNeighbourhoodId] = useState(''); // address mode
-  const [localityId, setLocalityId] = useState('');
-  const [street, setStreet] = useState('');
-  const [addressPin, setAddressPin] = useState<LatLng | null>(null); // address mode: optional pin, inside the chosen zone
-  const [showAddressMap, setShowAddressMap] = useState(false);
+  const [placeText, setPlaceText] = useState(''); // the field: the chosen place, the street at the pin, or what was typed
+  const [placeQuery, setPlaceQuery] = useState(''); // what was typed and is being searched; empty after a choice
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  const [searching, setSearching] = useState(false);
+  const [resolvingPlace, setResolvingPlace] = useState(false);
+  // A lagje / village chosen in the search and not moved since: saved as "that place" (approximate point).
+  const [pickedLocality, setPickedLocality] = useState<{ zoneId: number; localityId: number; label: string } | null>(null);
+  const [mapFocus, setMapFocus] = useState<{ point: LatLng; zoom: number } | null>(null);
+  const placeSeq = useRef(0);
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoCheck, setPhotoCheck] = useState<PhotoCheck | null>(null);
   // The last photo was refused (inappropriate, or a document / screenshot): the message stays until another photo is chosen.
@@ -94,7 +103,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   // A change made by the resident clears the server's message for that step.
   useEffect(() => {
     setServerErrors({});
-  }, [typeId, locationMode, reference, neighbourhoodId, localityId, street, description, contact, contactMode]);
+  }, [typeId, location, placeText, description, contact, contactMode]);
 
   const type = typeId ? typeById(typeId) ?? null : null;
 
@@ -128,21 +137,19 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photo, typeId, rules.aiChecks]);
   const currentCheck = photo && photoCheck?.photo === photo && photoCheck.typeId === typeId ? photoCheck : null;
-  // Map mode: the zone of the pin, from the zone borders (works offline too).
-  const pin = locationMode === 'map' ? location : null;
+  // The zone of the pin, from the zone borders (works offline too).
+  const pin = location;
   const pinZoneCode = pin && insideArea(pin, rules.serviceArea) ? zoneCodeAt(pin.latitude, pin.longitude) : null;
   const pinZone = pinZoneCode ? catalog.neighbourhoods.find((n) => n.code === pinZoneCode) : undefined;
-  // Address mode: the chosen zone and its own lagje / villages.
-  const zone = catalog.neighbourhoods.find((n) => n.id === Number(neighbourhoodId));
-  const locality = zone?.localities.find((l) => l.id === Number(localityId));
-  const addressPinZoneCode = addressPin && insideArea(addressPin, rules.serviceArea) ? zoneCodeAt(addressPin.latitude, addressPin.longitude) : null;
-  const addressPinZone = addressPinZoneCode ? catalog.neighbourhoods.find((n) => n.code === addressPinZoneCode) : undefined;
+  // A lagje / village chosen in the search, with the pin not moved and the text not changed since.
+  const approximatePlace = pickedLocality && pickedLocality.label === placeText.trim() ? pickedLocality : null;
   const category = type?.category ?? (categoryCode ? categoryByCode(categoryCode) ?? null : null);
   const stepName = STEPS[step]!;
 
   // Duplicate check: open reports of the same kind close by.
   useEffect(() => {
-    if (!type || !pin || !pinZoneCode) {
+    // An approximate point (a whole village) is no proof that a report is "nearby".
+    if (!type || !pin || !pinZoneCode || approximatePlace) {
       setDuplicates([]);
       return undefined;
     }
@@ -153,34 +160,15 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
         .catch(() => { if (!cancelled) setDuplicates([]); });
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [type, pin, pinZoneCode]);
+  }, [type, pin, pinZoneCode, approximatePlace]);
 
   /** What is still missing in a step (field → message). Empty object = the step is complete. */
   const errorsFor = useCallback((name: StepName): Errors => {
     const e: Errors = {};
     if (name === 'type' && !type) e.requestTypeId = t('report.errors.type');
     if (name === 'location') {
-      if (!locationMode) e.locationMode = t('report.errors.locationMode');
-      if (locationMode === 'map') {
-        if (!location) e.latitude = t('report.errors.pin');
-        else if (!pinZoneCode) e.latitude = t('report.outsideArea');
-      }
-      if (locationMode === 'address') {
-        if (!zone) e.neighbourhoodId = t('report.errors.area');
-        else if (zone.localities.length > 0 && !locality) e.localityId = t('report.errors.locality');
-        // The street is optional; when written, it may not name a place of another zone.
-        const text = street.trim();
-        if (text && zone) {
-          const other = otherZonePlace(text, zone.id, catalog.neighbourhoods);
-          if (other) e.address = t('report.errors.otherZone', { place: other.place, zone: other.zone });
-        }
-        if (addressPin) {
-          if (!addressPinZoneCode) e.latitude = t('report.outsideArea');
-          else if (zone?.code && addressPinZoneCode !== zone.code) {
-            e.latitude = t('report.errors.pinOtherZone', { zone: addressPinZone?.name ?? addressPinZoneCode, chosen: zone.name });
-          }
-        }
-      }
+      if (!location) e.latitude = t('report.errors.pin');
+      else if (!pinZoneCode) e.latitude = t('report.outsideArea');
     }
     if (name === 'photo' && !photo) e.photo = t('report.errors.photo');
     if (name === 'photo' && currentCheck?.status === 'checking') e.photo = t('report.photoCheck.wait');
@@ -199,7 +187,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       }
     }
     return e;
-  }, [type, locationMode, location, pinZoneCode, zone, locality, street, addressPin, addressPinZoneCode, addressPinZone, catalog.neighbourhoods, photo, currentCheck, description, contactMode, contact, t]);
+  }, [type, location, pinZoneCode, photo, currentCheck, description, contactMode, contact, t]);
 
   const currentErrors = useMemo(() => errorsFor(stepName), [errorsFor, stepName]);
   const firstIncompleteStep = useMemo(() => STEPS.findIndex((s) => s !== 'review' && Object.keys(errorsFor(s)).length > 0), [errorsFor]);
@@ -249,10 +237,58 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     goTo(step + 1);
   }
 
-  const onLocation = useCallback((p: LatLng) => {
+  /** The pin was put, dragged or set by GPS: the field gets the street there (OpenStreetMap), when one is known. */
+  const onPin = useCallback((p: LatLng) => {
     setLocation(p);
+    setPickedLocality(null);
+    setPlaceQuery('');
     setServerErrors((e) => ({ ...e, latitude: undefined }));
+    const seq = ++placeSeq.current;
+    if (!navigator.onLine) return;
+    setResolvingPlace(true);
+    call(placeAtAction({ latitude: p.latitude, longitude: p.longitude }))
+      .then((r) => { if (seq === placeSeq.current) setPlaceText(r.label ?? ''); })
+      .catch(() => { /* no street name: the zone under the map is enough */ })
+      .finally(() => { if (seq === placeSeq.current) setResolvingPlace(false); });
   }, []);
+
+  // Typing in "Vendndodhja": lagje and villages at once (no internet needed), streets and places after a short pause.
+  useEffect(() => {
+    const q = placeQuery.trim();
+    const local = searchLocalities(q, catalog.neighbourhoods);
+    setSuggestions(local);
+    setActiveSuggestion(-1);
+    if (plainWords(q).length < 3 || !navigator.onLine) {
+      setSearching(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const timer = setTimeout(() => {
+      call(searchPlacesAction({ q }))
+        .then((found) => {
+          if (cancelled) return;
+          const fresh = found.filter((f) => !local.some((l) => plainWords(l.label) === plainWords(f.label)));
+          setSuggestions([...local, ...fresh].slice(0, 8));
+        })
+        .catch(() => { /* the lagje and villages are still there */ })
+        .finally(() => { if (!cancelled) setSearching(false); });
+    }, 350);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [placeQuery, catalog.neighbourhoods]);
+
+  /** A place chosen in the list: the pin goes there, the map follows. */
+  function pickPlace(s: PlaceSuggestion) {
+    placeSeq.current += 1; // a street lookup still on its way must not overwrite the choice
+    setResolvingPlace(false);
+    const point = { latitude: s.latitude, longitude: s.longitude };
+    setLocation(point);
+    setPlaceText(s.label);
+    setPlaceQuery('');
+    setPickedLocality(s.kind === 'locality' && s.zoneId && s.localityId ? { zoneId: s.zoneId, localityId: s.localityId, label: s.label } : null);
+    setMapFocus({ point, zoom: s.kind === 'locality' ? 15 : 18 });
+    setServerErrors((e) => ({ ...e, latitude: undefined, address: undefined }));
+  }
 
   async function follow(caseNumber: string) {
     try {
@@ -277,7 +313,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       setShowErrors(true);
       return;
     }
-    if (!type || !photo || !locationMode || (locationMode === 'map' && !location)) return;
+    if (!type || !photo || !location) return;
     setSubmitting(true);
     setError(null);
     setServerErrors({});
@@ -285,13 +321,10 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     const standalone = typeof window !== 'undefined' && window.matchMedia?.('(display-mode: standalone)').matches;
     const data = {
       requestTypeId: type.id,
-      locationMode,
-      ...(locationMode === 'map' && location
-        ? { latitude: location.latitude, longitude: location.longitude, address: reference.trim() }
-        : {
-          neighbourhoodId: Number(neighbourhoodId), ...(locality ? { localityId: locality.id } : {}), address: street.trim(),
-          ...(addressPin ? { latitude: addressPin.latitude, longitude: addressPin.longitude } : {}),
-        }),
+      // A village chosen and not moved: "that village" (the server places it approximately). Otherwise the pin, exactly.
+      ...(approximatePlace
+        ? { locationMode: 'address' as const, neighbourhoodId: approximatePlace.zoneId, localityId: approximatePlace.localityId, address: '' }
+        : { locationMode: 'map' as const, latitude: location.latitude, longitude: location.longitude, address: placeText.trim() }),
       description: description.trim(),
       anonymous,
       ...(anonymous ? {} : {
@@ -395,9 +428,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     );
   }
 
-  const placeSummary = locationMode === 'map'
-    ? [t('report.pinOnMap'), pinZone?.name, reference.trim()].filter(Boolean).join(' · ')
-    : locationMode === 'address' ? [[street.trim(), locality?.name].filter(Boolean).join(', '), zone?.name].filter(Boolean).join(' · ') : '';
+  const placeSummary = [placeText.trim() || (location ? t('report.pinOnMap') : ''), pinZone?.name].filter(Boolean).join(' · ');
   return (
     <div className="wizard" ref={topRef}>
       <ol className="stepper" aria-label={t('report.progress')}>
@@ -470,69 +501,52 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       {stepName === 'location' && (
         <section>
           <h2>{t('report.whereTitle')}</h2>
-          <p className="muted">{t('report.whereIntro')}</p>
-          <fieldset className={`choice-cards${visibleError('locationMode') ? ' has-error' : ''}`}>
-            <legend className="label">{t('report.whereChoose')}</legend>
-            <label className={`choice-card${locationMode === 'map' ? ' selected' : ''}`}>
-              <input type="radio" name="location-mode" value="map" checked={locationMode === 'map'} onChange={() => setLocationMode('map')} />
-              <span><strong><Icon name="gps" size={16} /> {t('report.modeMap')}</strong><span className="muted small">{t('report.modeMapText')}</span></span>
-            </label>
-            <label className={`choice-card${locationMode === 'address' ? ' selected' : ''}`}>
-              <input type="radio" name="location-mode" value="address" checked={locationMode === 'address'} onChange={() => setLocationMode('address')} />
-              <span><strong><Icon name="edit" size={16} /> {t('report.modeAddress')}</strong><span className="muted small">{t('report.modeAddressText')}</span></span>
-            </label>
-            {visibleError('locationMode') && <div className="field-error" role="alert"><Icon name="alert" size={14} />{visibleError('locationMode')}</div>}
-          </fieldset>
-
-          {locationMode === 'map' && (
-            <div className="location-mode">
-              <LocationPicker value={location} onChange={onLocation} error={visibleError('latitude')} autoLocate outside={Boolean(location && !pinZoneCode)} />
-              {pinZone && (
-                <p className="zone-found" role="status"><Icon name="check" size={16} strokeWidth={2.6} /><strong>{t('report.zoneFound', { zone: pinZone.name })}</strong> <span className="muted small">{t('report.zoneFoundHint')}</span></p>
-              )}
-              <Field label={t('report.reference')} hint={t('report.referenceHint')} htmlFor="reference">
-                <input id="reference" type="text" value={reference} maxLength={LIMITS.maxAddress} onChange={(e) => setReference(e.target.value)} />
-              </Field>
-            </div>
-          )}
-
-          {locationMode === 'address' && (
-            <div className="location-mode">
-              <div className="grid-2">
-                <Field label={t('report.area')} htmlFor="area" error={visibleError('neighbourhoodId')} required>
-                  <select id="area" value={neighbourhoodId} aria-required="true" onChange={(e) => { setNeighbourhoodId(e.target.value); setLocalityId(''); }}>
-                    <option value="">{t('report.areaChoose')}</option>
-                    {catalog.neighbourhoods.map((n) => <option key={n.id} value={n.id}>{n.name}</option>)}
-                  </select>
-                </Field>
-                {(!zone || zone.localities.length > 0) && (
-                  <Field label={t('report.locality')} hint={zone ? undefined : t('report.localityFirst')} htmlFor="locality" error={visibleError('localityId')} required>
-                    <select id="locality" value={localityId} aria-required="true" disabled={!zone} onChange={(e) => setLocalityId(e.target.value)}>
-                      <option value="">{t('report.localityChoose')}</option>
-                      {zone?.localities.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-                    </select>
-                  </Field>
-                )}
-              </div>
-              <Field label={t('report.street')} hint={t('report.streetHint')} htmlFor="street" error={visibleError('address')}>
-                <input id="street" type="text" value={street} maxLength={LIMITS.maxAddress - 40} onChange={(e) => setStreet(e.target.value)} />
-              </Field>
-              {/* Optional: a pin, so the report also appears on the public map. It must be inside the chosen zone. */}
-              {!showAddressMap ? (
-                <button type="button" className="btn btn-sm btn-outline" disabled={!zone} onClick={() => setShowAddressMap(true)}>
-                  <Icon name="pin" size={16} />{t('report.addressPin')}
-                </button>
-              ) : (
-                <div>
-                  <p className="hint" style={{ marginTop: 0 }}>{t('report.addressPinHint')}</p>
-                  <LocationPicker
-                    key={zone?.id ?? 0} value={addressPin} onChange={setAddressPin} error={visibleError('latitude')}
-                    center={zone?.code ? zoneCenter(zone.code) : null} outside={Boolean(addressPin && !addressPinZoneCode)}
-                  />
-                  {addressPin && <button type="button" className="btn btn-sm btn-ghost" onClick={() => setAddressPin(null)}>{t('report.removePin')}</button>}
-                </div>
+          <Field label={t('report.place')} htmlFor="place" error={visibleError('address') || visibleError('neighbourhoodId') || visibleError('localityId')} required>
+            <div className="place-search">
+              <Icon name="search" size={18} />
+              <input
+                id="place" type="text" role="combobox" aria-autocomplete="list" aria-expanded={suggestions.length > 0} aria-controls="place-options"
+                aria-activedescendant={activeSuggestion >= 0 ? `place-option-${activeSuggestion}` : undefined} aria-describedby="place-hint"
+                autoComplete="off" enterKeyHint="search" placeholder={t('report.placePlaceholder')} value={placeText} maxLength={LIMITS.maxAddress}
+                onChange={(e) => { setPlaceText(e.target.value); setPlaceQuery(e.target.value); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') { setPlaceQuery(''); return; }
+                  if (!suggestions.length) return;
+                  if (e.key === 'ArrowDown') { e.preventDefault(); setActiveSuggestion((i) => (i + 1) % suggestions.length); }
+                  else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveSuggestion((i) => (i <= 0 ? suggestions.length - 1 : i - 1)); }
+                  else if (e.key === 'Enter') { e.preventDefault(); pickPlace(suggestions[Math.max(activeSuggestion, 0)]!); }
+                }}
+                // Closes the list when leaving the field; the delay lets a tap on a suggestion count first.
+                onBlur={() => setTimeout(() => setPlaceQuery(''), 200)}
+              />
+              {suggestions.length > 0 && (
+                <ul id="place-options" role="listbox" className="place-options" aria-label={t('report.place')}>
+                  {suggestions.map((s, i) => (
+                    <li
+                      key={`${s.kind}:${s.label}`} id={`place-option-${i}`} role="option" aria-selected={i === activeSuggestion}
+                      className={i === activeSuggestion ? 'active' : undefined} onMouseDown={(e) => e.preventDefault()} onClick={() => pickPlace(s)}
+                    >
+                      <Icon name={s.kind === 'locality' ? 'map' : 'pin'} size={16} />
+                      <span>{s.label}</span>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
+          </Field>
+          <p id="place-hint" className="hint" style={{ marginTop: -6 }}>
+            {resolvingPlace ? t('report.placeResolving')
+              : searching ? t('report.placeSearching')
+              : placeQuery.trim().length >= 3 && suggestions.length === 0 ? t('report.placeNone')
+              : t('report.placeHint')}
+          </p>
+          <LocationPicker
+            value={location} onChange={onPin} error={visibleError('latitude')} autoLocate focus={mapFocus} hideCoordinates hideHint
+            outside={Boolean(location && !pinZoneCode)}
+          />
+          {approximatePlace && <p className="hint">{t('report.placeApprox')}</p>}
+          {pinZone && (
+            <p className="zone-found" role="status"><Icon name="check" size={16} strokeWidth={2.6} /><strong>{t('report.zoneFound', { zone: pinZone.name })}</strong> <span className="muted small">{t('report.zoneFoundHint')}</span></p>
           )}
           {duplicates.length > 0 && (
             <div className="duplicate-box">

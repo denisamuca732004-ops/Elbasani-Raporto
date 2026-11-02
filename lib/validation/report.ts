@@ -188,6 +188,9 @@ export const caseNumber = z
   .regex(/^[A-Z]{1,6}-\d{4}-\d{5,}$/);
 
 export const nearbySchema = z.strictObject({ requestTypeId: id, latitude, longitude });
+/** "Vendndodhja" of the report form: what was typed, and the point of the pin. */
+export const placeQuerySchema = z.strictObject({ q: requiredText(3, 100) });
+export const pointSchema = z.strictObject({ latitude, longitude });
 /** Home page search: a street, an area or a problem ("gropë Rinia"). */
 export const placeSearchSchema = z.strictObject({ q: requiredText(3, 100) });
 /** "I have this problem too" while reporting: one more supporter (no contact details). */

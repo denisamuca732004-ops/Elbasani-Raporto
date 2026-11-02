@@ -74,6 +74,9 @@ const EnvSchema = z.object({
   SMTP_PASS: str(),
   AI_ENABLED: bool(false),
   AI_BASE_URL: str('https://api.openai.com/v1'),
+  // Address search on the report form (OpenStreetMap data). "off": only the lagje and villages of the Municipality.
+  GEOCODER_URL: str('https://photon.komoot.io'),
+  GEOCODER_TIMEOUT_MS: int(4000, 500, 20000),
   AI_API_KEY: str(''),
   AI_MODEL: str('gpt-4o-mini'),
   AI_TIMEOUT_MS: int(20000, 1000, 120000),
@@ -173,6 +176,10 @@ function load() {
       timeoutMs: e.AI_TIMEOUT_MS,
       verifyThreshold: e.AI_VERIFY_THRESHOLD,
       reviewThreshold: e.AI_REVIEW_THRESHOLD,
+    },
+    geocoder: {
+      url: e.GEOCODER_URL.toLowerCase() === 'off' ? null : e.GEOCODER_URL.replace(/\/$/, ''),
+      timeoutMs: e.GEOCODER_TIMEOUT_MS,
     },
     rules: {
       casePrefix: e.CASE_PREFIX,

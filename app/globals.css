@@ -247,6 +247,15 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand-button); o
 
 /* ── Case cards & lists ── */
 /* Home: "Raportohen më shpesh", shortcuts straight into the form */
+/* Location step: "Vendndodhja" search with suggestions (as on BOS:311) */
+.place-search { position: relative; }
+.place-search > svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.place-search input { padding-left: 42px; }
+/* Above the map and its zoom buttons (Leaflet: up to 1000), below the sticky header (1100). */
+.place-options { position: absolute; z-index: 1050; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 6px 0; list-style: none; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14); max-height: 320px; overflow-y: auto; }
+.place-options li { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 14px; cursor: pointer; line-height: 1.35; }
+.place-options li svg { flex: none; color: var(--brand-button); }
+.place-options li.active, .place-options li:hover { background: var(--bg-tint); }
 /* Contact step: "Përfshi kontaktin" switch (as on BOS:311) */
 .contact-intro { color: var(--ink-soft); margin: 0 0 18px; max-width: 640px; }
 .switch { position: relative; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; margin: 0 0 6px; cursor: pointer; user-select: none;

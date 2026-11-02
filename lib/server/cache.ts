@@ -9,7 +9,7 @@ import { Redis } from '@upstash/redis';
 import { config } from './env';
 
 export const CACHE_KEYS = {
-  catalog: 'catalog:v3', // v3: every category ends with "Tjetër" (<category>.other)
+  catalog: 'catalog:v4', // v4: lagje and villages carry their point (the "Vendndodhja" search)
   departments: 'departments:active:v1',
   settings: 'settings:v1',
   guide: 'guide:active:v3', // v3: the "Përfshi kontaktin" switch

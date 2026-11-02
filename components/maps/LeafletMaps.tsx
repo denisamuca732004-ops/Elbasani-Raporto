@@ -24,11 +24,12 @@ function ClickToMove({ onPick }: { onPick: (p: LatLng) => void }) {
   return null;
 }
 
-function Recenter({ position }: { position: LatLng | null }) {
+/** Moves the map to a place: the GPS position, or a place chosen in the search (with its own zoom). */
+function Recenter({ target }: { target: { point: LatLng; zoom?: number } | null }) {
   const map = useMap();
   useEffect(() => {
-    if (position) map.setView([position.latitude, position.longitude], Math.max(map.getZoom(), 17));
-  }, [position, map]);
+    if (target) map.setView([target.point.latitude, target.point.longitude], target.zoom ?? Math.max(map.getZoom(), 17));
+  }, [target, map]);
   return null;
 }
 
@@ -42,14 +43,23 @@ export interface LocationPickerProps {
   outside?: boolean;
   /** Where the map opens when there is no pin yet (e.g. the middle of the chosen zone). */
   center?: LatLng | null;
+  /** Move the map here when it changes (a place chosen in the "Vendndodhja" search). */
+  focus?: { point: LatLng; zoom: number } | null;
+  /** Hide the line under the map with the coordinates of the pin. */
+  hideCoordinates?: boolean;
+  /** Hide "tap the map…" next to the GPS button (the page explains it already). */
+  hideHint?: boolean;
 }
 
-export function LocationPicker({ value, onChange, error, autoLocate = false, outside, center }: LocationPickerProps) {
+export function LocationPicker({ value, onChange, error, autoLocate = false, outside, center, focus, hideCoordinates = false, hideHint = false }: LocationPickerProps) {
   const { t } = useI18n();
   const { rules } = useSettings();
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const [centerOn, setCenterOn] = useState<LatLng | null>(null);
+  const [centerOn, setCenterOn] = useState<{ point: LatLng; zoom?: number } | null>(null);
+  useEffect(() => {
+    if (focus) setCenterOn(focus);
+  }, [focus]);
 
   function useMyLocation() {
     if (!navigator.geolocation) {
@@ -62,7 +72,7 @@ export function LocationPicker({ value, onChange, error, autoLocate = false, out
       (pos) => {
         const p = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
         onChange(p);
-        setCenterOn(p);
+        setCenterOn({ point: p });
         setLocating(false);
       },
       () => {
@@ -96,7 +106,7 @@ export function LocationPicker({ value, onChange, error, autoLocate = false, out
         <button type="button" className="btn btn-outline btn-sm" onClick={useMyLocation} disabled={locating}>
           <Icon name="gps" size={18} />{locating ? t('report.locating') : t('report.useMyLocation')}
         </button>
-        <span className="hint" style={{ margin: 0 }}>{t('report.mapHint')}</span>
+        {!hideHint && <span className="hint" style={{ margin: 0 }}>{t('report.mapHint')}</span>}
       </div>
       {geoError && <div className="alert alert-warn">{geoError}</div>}
       {value && (outside ?? !insideArea(value, rules.serviceArea)) && <div className="alert alert-error" role="alert">{t('report.outsideArea')}</div>}
@@ -107,12 +117,12 @@ export function LocationPicker({ value, onChange, error, autoLocate = false, out
         >
           <TileLayer url={TILE_URL} attribution={ATTRIBUTION} />
           <ClickToMove onPick={onChange} />
-          <Recenter position={centerOn} />
+          <Recenter target={centerOn} />
           {value && <Marker position={[value.latitude, value.longitude]} icon={pinIcon} draggable eventHandlers={markerHandlers} />}
         </MapContainer>
       </div>
       {error && <div className="field-error" role="alert"><Icon name="alert" size={14} />{error}</div>}
-      {value && <p className="hint">{t('report.pinSet', { lat: value.latitude.toFixed(5), lng: value.longitude.toFixed(5) })}</p>}
+      {value && !hideCoordinates && <p className="hint">{t('report.pinSet', { lat: value.latitude.toFixed(5), lng: value.longitude.toFixed(5) })}</p>}
     </div>
   );
 }

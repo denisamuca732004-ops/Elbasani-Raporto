@@ -20,6 +20,7 @@ const RULES = {
   textCheck: () => ({ limit: config().rateLimit.reportsPerHour * 5, windowSeconds: 3600 }),
   follow: () => ({ limit: 30, windowSeconds: 3600 }),
   search: () => ({ limit: 120, windowSeconds: 600 }),
+  geocode: () => ({ limit: 300, windowSeconds: 600 }),
   feedback: () => ({ limit: 20, windowSeconds: 3600 }),
   setup: () => ({ limit: 10, windowSeconds: 3600 }),
   register: () => ({ limit: 10, windowSeconds: 3600 }),

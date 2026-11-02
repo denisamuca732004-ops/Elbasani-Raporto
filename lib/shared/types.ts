@@ -208,8 +208,11 @@ export interface CatalogType { id: number; code: string; nameSq: string; nameEn:
 export interface CatalogCategory { id: number; code: string; icon: string; nameSq: string; nameEn: string; types: CatalogType[] }
 export interface Catalog {
   categories: CatalogCategory[];
-  /** Active zones; `code` links a zone to its border, `localities` are its lagje or villages (active only, A–Z). */
-  neighbourhoods: Array<{ id: number; name: string; code: string | null; localities: Array<{ id: number; name: string }> }>;
+  /**
+   * Active zones; `code` links a zone to its border, `localities` are its lagje or villages (active only, A–Z),
+   * with their point when known (the "Vendndodhja" search of the report form).
+   */
+  neighbourhoods: Array<{ id: number; name: string; code: string | null; localities: Array<{ id: number; name: string; latitude: number | null; longitude: number | null }> }>;
   departments: Array<{ id: number; code: string; nameSq: string; nameEn: string; description: string | null }>;
 }
 

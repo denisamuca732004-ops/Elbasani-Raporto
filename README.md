@@ -139,18 +139,18 @@ The public site is only for reporting. Residents never sign up or sign in, and l
 
 Older data is kept as it is (no schema change, nothing deleted): accounts with role `USER` from the prototype cannot sign in, and an older report that has an email still gets the status and "was it fixed?" emails. A report the admin records at `/admin/reports/new` can still carry an email.
 
-## Location: GPS or address, zone always right
+## Location: one search field and a pin, zone always right
 
-A resident gives the place one of two ways. The server refuses anything else.
+The location step works like BOS:311's "Select a Location": one **"Vendndodhja"** field and a map below it.
 
-1. **GPS or a tap on the map.**
-   - The zone is found from the point, using the borders of the 13 administrative units ([`lib/shared/zones.ts`](lib/shared/zones.ts), data in `lib/shared/data/elbasan-zones.json`). This works in the browser too, also offline.
-   - No address is needed; a landmark is optional.
-   - A point outside the borders (Tirana, Cërrik, Durrës) is refused, even inside the old rectangle.
-2. **By hand.**
-   - Choose the zone, then one of **its** lagje (city) or villages, then optionally the street, number or landmark (without it the address is the lagje or village). The list only shows the places of that zone, and the server checks it again.
-   - A street that names a village or zone of another zone ("fshati Lleshan" with the city chosen) is refused, with the right zone in the message.
-   - An optional pin can be added too, so the report is also on the map. It must be inside the chosen zone.
+- **Typing** searches at once the lagje of the city and the villages of every zone ([`lib/shared/places.ts`](lib/shared/places.ts), no internet needed), and after a short pause streets and places from **OpenStreetMap** ([`lib/server/geocoder.ts`](lib/server/geocoder.ts)).
+  - The OpenStreetMap search goes through a Photon server (`GEOCODER_URL`, by default the public `https://photon.komoot.io`; `off` turns it off). Our server asks it, never the browser, so the CSP stays strict and the resident's IP and position are not sent to a third party.
+  - Only places inside the zone borders are offered. Answers are cached (a search for a week, a point for a month) and rate-limited per IP. If the service is slow or down, the lagje and villages are still found and nothing fails.
+- **Choosing** a result puts the pin there and moves the map.
+- **The pin** can be tapped, dragged or set by GPS ("Përdor vendndodhjen time", also asked once when the step opens). Moving it fills the field with the street at that point ("Rruga Qemal Stafa 7"), when OpenStreetMap knows one. The field can also be edited as a landmark.
+- **The zone** always comes from the point, using the borders of the 13 administrative units ([`lib/shared/zones.ts`](lib/shared/zones.ts), data in `lib/shared/data/elbasan-zones.json`), in the browser too. A point outside the borders (Tirana, Cërrik, Durrës) is refused.
+- **A lagje or village chosen and not moved** is saved as that place (the server's "address" mode: zone + lagje/village, approximate point), never as an exact point, so it is never taken for "the same problem nearby". Once the pin is moved, or the text changed, it is an exact point with that text.
+- The server still accepts and checks both modes (`map` and `address`), so reports queued offline by the older form are not lost. In `address` mode a text naming a village of another zone is refused, with the right zone in the message.
 
 **On the public map** every report shows as a point coloured by its status, from the moment it is received ("Marrë", grey).
 - Until a person verifies a report, its photo and description stay hidden. Phone numbers and emails typed in an address are masked.

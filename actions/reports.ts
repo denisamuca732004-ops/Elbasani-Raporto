@@ -17,6 +17,7 @@
  */
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { placeAt, searchPlaces } from '@/lib/server/geocoder';
 import { enforceRateLimit } from '@/lib/server/ratelimit';
 import { requireAdmin, requireStaff } from '@/lib/server/session';
 import * as publicReports from '@/lib/server/services/publicReport';
@@ -27,7 +28,7 @@ import { checkPhoto } from '@/lib/server/services/photoCheck';
 import { extractFromText } from '@/lib/server/services/triage';
 import {
   assignSchema, descriptionCheckSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoCheckSchema,
-  photoVisibilitySchema, placeSearchSchema,
+  photoVisibilitySchema, placeQuerySchema, placeSearchSchema, pointSchema,
   prioritySchema, rejectSchema, reportUpdateSchema, resolveSchema, staffReportSchema, statusChangeSchema, testFlagSchema,
   transferDecisionSchema, transferRequestSchema,
 } from '@/lib/validation/report';
@@ -78,6 +79,23 @@ export async function checkDescriptionAction(input: unknown) {
 
 export async function findNearbyAction(input: unknown) {
   return run(async () => publicReports.findNearbyOpen(parseInput(nearbySchema, input)));
+}
+
+/** "Vendndodhja" of the report form: streets and places of the Municipality (OpenStreetMap) for what was typed. */
+export async function searchPlacesAction(input: unknown) {
+  return run(async () => {
+    await enforceRateLimit('geocode', await clientIp());
+    return searchPlaces(parseInput(placeQuerySchema, input).q);
+  });
+}
+
+/** The street at the point where the resident put or dragged the pin (fills "Vendndodhja"). */
+export async function placeAtAction(input: unknown) {
+  return run(async () => {
+    await enforceRateLimit('geocode', await clientIp());
+    const { latitude, longitude } = parseInput(pointSchema, input);
+    return placeAt(latitude, longitude);
+  });
 }
 
 /** Home page search: open reports on a street or in an area, so residents see what is already reported. */

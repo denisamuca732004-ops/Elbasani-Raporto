@@ -24,7 +24,7 @@ export async function getCatalog(): Promise<Catalog> {
       }),
       db.neighbourhood.findMany({
         where: { active: true },
-        include: { localities: { where: { active: true }, select: { id: true, name: true } } },
+        include: { localities: { where: { active: true }, select: { id: true, name: true, latitude: true, longitude: true } } },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
       db.department.findMany({ where: { active: true }, orderBy: { nameSq: 'asc' } }),

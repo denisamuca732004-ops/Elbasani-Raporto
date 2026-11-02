@@ -52,9 +52,14 @@ Kontrolli bëhet në tre nivele, dhe të tri duhet të kalojnë:
 - **Qytetari** raporton me 6 hapa: lloji → vendndodhja → foto → përshkrimi → kontakti → kontrolli.
   * Asnjë hap nuk anashkalohet.
   * Pa foto, pa përshkrim ose pa vendndodhje, raportimi **nuk krijohet**.
-  * **Vendndodhja jepet në njërën nga dy mënyrat:**
-    1. me **GPS** ose duke prekur hartën: zona gjendet vetë nga kufijtë e 13 njësive administrative, dhe adresa nuk kërkohet;
-    2. **me dorë:** zona → një nga lagjet ose fshatrat e **asaj** zone → rruga (**opsionale**: pa të, adresa është lagjja ose fshati). Lagjja ose fshati nuk mund të jetë nga një zonë tjetër. Mund të shtohet edhe një pikë në hartë (opsionale), por brenda zonës së zgjedhur.
+  * **Vendndodhja** (si te BOS:311): një fushë kërkimi dhe harta poshtë saj.
+    - Kur shkruan, dalin menjëherë lagjet dhe fshatrat e Bashkisë (pa internet), dhe pas pak edhe rrugë e vende
+      nga **OpenStreetMap** (`GEOCODER_URL`, si fillim Photon publik; `off` e fik). Kërkimin e bën serveri ynë,
+      jo telefoni i qytetarit, dhe vetëm brenda kufijve të Bashkisë.
+    - Kur zgjedh një rezultat, pika vendoset aty. Pika mund të preket, të tërhiqet ose të vendoset me **GPS**;
+      kur lëviz, fusha merr emrin e rrugës aty (kur OpenStreetMap e njeh).
+    - Zona gjendet gjithmonë nga pika, me kufijtë e 13 njësive administrative.
+    - Një lagje ose fshat i zgjedhur pa e lëvizur pikën ruhet si "ai fshat" (pikë e përafërt), jo si pikë e saktë.
   * **Në hartën publike** çdo raportim del si pikë me ngjyrën e statusit, që kur merret ("Marrë", gri).
     - Fotoja dhe përshkrimi shfaqen vetëm pasi verifikohet.
     - Raportimet e refuzuara nuk shfaqen.
