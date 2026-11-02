@@ -130,7 +130,7 @@ The tests cover:
 ## Residents: no accounts, no email
 
 The public site is only for reporting. Residents never sign up or sign in, and leave no email:
-- **Contact step:** "Anonim" (nothing), or "Me emër dhe telefon": a name and a phone number, both required, so the department can call if it needs more details. The number is never published and never sent to the AI.
+- **Contact step** (as on BOS:311): a short paragraph asking the resident to consider leaving contact details, and a **"Përfshi kontaktin"** switch. Off (the default) = anonymous; on = a name and a phone number, both required, so the department can call if it needs more details. The number is never published and never sent to the AI.
 - **Final screen:** the report number (ID), with "Kopjo numrin" and a clear note to keep it: nothing is emailed, so the number is how the report is tracked (`/ndiq`, or the search box).
 - **"I have this problem too"** while reporting adds one supporter, with no contact details.
 - **The header** has no sign-in link. Staff sign in from the footer ("Hyrja për stafin", `/hyrje`); a signed-in staff member sees "Paneli" in the header.

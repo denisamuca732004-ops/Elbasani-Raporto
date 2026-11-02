@@ -56,9 +56,9 @@ const MESSAGES: Record<string, string> = {
   'description.too_short': `Përshkrimi duhet të ketë të paktën ${LIMITS.minDescription} shkronja.`,
   'description.gibberish': 'Përshkrimi nuk kuptohet. Shkruani me fjalë çfarë ndodh, p.sh. “Gropë e thellë në mes të rrugës”.',
   'description.abusive': 'Përshkrimi ka fjalë fyese ose të papërshtatshme. Përshkruani problemin pa to.',
-  'anonymous.required': 'Zgjidhni nëse doni të lini kontakt ose të raportoni anonim.',
-  'contactName.required': 'Shkruani emrin tuaj ose zgjidhni "Anonim".',
-  'contactPhone.required': 'Shkruani numrin e telefonit ose zgjidhni "Anonim".',
+  'anonymous.required': 'Zgjidhni nëse doni të përfshini kontaktin ose të raportoni anonim.',
+  'contactName.required': 'Shkruani emrin tuaj, ose fikni “Përfshi kontaktin”.',
+  'contactPhone.required': 'Shkruani numrin e telefonit, ose fikni “Përfshi kontaktin”.',
   'contactPhone.invalid': 'Numri i telefonit nuk është i saktë.',
 };
 

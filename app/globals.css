@@ -247,6 +247,17 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand-button); o
 
 /* ── Case cards & lists ── */
 /* Home: "Raportohen më shpesh", shortcuts straight into the form */
+/* Contact step: "Përfshi kontaktin" switch (as on BOS:311) */
+.contact-intro { color: var(--ink-soft); margin: 0 0 18px; max-width: 640px; }
+.switch { position: relative; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; margin: 0 0 6px; cursor: pointer; user-select: none;
+  font-family: inherit; font-size: 1.05rem; font-weight: 600; text-transform: none; letter-spacing: normal; color: var(--ink); }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.switch-track { position: relative; flex: none; width: 54px; height: 32px; border-radius: 999px; background: #D6DBD6; border: 1px solid #BFC6BF; transition: background-color 0.15s ease, border-color 0.15s ease; }
+.switch-track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform 0.15s ease; }
+.switch input:checked + .switch-track { background: var(--brand-button); border-color: var(--brand-button); }
+.switch input:checked + .switch-track::after { transform: translateX(22px); }
+.switch input:focus-visible + .switch-track { outline: 3px solid #F5B400; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .switch-track, .switch-track::after { transition: none; } }
 .frequent-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 640px) { .frequent-list { grid-template-columns: 1fr 1fr; } }
 .frequent-list a { display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink); text-decoration: none; }

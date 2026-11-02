@@ -28,8 +28,9 @@ Ky version është ndërtuar me **Next.js 16** (App Router) dhe **TypeScript**, 
 | `MUNICIPALITY_STAFF` | Përgjegjësi i një sektori | Vetëm raportimet e sektorit të vet dhe kërkesat që ka dërguar ai sektor |
 
 Qytetarët **nuk kanë llogari dhe nuk lënë email**: faqja është vetëm për raportim.
-* Te hapi “Kontakti” zgjedhin **“Anonim”**, ose **“Me emër dhe telefon”** (të dyja të detyrueshme), që sektori
-  t’i telefonojë nëse i duhen më shumë të dhëna. Numri nuk publikohet kurrë dhe nuk i dërgohet AI-së.
+* Hapi “Të dhënat e kontaktit” (si te BOS:311) ka një paragraf që i fton të lënë kontaktin dhe butonin
+  **“Përfshi kontaktin”**. I fikur (si fillim) = anonim; i ndezur = emri dhe telefoni (të dyja të detyrueshme),
+  që sektori t’i telefonojë nëse i duhen më shumë të dhëna. Numri nuk publikohet kurrë dhe nuk i dërgohet AI-së.
 * Në fund marrin **numrin (ID) e raportimit**, me “Kopjo numrin” dhe shënimin “Ruajeni për ta ndjekur”:
   asgjë nuk u dërgohet me email.
 * Lart në menu nuk ka “Hyr”. Stafi hyn nga fundi i faqes, “Hyrja për stafin” (`/hyrje`).

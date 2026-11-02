@@ -75,7 +75,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [descriptionCheck, setDescriptionCheck] = useState<DescriptionCheck | null>(null);
   const [checkingDescription, setCheckingDescription] = useState(false);
   const [description, setDescription] = useState('');
-  const [contactMode, setContactMode] = useState<'contact' | 'anonymous' | null>(null); // null until the resident chooses
+  // "Përfshi kontaktin" (as on BOS:311): off = anonymous, on = name and phone (both required).
+  const [contactMode, setContactMode] = useState<'contact' | 'anonymous'>('anonymous');
   // No e-mail and no account: a name and a phone number, so the Municipality can call if it needs more details.
   const [contact, setContact] = useState({ name: '', phone: '' });
   const [showErrors, setShowErrors] = useState(false);
@@ -190,7 +191,6 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       else if (looksLikeGibberish(description)) e.description = t('report.errors.descriptionGibberish');
     }
     if (name === 'contact') {
-      if (!contactMode) e.anonymous = t('report.errors.contactChoice');
       if (contactMode === 'contact') {
         const phone = contact.phone.trim();
         if (contact.name.trim().length < 2) e.contactName = t('report.errors.name');
@@ -605,19 +605,18 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       {stepName === 'contact' && (
         <section>
           <h2>{t('report.contactTitle')}</h2>
-          <fieldset className={`choice-cards${visibleError('anonymous') ? ' has-error' : ''}`}>
-            <legend className="label">{t('report.contactChoose')}</legend>
-            <label className={`choice-card${contactMode === 'contact' ? ' selected' : ''}`}>
-              <input type="radio" name="contact-mode" value="contact" checked={contactMode === 'contact'} onChange={() => setContactMode('contact')} />
-              <span><strong>{t('report.withContact')}</strong><span className="muted small">{t('report.withContactText')}</span></span>
-            </label>
-            <label className={`choice-card${contactMode === 'anonymous' ? ' selected' : ''}`}>
-              <input type="radio" name="contact-mode" value="anonymous" checked={contactMode === 'anonymous'} onChange={() => setContactMode('anonymous')} />
-              <span><strong>{t('report.anonymous')}</strong><span className="muted small">{t('report.anonymousText')}</span></span>
-            </label>
-            {visibleError('anonymous') && <div className="field-error" role="alert"><Icon name="alert" size={14} />{visibleError('anonymous')}</div>}
-          </fieldset>
-          {contactMode === 'contact' && (
+          <p className="contact-intro">{t('report.contactIntro')}</p>
+          <label className="switch">
+            <input
+              type="checkbox" role="switch" checked={contactMode === 'contact'} aria-checked={contactMode === 'contact'}
+              onChange={(e) => setContactMode(e.target.checked ? 'contact' : 'anonymous')}
+            />
+            <span className="switch-track" aria-hidden="true" />
+            <span>{t('report.includeContact')}</span>
+          </label>
+          {contactMode === 'anonymous' ? (
+            <p className="hint">{t('report.anonymousText')}</p>
+          ) : (
             <>
               <p className="hint">{t('report.contactRule')}</p>
               <div className="grid-2">

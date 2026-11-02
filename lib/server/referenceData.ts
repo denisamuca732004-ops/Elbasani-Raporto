@@ -275,8 +275,8 @@ export const GUIDE_ENTRIES: Array<{
     code: 'anonymous', sortOrder: 80, action: 'REPORT',
     questionSq: 'A mund të raportoj në mënyrë anonime?',
     questionEn: 'Can I report anonymously?',
-    answerSq: 'Po. Te hapi “Kontakti” zgjidhni “Anonim”. Atëherë Bashkia nuk mund t’ju telefonojë nëse i duhen më shumë të dhëna, prandaj përshkruajeni problemin qartë dhe ruajeni numrin e raportimit për ta ndjekur.',
-    answerEn: 'Yes. At the “Contact” step choose “Anonymous”. The Municipality then cannot call you if it needs more details, so describe the problem clearly and keep the report number to follow it.',
+    answerSq: 'Po. Te hapi “Të dhënat e kontaktit” lëreni të fikur “Përfshi kontaktin”: raportimi dërgohet pa emër dhe pa telefon. Atëherë Bashkia nuk mund t’ju telefonojë nëse i duhen më shumë të dhëna, prandaj përshkruajeni problemin qartë dhe ruajeni numrin e raportimit për ta ndjekur.',
+    answerEn: 'Yes. At the “Contact information” step leave “Include contact” off: the report is sent without a name or phone. The Municipality then cannot call you if it needs more details, so describe the problem clearly and keep the report number to follow it.',
     keywords: 'anonim, anonime, anonimisht, pa emër, anonymous, anonymously, without name',
   },
   {

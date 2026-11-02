@@ -12,7 +12,7 @@ export const CACHE_KEYS = {
   catalog: 'catalog:v3', // v3: every category ends with "Tjetër" (<category>.other)
   departments: 'departments:active:v1',
   settings: 'settings:v1',
-  guide: 'guide:active:v2', // v2: answers without accounts or e-mails
+  guide: 'guide:active:v3', // v3: the "Përfshi kontaktin" switch
   publicStats: 'stats:public:v1',
   frequentTypes: 'home:frequent-types:v1',
   userState: (userId: string) => `user:${userId}:state:v3`,
