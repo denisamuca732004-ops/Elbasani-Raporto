@@ -22,12 +22,12 @@
  * Used on /raporto and inside the /embed widget.
  */
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   checkDescriptionAction, checkPhotoAction, createReportAction, findNearbyAction, followReportAction, placeAtAction, searchPlacesAction,
 } from '@/actions/reports';
 import Icon from '@/components/Icon';
-import { LocationPicker } from '@/components/maps';
+import { LocationPicker, MiniMap } from '@/components/maps';
 import PhotoInput from '@/components/PhotoInput';
 import { useCatalog, useSettings } from '@/components/providers';
 import { CategoryIcon, ErrorAlert, Field } from '@/components/ui';
@@ -77,6 +77,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [pickedLocality, setPickedLocality] = useState<{ zoneId: number; localityId: number; label: string } | null>(null);
   const [mapFocus, setMapFocus] = useState<{ point: LatLng; zoom: number } | null>(null);
   const placeSeq = useRef(0);
+  // The chosen photo, shown small on the last step.
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoCheck, setPhotoCheck] = useState<PhotoCheck | null>(null);
   // The last photo was refused (inappropriate, or a document / screenshot): the message stays until another photo is chosen.
@@ -137,6 +139,15 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photo, typeId, rules.aiChecks]);
   const currentCheck = photo && photoCheck?.photo === photo && photoCheck.typeId === typeId ? photoCheck : null;
+  useEffect(() => {
+    if (!photo) {
+      setPhotoUrl(null);
+      return undefined;
+    }
+    const url = URL.createObjectURL(photo);
+    setPhotoUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photo]);
   // The zone of the pin, from the zone borders (works offline too).
   const pin = location;
   const pinZoneCode = pin && insideArea(pin, rules.serviceArea) ? zoneCodeAt(pin.latitude, pin.longitude) : null;
@@ -649,23 +660,46 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       {stepName === 'review' && (
         <section>
           <h2>{t('report.reviewTitle')}</h2>
-          <dl className="review-list card">
+          <p className="muted">{t('report.reviewIntro')}</p>
+          {/* As on BOS:311 "Submit Report": one card, a part per step, each with its own "Ndrysho". */}
+          <div className="review-card">
             {([
-              ['type', typeName(type, lang)],
-              ['location', placeSummary],
-              ['photo', photo ? t('report.photoAdded') : '–'],
-              ['details', description.trim()],
-              ['contact', contactMode === 'anonymous'
-                ? t('report.anonymousShort')
-                : [contact.name.trim(), contact.phone.trim()].filter(Boolean).join(' · ')],
-            ] as Array<[StepName, string]>).map(([s, value]) => (
-              <div className="review-row" key={s}>
-                <dt>{t(`report.steps.${s}`)}</dt>
-                <dd>{value || '–'}</dd>
-                <button type="button" className="btn btn-sm btn-ghost" onClick={() => goTo(STEPS.indexOf(s))}><Icon name="edit" size={14} />{t('common.change')}</button>
-              </div>
+              {
+                step: 'type', icon: <CategoryIcon icon={category?.icon} size={28} />,
+                value: [category ? (lang === 'en' ? category.nameEn : category.nameSq) : '', typeName(type, lang)].filter(Boolean).join(' · '),
+              },
+              {
+                step: 'location', icon: <Icon name="pin" size={28} strokeWidth={1.6} />,
+                value: (
+                  <>
+                    <p>{placeSummary || '–'}</p>
+                    {location && <div className="review-map"><MiniMap latitude={location.latitude} longitude={location.longitude} /></div>}
+                  </>
+                ),
+              },
+              {
+                step: 'photo', icon: <Icon name="camera" size={28} strokeWidth={1.6} />,
+                value: photoUrl ? <img className="review-photo" src={photoUrl} alt={t('report.photoAdded')} /> : '–',
+              },
+              { step: 'details', icon: <Icon name="list" size={28} strokeWidth={1.6} />, value: description.trim() || '–' },
+              {
+                step: 'contact', icon: <Icon name="user" size={28} strokeWidth={1.6} />,
+                value: contactMode === 'anonymous' ? t('report.anonymousShort') : [contact.name.trim(), contact.phone.trim()].filter(Boolean).join(' · ') || '–',
+              },
+            ] as Array<{ step: StepName; icon: ReactNode; value: ReactNode }>).map((item) => (
+              <section className="review-item" key={item.step} aria-labelledby={`review-${item.step}`}>
+                <span className="review-icon" aria-hidden="true">{item.icon}</span>
+                <h3 id={`review-${item.step}`}>{t(`report.steps.${item.step}`)}</h3>
+                <div className="review-value">{item.value}</div>
+                <button
+                  type="button" className="btn btn-sm btn-outline" onClick={() => goTo(STEPS.indexOf(item.step))}
+                  aria-label={`${t('common.change')}: ${t(`report.steps.${item.step}`)}`}
+                >
+                  {t('common.change')}
+                </button>
+              </section>
             ))}
-          </dl>
+          </div>
           <p className="small muted" style={{ marginTop: 12 }}>{t('report.consent')} <Link href="/privatesia" target="_blank">{t('nav.privacy')}</Link>.</p>
           <ErrorAlert error={error} />
         </section>

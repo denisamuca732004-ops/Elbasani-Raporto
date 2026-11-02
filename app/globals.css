@@ -435,12 +435,17 @@ pre.code { background: #10200F; color: #D8F5D8; padding: 14px; border-radius: va
 .location-mode { margin-top: 4px; }
 .zone-found { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin: 12px 0 16px; padding: 10px 14px; background: var(--ok-bg); border-left: 4px solid var(--ok); border-radius: var(--radius); }
 .zone-found svg { color: var(--ok); flex: none; }
-.review-list { margin: 0; padding: 0; }
-.review-row { display: grid; grid-template-columns: 150px 1fr auto; gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
-.review-row:last-child { border-bottom: 0; }
-.review-row dt { font-family: var(--font-head); font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
-.review-row dd { margin: 0; white-space: pre-wrap; word-break: break-word; }
-@media (max-width: 560px) { .review-row { grid-template-columns: 1fr auto; } .review-row dd { grid-column: 1 / -1; grid-row: 2; } }
+.review-card { border: 1.5px solid var(--ink); border-radius: var(--radius); background: #fff; overflow: hidden; }
+.review-item { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 20px 22px; }
+.review-item + .review-item { border-top: 1px solid var(--line); }
+.review-icon { color: var(--muted); display: flex; }
+.review-item h3 { margin: 4px 0 0; }
+.review-value { width: 100%; color: var(--ink-soft); white-space: pre-wrap; word-break: break-word; }
+.review-value p { margin: 0; }
+.review-map { margin-top: 10px; max-width: 460px; }
+.review-map .map-box { height: 160px !important; }
+.review-photo { display: block; width: 180px; max-width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.review-item .btn { margin-top: 6px; min-width: 110px; }
 
 /* ── Priority ── */
 .priority { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-head); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 9px 3px 7px; border-radius: 999px; white-space: nowrap; border: 1px solid; }
