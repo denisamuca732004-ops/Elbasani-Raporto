@@ -77,11 +77,14 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
   return <Link href={href} className={active ? 'active' : undefined} aria-current={active ? 'page' : undefined}>{children}</Link>;
 }
 
-/** "Panel" for a signed-in staff member. Residents have no accounts, so nobody else gets a sign-in link here (staff: footer). */
+/**
+ * Top right: "Paneli" for a signed-in staff member, otherwise "Hyrja për stafin" (residents have no
+ * accounts). On phones the staff link is in the menu instead.
+ */
 function AccountLink() {
   const { t } = useI18n();
   const viewer = useViewer();
-  if (viewer?.kind !== 'staff') return null;
+  if (viewer?.kind !== 'staff') return <Link href="/hyrje" className="staff-link">{t('nav.staff')}</Link>;
   return <Link href="/admin" className="account-link"><Icon name="dashboard" size={16} /><span>{t('nav.panel')}</span></Link>;
 }
 
@@ -146,7 +149,6 @@ export function SiteFooter() {
             <h4>{t('footer.info')}</h4>
             <ul>
               <li><Link href="/privatesia">{t('nav.privacy')}</Link></li>
-              <li><Link href="/hyrje">{t('nav.staff')}</Link></li>
               <li><a href="https://elbasani.gov.al" target="_blank" rel="noreferrer">elbasani.gov.al</a></li>
             </ul>
           </div>

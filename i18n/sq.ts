@@ -35,7 +35,7 @@ const sq = {
     seeMap: 'Shiko hartën',
     noRecent: 'Ende nuk ka raportime publike.',
     how: {
-      step1: { title: 'Raportoni', text: 'Zgjidhni problemin, shënoni vendin në hartë, shtoni foton dhe përshkrimin. Nuk ju duhet llogari.' },
+      step1: { title: 'Raportoni', text: 'Zgjidhni kategorinë, shënoni vendin në hartë, shtoni foton dhe përshkrimin. Nuk ju duhet llogari.' },
       step2: { title: 'Merrni numrin', text: 'Çdo raportim merr një numër (p.sh. EL-2026-00042) dhe dërgohet automatikisht te sektori përgjegjës.' },
       step3: { title: 'Ndiqeni deri në zgjidhje', text: 'Shikoni statusin në çdo kohë te “Ndiq raportimin”: me numrin e raportimit, ose sipas datës, zonës, kategorisë, ose emrit dhe telefonit.' },
     },

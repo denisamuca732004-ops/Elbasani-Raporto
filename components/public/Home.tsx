@@ -1,8 +1,8 @@
 'use client';
 /**
- * Home page: the "Track a report" button, the categories (a report starts
- * ONLY by choosing one), the latest public reports, the problems reported
- * most often (for information, not links) and how it works. Questions are
+ * Home page: the "Track a report" button, how it works (3 steps), the
+ * categories (a report starts ONLY by choosing one), the latest public
+ * reports and the problems reported most often (for information, not links). Questions are
  * answered by the help chat at the bottom right (components/site/ChatHelp.tsx).
  */
 import Link from 'next/link';
@@ -26,6 +26,19 @@ export default function Home({ recent, frequent = [] }: { recent: PublicCard[] |
           <div className="hero-actions">
             <Link href="/ndiq" className="btn btn-lg"><Icon name="search" size={20} />{t('home.trackButton')}</Link>
           </div>
+        </div>
+      </section>
+
+      {/* How it works: at the top, before the categories. */}
+      <section className="section how-steps">
+        <div className="container grid-3">
+          {['step1', 'step2', 'step3'].map((k, i) => (
+            <div key={k}>
+              <div className="head" style={{ fontSize: '2rem', color: 'var(--brand-button)' }}>{i + 1}</div>
+              <h3>{t(`home.how.${k}.title`)}</h3>
+              <p className="muted">{t(`home.how.${k}.text`)}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -76,18 +89,6 @@ export default function Home({ recent, frequent = [] }: { recent: PublicCard[] |
           </div>
         </section>
       )}
-
-      <section className="section">
-        <div className="container grid-3">
-          {['step1', 'step2', 'step3'].map((k, i) => (
-            <div key={k}>
-              <div className="head" style={{ fontSize: '2rem', color: 'var(--brand-button)' }}>{i + 1}</div>
-              <h3>{t(`home.how.${k}.title`)}</h3>
-              <p className="muted">{t(`home.how.${k}.text`)}</p>
-            </div>
-          ))}
-        </div>
-      </section>
     </>
   );
 }

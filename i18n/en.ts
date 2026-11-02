@@ -35,7 +35,7 @@ const en = {
     seeMap: 'See the map',
     noRecent: 'There are no public reports yet.',
     how: {
-      step1: { title: 'Report', text: 'Choose the problem, mark the place on the map, add a photo and a description. No account needed.' },
+      step1: { title: 'Report', text: 'Choose the category, mark the place on the map, add a photo and a description. No account needed.' },
       step2: { title: 'Get a number', text: 'Every report gets a number (e.g. EL-2026-00042) and goes automatically to the responsible sector.' },
       step3: { title: 'Follow it until it is fixed', text: 'Check the status at any time under “Track a report”: with the report number, or by date, area, category, or your name and phone.' },
     },
