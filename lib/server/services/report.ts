@@ -23,7 +23,8 @@ import { createToken } from '../tokens';
 import { assertAdmin, assertCanAccessReport, isAdmin, reportScope } from './access';
 import { insideMunicipality, zoneOfPoint } from './geo';
 import { allowedStatusesFor, detailInclude, listInclude, toDetail, toListItem } from './mapper';
-import { citizenRecipients, notifyCitizenStatus, notifyDepartmentOfReport } from './notification';
+import { citizenRecipients, notifyCitizenStatus, notifyDepartmentOfReport, sendReportToSector } from './notification';
+import { currentLink, linkUrl } from './reportLinks';
 import { persistNewReport, routeDepartmentId } from './reportCreation';
 import { moveToDepartment, settlePendingTransfer } from './routing';
 
@@ -32,12 +33,14 @@ const CHANGED_MEANWHILE = 'Raportimi u ndryshua ndërkohë nga dikush tjetër. R
 
 /* ───────────────────────── Loading ───────────────────────── */
 
-async function loadReport(id: string, tx: Tx = db) {
+export async function loadReport(id: string, tx: Tx = db) {
   const report = await tx.report.findUnique({ where: { id } });
   if (!report) throw notFound('Raportimi nuk u gjet.');
   return report;
 }
-type ReportRow = Awaited<ReturnType<typeof loadReport>>;
+export type ReportRow = Awaited<ReturnType<typeof loadReport>>;
+/** Who changed something: a staff member, or nobody signed in (a sector working from its e-mail link: id null). */
+export type Actor = { id: string | null };
 
 async function loadAccessible(user: Principal, id: string) {
   const report = await loadReport(id);
@@ -56,7 +59,29 @@ export async function buildDetail(user: Principal, id: string): Promise<ReportDe
     db.reportEvent.findMany({ where: { reportId: id }, include: { actor: { select: { id: true, name: true } } }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] }),
   ]);
   if (!report) throw notFound('Raportimi nuk u gjet.');
-  return toDetail(report, user, events);
+  const detail = toDetail(report, user, events);
+  if (report.department?.worksByEmail) {
+    const link = await currentLink(id, report.departmentId);
+    detail.sectorMail = {
+      email: link?.email ?? report.department.email,
+      sentAt: link?.sentAt.toISOString() ?? null,
+      expiresAt: link?.expiresAt.toISOString() ?? null,
+      lastUsedAt: link?.lastUsedAt?.toISOString() ?? null,
+      url: link && isAdmin(user) ? linkUrl(link) : null,
+    };
+  }
+  return detail;
+}
+
+/** Admin: e-mail the report again to its sector that works by e-mail (also a demo report, on purpose). */
+export async function resendToSector(user: Principal, id: string): Promise<ReportDetail> {
+  assertAdmin(user);
+  const report = await db.report.findUnique({ where: { id }, include: { department: true } });
+  if (!report) throw notFound('Raportimi nuk u gjet.');
+  if (!report.department?.worksByEmail || !report.department.email) throw badRequest('Sektori i këtij raportimi nuk punon me email.');
+  assertOpen(report, 'Raportimi është mbyllur.');
+  await sendReportToSector(id, 'resend');
+  return buildDetail(user, id);
 }
 
 export async function getReport(user: Principal, id: string): Promise<ReportDetail> {
@@ -148,18 +173,20 @@ export async function assignableUsers(user: Principal, reportId: string) {
 
 /* ───────────────────────── Status workflow ───────────────────────── */
 
-interface ApplyStatusOptions {
+export interface ApplyStatusOptions {
   note?: string | null;
   publicNote?: boolean;
   extra?: Prisma.ReportUncheckedUpdateManyInput;
+  /** Kept with the history entry, e.g. { via: 'sector_link', email } for a sector working by e-mail. */
+  meta?: Prisma.InputJsonValue;
 }
 
 /**
  * Changes the status, keeps every timestamp consistent and writes the history.
  * Fails with 409 if someone else changed the status meanwhile.
  */
-async function applyStatus(tx: Tx, user: Principal, report: ReportRow, status: Status, opts: ApplyStatusOptions = {}): Promise<Status> {
-  const { note = null, publicNote = true, extra = {} } = opts;
+export async function applyStatus(tx: Tx, user: Actor, report: ReportRow, status: Status, opts: ApplyStatusOptions = {}): Promise<Status> {
+  const { note = null, publicNote = true, extra = {}, meta } = opts;
   const previous = report.status;
   const now = new Date();
   const data: Prisma.ReportUncheckedUpdateManyInput = { status, ...extra };
@@ -195,6 +222,7 @@ async function applyStatus(tx: Tx, user: Principal, report: ReportRow, status: S
       actorId: user.id,
       isPublic: status !== 'NEEDS_REVIEW' && status !== 'PENDING',
       message: note && publicNote ? note : null,
+      ...(meta !== undefined ? { meta } : {}),
     },
   });
   if (note && !publicNote) {
@@ -242,6 +270,20 @@ export async function rejectReport(user: Principal, id: string, input: { reason:
 export async function resolveReport(user: Principal, id: string, input: { note?: string; photoKey?: string }): Promise<ReportDetail> {
   const report = await loadAccessible(user, id);
   assertAllowed(user, report, 'RESOLVED');
+  await resolveAs(user, report, input);
+  return buildDetail(user, id);
+}
+
+/**
+ * Marks the report RESOLVED: the optional "after" photo, the closing note (public), the resident's
+ * e-mails (older reports with an e-mail) and the AI check of the "after" photo. Shared by the panel
+ * and the link of a sector that works by e-mail.
+ */
+export async function resolveAs(
+  user: Actor, report: ReportRow, input: { note?: string | null; photoKey?: string },
+  opts: { extra?: Prisma.ReportUncheckedUpdateManyInput; meta?: Prisma.InputJsonValue } = {},
+): Promise<void> {
+  const id = report.id;
   const note = input.note?.trim() || null;
   const photo: StoredImage | null = input.photoKey ? await storeImage(await takeTemporaryUpload(input.photoKey)) : null;
   const feedback = report.contactEmail && !report.isTest ? createToken() : null;
@@ -253,7 +295,8 @@ export async function resolveReport(user: Principal, id: string, input: { note?:
         });
       }
       await applyStatus(tx, user, report, 'RESOLVED', {
-        note, publicNote: true, extra: { closingNote: note, citizenTokenHash: feedback?.hash ?? null, resolvedAt: new Date() },
+        note, publicNote: true, meta: opts.meta,
+        extra: { closingNote: note, citizenTokenHash: feedback?.hash ?? null, resolvedAt: new Date(), ...opts.extra },
       });
     });
   } catch (err) {
@@ -272,7 +315,6 @@ export async function resolveReport(user: Principal, id: string, input: { note?:
     }
   }
   if (photo) await enqueue('closing-check', { reportId: id });
-  return buildDetail(user, id);
 }
 
 /* ───────────────────────── Other actions ───────────────────────── */

@@ -53,6 +53,7 @@ export async function listDepartments(admin: Principal) {
     nameEn: d.nameEn,
     description: d.description,
     email: d.email,
+    worksByEmail: d.worksByEmail,
     active: d.active,
     heads: heads.filter((h) => h.departmentId === d.id).map((h) => ({ id: h.id, name: h.name, email: h.email, active: h.active })),
     activeTypes: typesBy.get(d.id) ?? 0,
@@ -64,7 +65,10 @@ export type DepartmentRow = Awaited<ReturnType<typeof listDepartments>>[number];
 export async function createDepartment(admin: Principal, input: DepartmentInput) {
   assertAdmin(admin);
   return saveUnique(() => db.department.create({
-    data: { code: input.code, nameSq: input.nameSq, nameEn: input.nameEn, description: input.description ?? null, email: input.email ?? null, active: input.active },
+    data: {
+      code: input.code, nameSq: input.nameSq, nameEn: input.nameEn, description: input.description ?? null, email: input.email ?? null,
+      worksByEmail: input.worksByEmail, active: input.active,
+    },
   }));
 }
 
@@ -72,6 +76,12 @@ export async function updateDepartment(admin: Principal, id: number, input: Depa
   assertAdmin(admin);
   const department = await db.department.findUnique({ where: { id } });
   if (!department) throw notFound('Sektori nuk u gjet.');
+  // A sector that works by e-mail needs the address its reports go to.
+  const nextEmail = 'email' in input ? input.email ?? null : department.email;
+  const nextByEmail = input.worksByEmail ?? department.worksByEmail;
+  if (nextByEmail && !nextEmail) {
+    throw badRequest('Për të punuar me email, vendosni emailin e sektorit.', [{ field: 'email', code: 'required', message: 'Vendosni emailin e sektorit.' }]);
+  }
   if (input.active === false && department.active) {
     const [types, open] = await Promise.all([
       db.requestType.count({ where: { departmentId: id, active: true } }),
@@ -95,6 +105,7 @@ export async function updateDepartment(admin: Principal, id: number, input: Depa
       ...(input.nameEn !== undefined ? { nameEn: input.nameEn } : {}),
       ...('description' in input ? { description: input.description ?? null } : {}),
       ...('email' in input ? { email: input.email ?? null } : {}),
+      ...(input.worksByEmail !== undefined ? { worksByEmail: input.worksByEmail } : {}),
       ...(input.active !== undefined ? { active: input.active } : {}),
     },
   }));

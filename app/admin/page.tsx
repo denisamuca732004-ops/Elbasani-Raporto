@@ -30,7 +30,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     const active = departments.filter((d) => d.active);
     onboarding = {
       activeDepartments: active.length,
-      withoutHead: active.filter((d) => !d.heads.some((h) => h.active)).map((d) => ({ nameSq: d.nameSq, nameEn: d.nameEn })),
+      // A sector that works by e-mail needs no head in the panel.
+      withoutHead: active.filter((d) => !d.worksByEmail && !d.heads.some((h) => h.active)).map((d) => ({ nameSq: d.nameSq, nameEn: d.nameEn })),
     };
   }
   return <Dashboard principal={principal} data={data} onboarding={onboarding} />;

@@ -19,9 +19,13 @@ const departmentFields = {
   nameEn: name160,
   description: optionalText(1000),
   email: optionalEmail,
+  /** Works by e-mail instead of the panel: each report goes to `email` with a link (needs the e-mail). */
+  worksByEmail: z.boolean(),
   active: z.boolean(),
 };
-export const departmentSchema = z.strictObject({ ...departmentFields, active: z.boolean().default(true) });
+export const departmentSchema = z
+  .strictObject({ ...departmentFields, worksByEmail: z.boolean().default(false), active: z.boolean().default(true) })
+  .refine((v) => !v.worksByEmail || Boolean(v.email), { path: ['email'], message: 'Për të punuar me email, vendosni emailin e sektorit.' });
 export const departmentPatchSchema = z.strictObject(departmentFields).partial().refine((v) => Object.keys(v).length > 0, { message: 'Nuk ka asnjë ndryshim.' });
 export type DepartmentInput = z.output<typeof departmentSchema>;
 export type DepartmentPatch = z.output<typeof departmentPatchSchema>;

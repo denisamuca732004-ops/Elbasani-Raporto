@@ -178,6 +178,7 @@ export function toTransferSummary(t: TransferRow): TransferSummary {
     suggestedDepartment: departmentRef(t.suggestedDepartment),
     toDepartment: departmentRef(t.toDepartment),
     requestedBy: personRef(t.requestedBy),
+    requestedByEmail: t.requestedByEmail,
     decidedBy: personRef(t.decidedBy),
     decisionNote: t.decisionNote,
     createdAt: t.createdAt.toISOString(),
@@ -273,6 +274,7 @@ export function toDetail(r: DetailRow, user: Principal, events: EventRow[]): Rep
       canDelete: admin,
     },
     pendingTransfer,
+    sectorMail: null, // filled in by buildDetail (report.ts)
     transfers,
     attachments: r.attachments.map(toAttachment),
     events: events.map((e) => ({

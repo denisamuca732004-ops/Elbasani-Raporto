@@ -1,8 +1,9 @@
 'use client';
 /**
  * Admin: the departments (sectors) of the municipality. Every report type is
- * routed to a department, and every department gets one or more heads
- * (përgjegjës) who handle its reports.
+ * routed to a department. A department works either in the panel, with one or
+ * more heads (përgjegjës), or by e-mail: each report goes to its address with a
+ * link where it marks the work or asks for a review (no account).
  */
 import Link from 'next/link';
 import { useState, type ChangeEvent, type FormEvent } from 'react';
@@ -17,8 +18,8 @@ import { useAdminAction } from './useAdminAction';
 export const slugify = (s: string) => s.toLowerCase().replace(/ë/g, 'e').replace(/ç/g, 'c').normalize('NFD').replace(/[̀-ͯ]/g, '')
   .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60);
 
-type DepartmentForm = { nameSq: string; nameEn: string; code: string; description: string; email: string };
-const EMPTY: DepartmentForm = { nameSq: '', nameEn: '', code: '', description: '', email: '' };
+type DepartmentForm = { nameSq: string; nameEn: string; code: string; description: string; email: string; worksByEmail: boolean };
+const EMPTY: DepartmentForm = { nameSq: '', nameEn: '', code: '', description: '', email: '', worksByEmail: false };
 
 function DepartmentFormView({ initial, onSubmit, onCancel, submitLabel, busy, isNew }: {
   initial: DepartmentForm; onSubmit: (body: Record<string, unknown>) => void; onCancel?: () => void; submitLabel: string; busy: boolean; isNew?: boolean;
@@ -31,6 +32,7 @@ function DepartmentFormView({ initial, onSubmit, onCancel, submitLabel, busy, is
     nameSq: form.nameSq.trim().length < 2 ? t('admin.required') : null,
     nameEn: form.nameEn.trim().length < 2 ? t('admin.required') : null,
     code: isNew && !/^[a-z0-9_.-]{2,60}$/.test(form.code) ? t('admin.sectors.codeRule') : null,
+    email: form.worksByEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim()) ? t('admin.sectors.emailNeeded') : null,
   };
   const set = (field: keyof DepartmentForm) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -44,7 +46,7 @@ function DepartmentFormView({ initial, onSubmit, onCancel, submitLabel, busy, is
     }
     onSubmit({
       nameSq: form.nameSq.trim(), nameEn: form.nameEn.trim(), description: form.description.trim(), email: form.email.trim(),
-      ...(isNew ? { code: form.code } : {}),
+      worksByEmail: form.worksByEmail, ...(isNew ? { code: form.code } : {}),
     });
   }
   const suffix = initial.code || 'new';
@@ -62,10 +64,17 @@ function DepartmentFormView({ initial, onSubmit, onCancel, submitLabel, busy, is
             <input id="sf-code" type="text" value={form.code} maxLength={60} onChange={(e) => { setCodeTouched(true); setForm({ ...form, code: e.target.value.toLowerCase() }); }} />
           </Field>
         )}
-        <Field label={t('admin.sectors.email')} htmlFor={`sf-email-${suffix}`} hint={t('admin.sectors.emailHint')}>
+        <Field
+          label={t('admin.sectors.email')} htmlFor={`sf-email-${suffix}`} required={form.worksByEmail}
+          hint={form.worksByEmail ? t('admin.sectors.emailHintByEmail') : t('admin.sectors.emailHint')} error={showErrors ? errors.email : null}
+        >
           <input id={`sf-email-${suffix}`} type="email" value={form.email} maxLength={200} onChange={set('email')} />
         </Field>
       </div>
+      <label className="check-row">
+        <input type="checkbox" checked={form.worksByEmail} onChange={(e) => setForm({ ...form, worksByEmail: e.target.checked })} />
+        <span><strong>{t('admin.sectors.worksByEmail')}</strong><span className="small muted">{t('admin.sectors.worksByEmailHint')}</span></span>
+      </label>
       <Field label={t('admin.sectors.description')} htmlFor={`sf-desc-${suffix}`} hint={t('admin.sectors.descriptionHint')}>
         <textarea id={`sf-desc-${suffix}`} value={form.description} maxLength={1000} onChange={set('description')} style={{ minHeight: 70 }} />
       </Field>
@@ -110,7 +119,7 @@ export default function Departments({ items }: { items: DepartmentRow[] }) {
         <article key={s.id} className={`card sector-card${s.active ? '' : ' inactive'}`}>
           {editing === s.id ? (
             <DepartmentFormView
-              initial={{ nameSq: s.nameSq, nameEn: s.nameEn, code: s.code, description: s.description ?? '', email: s.email ?? '' }}
+              initial={{ nameSq: s.nameSq, nameEn: s.nameEn, code: s.code, description: s.description ?? '', email: s.email ?? '', worksByEmail: s.worksByEmail }}
               busy={busy} submitLabel={t('common.save')} onCancel={() => setEditing(null)}
               onSubmit={async (body) => {
                 const ok = await run(() => call(updateDepartmentAction(s.id, body)), t('detail.saved'));
@@ -125,6 +134,7 @@ export default function Departments({ items }: { items: DepartmentRow[] }) {
                   <div className="small muted">{s.code}{s.email ? ` · ${s.email}` : ''}</div>
                 </div>
                 <div className="row">
+                  {s.worksByEmail && <span className="badge status-open"><Icon name="mail" size={12} />{t('admin.sectors.byEmailBadge')}</span>}
                   {!s.active && <span className="badge status-rejected">{t('admin.inactive')}</span>}
                   <button type="button" className="btn btn-sm btn-outline" onClick={() => setEditing(s.id)}><Icon name="edit" size={14} />{t('common.edit')}</button>
                   <button
@@ -142,7 +152,8 @@ export default function Departments({ items }: { items: DepartmentRow[] }) {
                 <span><strong>{s.heads.filter((h) => h.active).length}</strong> {t('admin.sectors.heads')}</span>
               </div>
               <div className="heads">
-                {s.heads.length === 0 && <span className="badge badge-overdue">{t('admin.sectors.noHead')}</span>}
+                {s.worksByEmail && <span className="small">{t('admin.sectors.byEmailNote', { email: s.email ?? '' })}</span>}
+                {s.heads.length === 0 && !s.worksByEmail && <span className="badge badge-overdue">{t('admin.sectors.noHead')}</span>}
                 {s.heads.map((h) => (
                   <span key={h.id} className={`head-chip${h.active ? '' : ' inactive'}`}><Icon name="user" size={12} /> {h.name}</span>
                 ))}

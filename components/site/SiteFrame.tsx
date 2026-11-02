@@ -165,6 +165,8 @@ export function SiteFooter() {
 /** guide: the questions the help chat answers (empty on the "page not found" page: it still finds report numbers, problems and streets). */
 export default function SiteFrame({ children, guide }: { children: ReactNode; guide?: GuideItem[] }) {
   const { t } = useI18n();
+  // The help chat is for residents: not on a sector's report page (/sektori/…).
+  const forResidents = !usePathname().startsWith('/sektori');
   return (
     <>
       <a href="#main" className="sr-only">{t('common.skip')}</a>
@@ -172,7 +174,7 @@ export default function SiteFrame({ children, guide }: { children: ReactNode; gu
       <OfflineBar />
       <main id="main">{children}</main>
       <SiteFooter />
-      <ChatHelp guide={guide ?? []} />
+      {forResidents && <ChatHelp guide={guide ?? []} />}
     </>
   );
 }

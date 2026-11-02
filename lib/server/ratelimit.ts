@@ -23,6 +23,8 @@ const RULES = {
   geocode: () => ({ limit: 300, windowSeconds: 600 }),
   // "Ndiq raportimin" by name + phone: few tries, so a phone number cannot be guessed.
   trackContact: () => ({ limit: 20, windowSeconds: 3600 }),
+  // The report link of a sector that works by e-mail (actions and photos).
+  sector: () => ({ limit: 120, windowSeconds: 600 }),
   feedback: () => ({ limit: 20, windowSeconds: 3600 }),
   setup: () => ({ limit: 10, windowSeconds: 3600 }),
   register: () => ({ limit: 10, windowSeconds: 3600 }),

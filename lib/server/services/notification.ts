@@ -8,6 +8,7 @@ import { publicStatusOf, type Priority, type Status } from '@/lib/shared/domain'
 import { db } from '../db';
 import { queueEmails } from '../mail';
 import * as tpl from '../mailTemplates';
+import { issueLink, linkUrl, revokeLinks } from './reportLinks';
 
 /** Residents who asked for updates: the reporter (with email) and people who followed the case. */
 export async function citizenRecipients(r: { id: string; contactEmail: string | null; wantsUpdates: boolean }): Promise<string[]> {
@@ -47,16 +48,26 @@ export async function notifyCitizenStatus(
   await queueEmails(await citizenRecipients(r), mail, r.id);
 }
 
-/** A report arrived in a department (new, moved after review, or re-routed by the admin). */
+/**
+ * A report arrived in a department (new, moved after review, or re-routed by the admin). The report
+ * links of any other sector stop working. A sector that works by e-mail gets the whole report with
+ * its link (sendReportToSector); the others get the panel notice.
+ */
 export async function notifyDepartmentOfReport(reportId: string, reason: tpl.DepartmentReportReason): Promise<void> {
   const r = await db.report.findUnique({
     where: { id: reportId },
     select: {
       id: true, caseNumber: true, isTest: true, departmentId: true, priority: true, address: true,
-      requestType: { select: { nameSq: true } }, department: { select: { nameSq: true } },
+      requestType: { select: { nameSq: true } }, department: { select: { nameSq: true, email: true, worksByEmail: true } },
     },
   });
-  if (!r || r.isTest) return;
+  if (!r) return;
+  await revokeLinks(r.id, r.department?.worksByEmail ? r.departmentId : null);
+  if (r.isTest) return;
+  if (r.department?.worksByEmail && r.department.email) {
+    await sendReportToSector(r.id, reason);
+    return;
+  }
   const recipients = r.departmentId ? await departmentRecipients(r.departmentId) : await adminRecipients();
   const mail = tpl.departmentNewReport({
     caseNumber: r.caseNumber,
@@ -68,4 +79,43 @@ export async function notifyDepartmentOfReport(reportId: string, reason: tpl.Dep
     reason,
   });
   await queueEmails(recipients, mail, r.id);
+}
+
+/**
+ * A sector that works by e-mail: the whole report (type, priority, deadline, place with a map link,
+ * description, the resident's name and phone) and the link where it changes the status or asks for a
+ * review, to the sector's address. Returns the link, or null when the sector does not work by e-mail.
+ * The admin can send it again ("resend"), also for a demo report.
+ */
+export async function sendReportToSector(reportId: string, reason: tpl.DepartmentReportReason) {
+  const r = await db.report.findUnique({
+    where: { id: reportId },
+    include: {
+      requestType: { select: { nameSq: true } }, category: { select: { nameSq: true } }, neighbourhood: { select: { name: true } },
+      department: { select: { id: true, nameSq: true, email: true, worksByEmail: true } },
+    },
+  });
+  const department = r?.department;
+  if (!r || !department?.worksByEmail || !department.email) return null;
+  const link = await issueLink(r.id, { id: department.id, email: department.email });
+  const mail = tpl.sectorReport({
+    caseNumber: r.caseNumber,
+    typeNameSq: r.requestType.nameSq,
+    categoryNameSq: r.category.nameSq,
+    departmentNameSq: department.nameSq,
+    priority: r.priority as Priority,
+    dueAt: r.dueAt,
+    address: r.address,
+    zone: r.neighbourhood?.name ?? null,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    approximate: r.locationApproximate,
+    description: r.description,
+    contact: r.anonymous ? null : { name: r.contactName, phone: r.contactPhone },
+    reason,
+    link: linkUrl(link),
+    linkExpires: link.expiresAt,
+  });
+  await queueEmails([department.email], mail, r.id);
+  return link;
 }

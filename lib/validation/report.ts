@@ -109,6 +109,13 @@ export const transferRequestSchema = z.strictObject({
 });
 export type TransferRequestInput = z.output<typeof transferRequestSchema>;
 
+/* ─── A sector that works by e-mail, from its report link (no account) ─── */
+export const sectorToken = z.string().min(40).max(160);
+/** "Po merremi": an optional note the resident sees. */
+export const sectorStartSchema = z.strictObject({ note: optionalText(1000) });
+/** "U zgjidh": what was done (the resident sees it) and, optionally, an "after" photo. */
+export const sectorResolveSchema = z.strictObject({ note: requiredText(5, 2000), photoKey: uploadKey.optional() });
+
 export const transferDecisionSchema = z.discriminatedUnion('decision', [
   z.strictObject({ decision: z.literal('approve'), toDepartmentId: id.optional(), note: optionalText(1000) }),
   z.strictObject({ decision: z.literal('decline'), note: requiredText(LIMITS.minDeclineNote, 1000) }),

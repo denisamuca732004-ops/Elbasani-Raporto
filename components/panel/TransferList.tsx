@@ -68,7 +68,7 @@ export default function TransferList({ principal, filter, data }: { principal: P
               </span>
             </div>
             <dl className="kv" style={{ marginTop: 12 }}>
-              <dt>{t('transfers.from')}</dt><dd>{departmentName(item.fromDepartment, lang) ?? '—'}{item.requestedBy ? ` · ${item.requestedBy.name}` : ''}</dd>
+              <dt>{t('transfers.from')}</dt><dd>{departmentName(item.fromDepartment, lang) ?? '—'}{item.requestedBy ? ` · ${item.requestedBy.name}` : item.requestedByEmail ? ` · ${t('transfers.byEmail', { email: item.requestedByEmail })}` : ''}</dd>
               <dt>{t('transfers.sentAt')}</dt><dd>{formatDate(item.createdAt, lang, true)}</dd>
               <dt>{t('transfers.reason')}</dt><dd><blockquote style={{ margin: 0 }}>{item.reason}</blockquote></dd>
               <dt>{t('transfers.suggestion')}</dt><dd>{departmentName(item.suggestedDepartment, lang) ?? t('transfers.noSuggestion')}</dd>

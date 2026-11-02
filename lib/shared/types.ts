@@ -98,6 +98,8 @@ export interface TransferSummary {
   suggestedDepartment: NamedRef | null;
   toDepartment: NamedRef | null;
   requestedBy: PersonRef | null;
+  /** Asked from the e-mail link of a sector without an account (no person). */
+  requestedByEmail: string | null;
   decidedBy: PersonRef | null;
   decisionNote: string | null;
   createdAt: string;
@@ -195,6 +197,11 @@ export interface ReportDetail extends ReportListItem {
   allowedStatuses: Status[];
   permissions: ReportPermissions;
   pendingTransfer: TransferSummary | null;
+  /**
+   * The report's sector works by e-mail (no panel account): where and when its link was sent, and
+   * when the sector last used it. url: only for the admin ("Hap faqen e sektorit").
+   */
+  sectorMail: { email: string | null; sentAt: string | null; expiresAt: string | null; lastUsedAt: string | null; url: string | null } | null;
   transfers: TransferSummary[];
   attachments: ReportAttachment[];
   events: ReportEventItem[];

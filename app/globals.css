@@ -182,6 +182,17 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand-button); o
 /* Answers of the guide (help chat, admin preview) */
 .guide-answer p { white-space: pre-line; margin: 0 0 10px; }
 
+/* A checkbox with a title and a hint (e.g. "Punon me email") */
+.check-row { display: flex; gap: 10px; align-items: flex-start; margin: 4px 0 16px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-soft); cursor: pointer;
+  font-family: inherit; font-size: 1rem; font-weight: 400; text-transform: none; letter-spacing: normal; color: var(--ink); }
+.check-row input { flex: none; width: 18px; height: 18px; margin-top: 3px; }
+.check-row > span { display: flex; flex-direction: column; gap: 2px; }
+
+/* The report page of a sector that works by e-mail (/sektori/<link>) */
+.sector-actions h2 { font-size: 1.1rem; margin-bottom: 12px; }
+.sector-actions .btn-ghost.active { background: var(--bg-tint); }
+.sector-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); max-width: 640px; }
+
 /* "Ndiq raportimin" without the number */
 .track-search h2 { font-size: 1.15rem; margin-bottom: 4px; }
 .track-or { margin: 6px 0 10px; font-family: var(--font-head); font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); }

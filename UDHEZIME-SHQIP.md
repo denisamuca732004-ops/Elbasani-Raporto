@@ -173,6 +173,29 @@ shfaq gjithmonë (nuk ka më çelës "Shfaq të dhënat demo"). Fshijini para p�
 - **Kur raportimi nuk i përket sektorit:** sektori dërgon **kërkesë për rishikim**. Administratori
   e sheh te *Kërkesat për rishikim* dhe e dërgon raportimin te sektori i duhur.
 
+## Sektorët që punojnë me email (pa panel)
+
+Kur sektori nuk ka njeri që ndjek panelin, administratori te `/admin/departments` e hap sektorin,
+shënon **"Punon me email"** dhe vendos emailin e stafit të sektorit (detyrueshëm). Pastaj:
+
+- **Çdo raportim i sektorit i shkon direkt në email:** problemi, prioriteti, afati, vendi me hartë,
+  përshkrimi, emri dhe telefoni i qytetarit (ose "Anonim"), dhe një lidhje personale `/sektori/...`.
+  Sektori nuk ka nevojë për llogari në panel.
+- **Lidhja** hap raportimin pa hyrje, me fotot dhe historikun, dhe ka tre butona:
+  * **Po merremi**: raportimi kalon "Në punë", me një shënim që e sheh qytetari (jo i detyrueshëm);
+  * **U zgjidh**: me shënim për qytetarin (i detyrueshëm) dhe foto "pas" (jo e detyrueshme);
+  * **Nuk është për ne**: me komentin pse nuk i përket, dhe sipas dëshirës sektorin e duhur.
+    Kërkesa i shkon administratorit te *Kërkesat për rishikim*. Nëse e pranon, raportimi i dërgohet
+    me email sektorit tjetër dhe lidhja e vjetër nuk vlen më. Nëse e refuzon, sektori merr përgjigjen
+    me të njëjtën lidhje.
+- **Qytetari** e sheh çdo hap te "Ndiq raportimin". Në historik shkruhet që u bë "nga emaili i sektorit".
+- **Te raportimi**, administratori sheh kartën "Sektori punon me email": kur u dërgua, nëse sektori e
+  hapi, kur skadon lidhja, dhe butonat **"Dërgo përsëri emailin"** dhe **"Hap faqen e sektorit"**.
+- **Siguria:** lidhja nuk mund të merret me mend; vlen 90 ditë nga dërgimi i fundit dhe ndalon kur
+  raportimi kalon te një sektor tjetër. Emaili kërkon që lidhja të mos përcillet, sepse tregon
+  telefonin e qytetarit.
+- **Duhet SMTP** (`MAIL_DRIVER=smtp`). Deri atëherë emailet vetëm shkruhen dhe duken te *Emailet*.
+
 ## Vendosja në Vercel
 
 1. Lidhni repository-n në Vercel. Projekti njihet si Next.js, dhe `vercel.json` vendos build-in

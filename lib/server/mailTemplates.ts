@@ -85,7 +85,7 @@ ${footer()}`,
 
 /* ── Staff emails ── */
 
-export type DepartmentReportReason = 'new' | 'transferred' | 'rerouted';
+export type DepartmentReportReason = 'new' | 'transferred' | 'rerouted' | 'resend';
 
 export function departmentNewReport(p: {
   caseNumber: string; reportId: string; typeNameSq: string; departmentNameSq: string; priority: Priority;
@@ -95,6 +95,7 @@ export function departmentNewReport(p: {
     new: 'Një raportim i ri u drejtua automatikisht te sektori juaj.',
     transferred: 'Administratori e kaloi këtë raportim te sektori juaj pas rishikimit.',
     rerouted: 'Administratori e drejtoi këtë raportim te sektori juaj.',
+    resend: 'Administratori jua dërgoi përsëri këtë raportim.',
   }[p.reason];
   return {
     template: 'department_new_report',
@@ -108,6 +109,56 @@ Prioriteti: ${PRIORITY_SQ[p.priority]}
 Adresa: ${p.address || '—'}
 
 Hapeni në panel: ${staffCaseUrl(p.reportId)}
+${staffFooter()}`,
+  };
+}
+
+/** The whole report for a sector that works by e-mail (no panel account), with its link. */
+export function sectorReport(p: {
+  caseNumber: string; typeNameSq: string; categoryNameSq: string; departmentNameSq: string; priority: Priority; dueAt: Date | null;
+  address: string | null; zone: string | null; latitude: number | null; longitude: number | null; approximate: boolean;
+  description: string | null; contact: { name: string | null; phone: string | null } | null; reason: DepartmentReportReason;
+  link: string; linkExpires: Date;
+}): MailContent {
+  const why = {
+    new: 'Një raportim i ri iu drejtua sektorit tuaj.',
+    transferred: 'Administratori e kaloi këtë raportim te sektori juaj pas rishikimit.',
+    rerouted: 'Administratori e drejtoi këtë raportim te sektori juaj.',
+    resend: 'Administratori jua dërgoi përsëri këtë raportim.',
+  }[p.reason];
+  const map = p.latitude !== null && p.longitude !== null
+    ? `https://www.openstreetmap.org/?mlat=${p.latitude}&mlon=${p.longitude}#map=18/${p.latitude}/${p.longitude}${p.approximate ? ' (pikë e përafërt)' : ''}`
+    : '—';
+  const contact = p.contact ? [p.contact.name, p.contact.phone].filter(Boolean).join(' · ') || '—' : 'Anonim (pa emër dhe pa telefon)';
+  return {
+    template: 'sector_report',
+    subject: `${p.priority === 'HIGH' ? '[PRIORITET I LARTË] ' : ''}${p.caseNumber} – ${p.typeNameSq}`,
+    text: `Përshëndetje,
+
+${why}
+
+Numri: ${p.caseNumber}
+Problemi: ${p.categoryNameSq} · ${p.typeNameSq}
+Prioriteti: ${PRIORITY_SQ[p.priority]}${p.dueAt ? `
+Afati: ${p.dueAt.toISOString().slice(0, 10)}` : ''}
+Adresa: ${[p.address, p.zone].filter(Boolean).join(' · ') || '—'}
+Harta: ${map}
+
+Përshkrimi:
+${p.description || '—'}
+
+Qytetari: ${contact}
+
+Hapeni raportimin (me foton) dhe ndryshoni statusin, pa llogari:
+${p.link}
+
+Në faqe gjeni butonat:
+• "Po merremi" – kur e merrni në punë;
+• "U zgjidh" – kur përfundon (me një shënim dhe, nëse mundeni, një foto "pas");
+• "Nuk është për ne" – nëse nuk është në kompetencat e sektorit: shkruani arsyen dhe administratori e kalon te sektori i duhur.
+Çdo ndryshim e sheh edhe qytetari te "Ndiq raportimin".
+
+Lidhja vlen deri më ${p.linkExpires.toISOString().slice(0, 10)}. Mos e përcillni jashtë sektorit: kushdo që e ka, mund ta ndryshojë raportimin.
 ${staffFooter()}`,
   };
 }
@@ -153,6 +204,8 @@ ${staffFooter()}`,
 
 export function transferDecided(p: {
   caseNumber: string; reportId: string; approved: boolean; toDepartmentSq: string | null; note: string | null; name: string;
+  /** A sector that works by e-mail: its report link instead of the panel (only while the report stays with it). */
+  link?: string | null;
 }): MailContent {
   const body = p.approved
     ? `Administratori e pranoi kërkesën tuaj. Raportimi ${p.caseNumber} kaloi te: ${p.toDepartmentSq}.`
@@ -164,7 +217,7 @@ export function transferDecided(p: {
 
 ${body}${p.note ? `\nShënim nga administratori: "${p.note}"` : ''}
 
-Raportimi: ${staffCaseUrl(p.reportId)}
+${p.link === undefined ? `Raportimi: ${staffCaseUrl(p.reportId)}` : p.link ? `Raportimi: ${p.link}` : 'Lidhja e mëparshme e raportimit nuk vlen më.'}
 ${staffFooter()}`,
   };
 }
@@ -201,10 +254,11 @@ ${staffFooter()}`,
 }
 
 export function overdueDigest(p: {
-  name: string; items: Array<{ id: string; caseNumber: string; typeNameSq: string; dueAt: Date; priority: Priority }>;
+  /** href: the report link of a sector that works by e-mail; otherwise the panel. */
+  name: string; items: Array<{ id: string; caseNumber: string; typeNameSq: string; dueAt: Date; priority: Priority; href?: string }>;
 }): MailContent {
   const lines = p.items
-    .map((r) => `• ${r.caseNumber} – ${r.typeNameSq} – prioriteti ${PRIORITY_SQ[r.priority].toLowerCase()} – afati ${r.dueAt.toISOString().slice(0, 10)} – ${staffCaseUrl(r.id)}`)
+    .map((r) => `• ${r.caseNumber} – ${r.typeNameSq} – prioriteti ${PRIORITY_SQ[r.priority].toLowerCase()} – afati ${r.dueAt.toISOString().slice(0, 10)} – ${r.href ?? staffCaseUrl(r.id)}`)
     .join('\n');
   return {
     template: 'overdue_digest',

@@ -108,11 +108,13 @@ export default async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('Content-Security-Policy', csp);
   response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // A sector's report link is a secret: it never leaves in a Referer header.
+  response.headers.set('Referrer-Policy', pathname.startsWith('/sektori') ? 'no-referrer' : 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(self), geolocation=(self), microphone=()');
   if (!embed) response.headers.set('X-Frame-Options', 'DENY');
   if (secure && !isDev) response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
-  if (pathname.startsWith('/admin') || pathname.startsWith('/hyrje')) response.headers.set('Cache-Control', 'no-store');
+  // Pages with personal data or a secret link are never stored by browsers or shared caches.
+  if (pathname.startsWith('/admin') || pathname.startsWith('/hyrje') || pathname.startsWith('/sektori')) response.headers.set('Cache-Control', 'no-store');
   return response;
 }
 

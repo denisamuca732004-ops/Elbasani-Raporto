@@ -18,6 +18,7 @@ import { assertCanAccessReport, isAdmin } from './access';
 import { toTransferSummary, transferInclude, typeRef } from './mapper';
 import { adminRecipients, notifyCitizenStatus, notifyDepartmentOfReport } from './notification';
 import { buildDetail } from './report';
+import { issueLink, linkUrl } from './reportLinks';
 import { moveToDepartment } from './routing';
 
 const listInclude = {
@@ -190,6 +191,15 @@ export async function decideTransfer(user: Principal, transferId: string, input:
           toDepartmentSq: outcome.toDepartment?.nameSq ?? null, note: outcome.note, name: requester.name,
         }), report.id);
       }
+    } else if (transfer.requestedByEmail) {
+      // Asked from the e-mail link of a sector without an account: the answer goes to that address.
+      // Declined: the report stays with the sector, so the same link is sent again (it lasts longer).
+      const from = await db.department.findUnique({ where: { id: transfer.fromDepartmentId } });
+      const link = !outcome.approved && from?.worksByEmail && from.email ? await issueLink(report.id, { id: from.id, email: from.email }) : null;
+      await queueEmails([transfer.requestedByEmail], tpl.transferDecided({
+        caseNumber: report.caseNumber, reportId: report.id, approved: outcome.approved,
+        toDepartmentSq: outcome.toDepartment?.nameSq ?? null, note: outcome.note, name: from?.nameSq ?? 'sektori', link: link ? linkUrl(link) : null,
+      }), report.id);
     }
   }
   const fresh = await db.departmentTransfer.findUniqueOrThrow({ where: { id: transfer.id }, include: listInclude });

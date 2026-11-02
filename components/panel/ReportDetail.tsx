@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   addNoteAction, assignReportAction, changePriorityAction, changeStatusAction, deleteReportAction, messageCitizenAction,
-  rejectReportAction, requestTransferAction, resolveReportAction, setPhotoVisibilityAction, setTestFlagAction, updateReportAction,
+  rejectReportAction, requestTransferAction, resendToSectorAction, resolveReportAction, setPhotoVisibilityAction, setTestFlagAction, updateReportAction,
 } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { LocationPicker, MiniMap } from '@/components/maps';
@@ -202,7 +202,7 @@ export default function ReportDetail({ principal, report: initial, assignable, b
           <div className="row" style={{ gap: 8 }}><Icon name="transfer" size={20} /><strong>{t('detail.transfer.pendingTitle')}</strong></div>
           <p style={{ margin: '8px 0' }}>
             {t('detail.transfer.pendingText', {
-              who: report.pendingTransfer.requestedBy?.name ?? '—',
+              who: report.pendingTransfer.requestedBy?.name ?? report.pendingTransfer.requestedByEmail ?? '—',
               sector: departmentName(report.pendingTransfer.fromDepartment, lang) ?? '—',
               date: formatDate(report.pendingTransfer.createdAt, lang, true),
             })}
@@ -315,7 +315,11 @@ export default function ReportDetail({ principal, report: initial, assignable, b
                     {!e.isPublic && <span className="muted small"> · {t('detail.internal')}</span>}
                   </div>
                   {e.message && <div style={{ whiteSpace: 'pre-wrap' }}>{e.message}</div>}
-                  <div className="when">{formatDate(e.at, lang, true)}{e.actor ? ` · ${e.actor.name}` : ''}</div>
+                  <div className="when">
+                    {formatDate(e.at, lang, true)}{e.actor ? ` · ${e.actor.name}` : ''}
+                    {/* Done by a sector that works by e-mail, from its report link (no account). */}
+                    {!e.actor && e.meta?.via === 'sector_link' && ` · ${t('detail.sectorMail.byLink', { email: String(e.meta.email ?? '') })}`}
+                  </div>
                 </li>
               ))}
             </ol>
@@ -587,6 +591,32 @@ export default function ReportDetail({ principal, report: initial, assignable, b
               if (ok) setNote('');
             }}>{t('detail.note.submit')}</button>
           </Card>
+
+          {report.sectorMail && (
+            <Card title={t('detail.sectorMail.title')} icon="mail">
+              <p className="small" style={{ marginTop: 0 }}>
+                {report.sectorMail.sentAt
+                  ? t('detail.sectorMail.sent', { email: report.sectorMail.email ?? '', date: formatDate(report.sectorMail.sentAt, lang, true) })
+                  : t('detail.sectorMail.notSent', { email: report.sectorMail.email ?? '' })}
+              </p>
+              {report.sectorMail.sentAt && (
+                <p className="small muted">
+                  {report.sectorMail.lastUsedAt ? t('detail.sectorMail.used', { date: formatDate(report.sectorMail.lastUsedAt, lang, true) }) : t('detail.sectorMail.unused')}
+                  {report.sectorMail.expiresAt && ` · ${t('detail.sectorMail.expires', { date: formatDate(report.sectorMail.expiresAt, lang) })}`}
+                </p>
+              )}
+              {report.permissions.canSetAnyStatus && !['CLOSED', 'REJECTED'].includes(report.status) && (
+                <div className="row">
+                  <button type="button" className="btn btn-sm btn-outline" disabled={Boolean(busy)} onClick={() => act('resend', () => call(resendToSectorAction(id)), t('detail.sectorMail.resent'))}>
+                    <Icon name="mail" size={14} />{report.sectorMail.sentAt ? t('detail.sectorMail.resend') : t('detail.sectorMail.send')}
+                  </button>
+                  {report.sectorMail.url && (
+                    <a className="btn btn-sm btn-ghost" href={report.sectorMail.url} target="_blank" rel="noreferrer"><Icon name="external" size={14} />{t('detail.sectorMail.open')}</a>
+                  )}
+                </div>
+              )}
+            </Card>
+          )}
 
           {report.contact.email && (
             <Card title={t('detail.message.title')} icon="mail">

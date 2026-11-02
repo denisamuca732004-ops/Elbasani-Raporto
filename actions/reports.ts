@@ -240,6 +240,16 @@ export async function deleteReportAction(id: string) {
   });
 }
 
+/** Admin: e-mail the report again to its sector that works by e-mail. */
+export async function resendToSectorAction(id: string) {
+  return run(async () => {
+    const user = await requireAdmin();
+    const result = await reports.resendToSector(user, parseInput(reportId, id));
+    refreshPanel(id);
+    return result;
+  });
+}
+
 export async function setTestFlagAction(id: string, input: unknown) {
   return run(async () => {
     const user = await requireAdmin();

@@ -16,6 +16,7 @@ import { overdueDigest } from '../mailTemplates';
 import { enqueue } from '../queue';
 import { cleanupTemporaryUploads } from '../storage';
 import { maskContacts } from './mapper';
+import { issueLink, linkUrl } from './reportLinks';
 import { settlePendingTransfer } from './routing';
 import { stuckPendingReports } from './triage';
 
@@ -64,9 +65,14 @@ export async function sendOverdueDigests(now = new Date()): Promise<number> {
   }
   const departments = await db.department.findMany({ where: { active: true, email: { not: null } } });
   for (const department of departments) {
-    const mine = items.filter((i) => i.departmentId === department.id);
-    if (!mine.length || !department.email) continue;
-    await queueEmails([department.email], overdueDigest({ name: department.nameSq, items: [...mine].sort(byPriorityThenDue).slice(0, 50) }));
+    const email = department.email;
+    const mine = [...items.filter((i) => i.departmentId === department.id)].sort(byPriorityThenDue).slice(0, 50);
+    if (!mine.length || !email) continue;
+    // A sector that works by e-mail gets each report's own link (sent again, so it keeps working).
+    const listed = department.worksByEmail
+      ? await Promise.all(mine.map(async (i) => ({ ...i, href: linkUrl(await issueLink(i.id, { id: department.id, email })) })))
+      : mine;
+    await queueEmails([email], overdueDigest({ name: department.nameSq, items: listed }));
     sent += 1;
   }
   return sent;
