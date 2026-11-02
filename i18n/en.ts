@@ -235,7 +235,7 @@ const en = {
     public: { title: 'What is public', text: 'The type, status, approximate address, photo and description once verified. Your contact details are never published.' },
     photos: { title: 'Photos', text: 'Every photo is re-processed and its hidden data (such as GPS and device) is removed. Photos with visible faces or licence plates are hidden from the public.' },
     ai: { title: 'Artificial intelligence', text: 'An AI model checks the photo and the description, also before the report is sent: that they show the problem and have no inappropriate content. The AI also suggests the type and priority to the sectors. A municipal employee always makes the decision. Contact details are never sent to the AI.' },
-    keep: { title: 'How long we keep it', text: 'Contact details are kept while the report is open and for a limited period after it is closed, according to the municipality’s archiving rules.' },
+    keep: { title: 'How long we keep it', text: 'Your name and phone number are kept while the report is open. {days} days after it is closed (or rejected) they are deleted automatically, together with any phone number or email typed in the description. The report stays without them, only for statistics.' },
     rights: { title: 'Your rights', text: 'You can ask to see, correct or delete your data by contacting the Citizen Service Office with your report number.' },
   },
   channels: { web: 'Web', app: 'App', embed: 'Municipality website', in_person: 'At the office', phone: 'Phone', facebook: 'Facebook', email: 'Email' },
@@ -389,7 +389,10 @@ const en = {
       title: 'Edit details', open: 'Change the type, sector, area…', type: 'Report type',
       typeHint: 'When you change the type, the sector follows the type (you can also choose it yourself).', sector: 'Sector',
     },
-    contact: { title: 'Resident’s contact', anonymous: 'Anonymous report.', name: 'Name', email: 'Email', phone: 'Phone' },
+    contact: {
+      title: 'Resident’s contact', anonymous: 'Anonymous report.', name: 'Name', email: 'Email', phone: 'Phone',
+      erased: 'The name and phone were deleted automatically on {date}, after the retention period that follows closing.',
+    },
     note: { title: 'Internal note', label: 'Note', hint: 'Only municipal staff can see it.', submit: 'Add note', done: 'The note was added.' },
     message: {
       title: 'Message to the resident', label: 'Message', hint: 'Sent by email, e.g. to ask for more information.',
@@ -535,7 +538,7 @@ const en = {
       loaded: '{n} demo reports and {t} review requests were created. The panel shows them marked “Demo”.', deleted: { one: '1 demo report was deleted.', other: '{n} demo reports were deleted.' },
       dailyTitle: 'Daily job',
       dailyText: 'Closes resolved reports the resident never answered and sends the sectors the list of overdue reports. On the server it runs automatically every day.',
-      runDaily: 'Run now', dailyDone: 'Reports closed: {closed}. Emails sent: {sent}.',
+      runDaily: 'Run now', dailyDone: 'Reports closed: {closed}. Contacts deleted: {erased}. Emails sent: {sent}.',
     },
   },
 };

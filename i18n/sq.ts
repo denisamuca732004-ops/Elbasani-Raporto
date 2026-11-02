@@ -235,7 +235,7 @@ const sq = {
     public: { title: 'Çfarë është publike', text: 'Lloji, statusi, adresa e përafërt, fotoja dhe përshkrimi pasi verifikohen. Të dhënat tuaja të kontaktit nuk publikohen kurrë.' },
     photos: { title: 'Fotot', text: 'Çdo foto ripërpunohet dhe i hiqen të dhënat e fshehura (si GPS dhe pajisja). Fotot me fytyra ose targa të dukshme fshihen nga publiku.' },
     ai: { title: 'Inteligjenca artificiale', text: 'Një model AI kontrollon foton dhe përshkrimin, edhe para se raportimi të dërgohet: që të tregojnë problemin dhe të mos kenë përmbajtje të papërshtatshme. AI u sugjeron sektorëve edhe llojin dhe prioritetin. Vendimin e merr gjithmonë një punonjës i Bashkisë. Të dhënat e kontaktit nuk i dërgohen AI.' },
-    keep: { title: 'Sa kohë i ruajmë', text: 'Të dhënat e kontaktit ruhen sa kohë raportimi është i hapur dhe për një periudhë të kufizuar pas mbylljes, sipas rregullave të arkivimit të Bashkisë.' },
+    keep: { title: 'Sa kohë i ruajmë', text: 'Emri dhe numri i telefonit ruhen sa kohë raportimi është i hapur. {days} ditë pas mbylljes (ose refuzimit) fshihen automatikisht, bashkë me çdo numër telefoni ose email të shkruar te përshkrimi. Raportimi mbetet pa to, vetëm për statistikat.' },
     rights: { title: 'Të drejtat tuaja', text: 'Mund të kërkoni të shihni, korrigjoni ose fshini të dhënat tuaja duke kontaktuar Zyrën e Shërbimit ndaj Qytetarit me numrin e raportimit.' },
   },
   channels: { web: 'Web', app: 'Aplikacion', embed: 'Faqja e Bashkisë', in_person: 'Në sportel', phone: 'Telefon', facebook: 'Facebook', email: 'Email' },
@@ -389,7 +389,10 @@ const sq = {
       title: 'Ndrysho detajet', open: 'Ndrysho llojin, sektorin, zonën…', type: 'Lloji i raportimit',
       typeHint: 'Kur ndryshoni llojin, sektori ndryshon sipas llojit (mund ta zgjidhni edhe vetë).', sector: 'Sektori',
     },
-    contact: { title: 'Kontakti i qytetarit', anonymous: 'Raportim anonim.', name: 'Emri', email: 'Email', phone: 'Telefoni' },
+    contact: {
+      title: 'Kontakti i qytetarit', anonymous: 'Raportim anonim.', name: 'Emri', email: 'Email', phone: 'Telefoni',
+      erased: 'Emri dhe telefoni u fshinë automatikisht më {date}, sipas afatit të ruajtjes pas mbylljes.',
+    },
     note: { title: 'Shënim i brendshëm', label: 'Shënimi', hint: 'E shohin vetëm stafi i Bashkisë.', submit: 'Shto shënim', done: 'Shënimi u shtua.' },
     message: {
       title: 'Mesazh për qytetarin', label: 'Mesazhi', hint: 'Dërgohet me email, p.sh. për të kërkuar më shumë informacion.',
@@ -535,7 +538,7 @@ const sq = {
       loaded: 'U krijuan {n} raportime demo dhe {t} kërkesa për rishikim. Shfaqen në panel me shenjën “Demo”.', deleted: { one: 'U fshi 1 raportim demo.', other: 'U fshinë {n} raportime demo.' },
       dailyTitle: 'Detyra ditore',
       dailyText: 'Mbyll raportimet e zgjidhura pa përgjigje nga qytetari dhe u dërgon sektorëve listën e raportimeve me vonesë. Në server ekzekutohet automatikisht çdo ditë.',
-      runDaily: 'Ekzekuto tani', dailyDone: 'Raportime të mbyllura: {closed}. Emaile të dërguara: {sent}.',
+      runDaily: 'Ekzekuto tani', dailyDone: 'Raportime të mbyllura: {closed}. Kontakte të fshira: {erased}. Emaile të dërguara: {sent}.',
     },
   },
 };

@@ -239,7 +239,7 @@ export function toDetail(r: DetailRow, user: Principal, events: EventRow[]): Rep
     departmentId: r.departmentId,
     requestTypeId: r.requestTypeId,
     anonymous: r.anonymous,
-    contact: { name: r.contactName, email: r.contactEmail, phone: r.contactPhone, wantsUpdates: r.wantsUpdates },
+    contact: { name: r.contactName, email: r.contactEmail, phone: r.contactPhone, wantsUpdates: r.wantsUpdates, erasedAt: iso(r.contactErasedAt) },
     ai: {
       status: r.aiStatus,
       summary: r.aiSummary,

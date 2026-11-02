@@ -56,7 +56,7 @@ export default function Demo() {
         <div>
           <button type="button" className="btn btn-outline" disabled={Boolean(busy)} onClick={() => run('daily', async () => {
             const r = await call(runDailyJobAction());
-            return t('admin.demo.dailyDone', { closed: r.closed, sent: r.sent });
+            return t('admin.demo.dailyDone', { closed: r.closed, erased: r.erasedContacts, sent: r.sent });
           })}>{busy === 'daily' ? t('common.wait') : t('admin.demo.runDaily')}</button>
         </div>
       </section>

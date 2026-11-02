@@ -35,6 +35,10 @@ Qytetarët **nuk kanë llogari dhe nuk lënë email**: faqja është vetëm për
 * Lart në menu nuk ka “Hyr”. Stafi hyn nga fundi i faqes, “Hyrja për stafin” (`/hyrje`).
 * Lidhjet e vjetra `/llogaria…` të çojnë te faqja kryesore. Të dhënat e vjetra nuk fshihen: llogaritë e
   qytetarëve nga prototipi nuk hyjnë dot më.
+* **Emri dhe telefoni fshihen automatikisht** `CONTACT_RETENTION_DAYS` ditë (fillimisht 90) pas mbylljes
+  së raportimit (ose pas ndryshimit të fundit, nëse u refuzua), bashkë me numrat dhe emailet e shkruara te
+  përshkrimi. Raportimi mbetet për statistikat; paneli tregon datën kur u fshi kontakti. Afatin e vendos
+  Bashkia, sipas rregullave të arkivimit dhe ligjit për mbrojtjen e të dhënave personale.
 
 Kontrolli bëhet në tre nivele, dhe të tri duhet të kalojnë:
 1. **proxy-ja** kontrollon cookie-n;

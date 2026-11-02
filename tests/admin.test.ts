@@ -13,7 +13,7 @@ import { getDashboard, sidebarCounts } from '@/lib/server/services/dashboard';
 import { runDaily } from '@/lib/server/services/maintenance';
 import { getPublicCase, getPublicPhoto } from '@/lib/server/services/publicReport';
 import {
-  assignReport, changeStatus, createStaffReport, deleteReport, getReport, setPhotoVisibility, updateReport,
+  assignReport, changeStatus, createStaffReport, deleteReport, getReport, rejectReport, setPhotoVisibility, updateReport,
 } from '@/lib/server/services/report';
 import { getPublicSettings } from '@/lib/server/services/settings';
 import { exportCsv } from '@/lib/server/services/stats';
@@ -23,7 +23,7 @@ import type { Principal } from '@/lib/shared/types';
 import { departmentSchema, requestTypeSchema, settingsSchema, userCreateSchema } from '@/lib/validation/admin';
 import { dashboardSchema, exportSchema, reportUpdateSchema, staffReportSchema } from '@/lib/validation/report';
 import {
-  ADMIN_PASSWORD, adminSession, backdate, db, departmentId, drainJobs, rejects, setupTestDb, staffSession, submitReport, teardown, typeId,
+  ADMIN_PASSWORD, adminSession, backdate, db, departmentId, drainJobs, rejects, setupTestDb, staffSession, submitReport, teardown, typeId, withOlderEmail,
 } from './helpers';
 
 let admin: Principal;
@@ -296,6 +296,52 @@ describe('appearance, demo data, daily job, export, email log', () => {
     assert.equal((await db.report.findUniqueOrThrow({ where: { id: old.report.id } })).status, 'CLOSED');
     const digest = await db.emailLog.findFirstOrThrow({ where: { template: 'overdue_digest', toAddress: 'digest@example.com' } });
     assert.ok(digest.bodyText.includes(late.result.caseNumber));
+  });
+
+  test('the daily job deletes the contact 90 days after closing or rejecting, and only then', async () => {
+    const days = config().rules.contactRetentionDays;
+    assert.equal(days, 90, 'the default period');
+    const contactText = 'Gropë e thellë para shkollës. Më telefononi në 069 555 1234 ose qytetar@example.com.';
+    const old = await submitReport({ description: contactText });
+    await withOlderEmail(old.report.id, 'old-contact@example.com');
+    await db.reportFollower.create({ data: { reportId: old.report.id, email: 'fqinji@example.com' } });
+    await db.emailLog.create({ data: { toAddress: 'old-contact@example.com', subject: 'U zgjidh?', bodyText: old.result.caseNumber, reportId: old.report.id, status: 'LOGGED' } });
+    await changeStatus(admin, old.report.id, { status: 'CLOSED', note: 'U rregullua.', publicNote: true });
+    await backdate(old.report.id, days + 1, ['closed_at']);
+
+    const recent = await submitReport();
+    await changeStatus(admin, recent.report.id, { status: 'CLOSED', note: 'U rregullua.', publicNote: true });
+    await backdate(recent.report.id, days - 1, ['closed_at']);
+
+    const rejected = await submitReport();
+    await rejectReport(admin, rejected.report.id, { reason: 'Nuk është problem publik.' });
+    await db.$executeRawUnsafe(`UPDATE reports SET updated_at = updated_at - ($1 * interval '1 day') WHERE id = $2::uuid`, days + 1, rejected.report.id);
+
+    const open = await submitReport();
+    await backdate(open.report.id, days + 30, ['created_at']);
+
+    const result = await runDaily();
+    assert.ok(result.erasedContacts >= 2);
+
+    const erased = await db.report.findUniqueOrThrow({ where: { id: old.report.id } });
+    assert.equal(erased.contactName, null);
+    assert.equal(erased.contactPhone, null);
+    assert.equal(erased.contactEmail, null);
+    assert.equal(erased.wantsUpdates, false);
+    assert.ok(erased.contactErasedAt);
+    assert.ok(!erased.description!.includes('069 555 1234') && !erased.description!.includes('qytetar@example.com'), 'also in the description');
+    assert.ok(erased.description!.includes('Gropë e thellë'), 'the problem itself stays');
+    assert.equal(erased.status, 'CLOSED', 'the report stays, for the statistics');
+    assert.equal(await db.reportFollower.count({ where: { reportId: old.report.id, email: { not: null } } }), 0);
+    assert.equal(await db.emailLog.count({ where: { toAddress: 'old-contact@example.com' } }), 0);
+    const detail = await getReport(admin, old.report.id);
+    assert.equal(detail.contact.erasedAt, erased.contactErasedAt!.toISOString(), 'the panel says when');
+
+    assert.equal((await db.report.findUniqueOrThrow({ where: { id: rejected.report.id } })).contactPhone, null, 'rejected: counted from its last change');
+    assert.equal((await db.report.findUniqueOrThrow({ where: { id: recent.report.id } })).contactPhone, '069 123 4567', 'closed less than 90 days ago: kept');
+    assert.equal((await db.report.findUniqueOrThrow({ where: { id: open.report.id } })).contactPhone, '069 123 4567', 'an open report keeps its contact');
+
+    assert.equal((await runDaily()).erasedContacts, 0, 'each report only once');
   });
 
   test('the admin exports every department to CSV, safe for Excel', async () => {

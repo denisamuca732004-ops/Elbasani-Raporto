@@ -4,7 +4,8 @@
  *  - email each department head, each department mailbox and each admin the
  *    list of overdue reports;
  *  - retry emails that failed and checks that were lost;
- *  - delete photo uploads that were never attached to a report.
+ *  - delete photo uploads that were never attached to a report;
+ *  - delete the resident's contact CONTACT_RETENTION_DAYS (90) after a report is closed or rejected.
  */
 import 'server-only';
 import { OPEN_STATUSES, PRIORITY_RANK, type Priority } from '@/lib/shared/domain';
@@ -14,6 +15,7 @@ import { queueEmails, retryStuckEmails } from '../mail';
 import { overdueDigest } from '../mailTemplates';
 import { enqueue } from '../queue';
 import { cleanupTemporaryUploads } from '../storage';
+import { maskContacts } from './mapper';
 import { settlePendingTransfer } from './routing';
 import { stuckPendingReports } from './triage';
 
@@ -70,12 +72,53 @@ export async function sendOverdueDigests(now = new Date()): Promise<number> {
   return sent;
 }
 
+/**
+ * The resident's name, phone and e-mail are kept only while they may be needed: they are deleted
+ * CONTACT_RETENTION_DAYS after the report was closed (or rejected, counted from its last change).
+ * The report itself stays, without them, for the statistics. Also removed: phone numbers and
+ * e-mails typed in the description or the resident's comment, the e-mail of anyone who followed
+ * the case, and the e-mails sent to those addresses. Done once per report (contactErasedAt).
+ */
+export async function eraseOldContacts(now = new Date()): Promise<number> {
+  const limit = new Date(now.getTime() - config().rules.contactRetentionDays * 86_400_000);
+  const due = await db.report.findMany({
+    where: {
+      contactErasedAt: null,
+      OR: [{ status: 'CLOSED', closedAt: { lt: limit } }, { status: 'REJECTED', updatedAt: { lt: limit } }],
+    },
+    select: { id: true, contactEmail: true, description: true, citizenComment: true, followers: { select: { email: true } } },
+    orderBy: { updatedAt: 'asc' },
+    take: 500, // a large backlog is finished over the next days
+  });
+  let erased = 0;
+  for (const r of due) {
+    const addresses = [r.contactEmail, ...r.followers.map((f) => f.email)].filter((e): e is string => Boolean(e));
+    await db.$transaction(async (tx) => {
+      const updated = await tx.report.updateMany({
+        // Only while it is still closed or rejected: a report reopened meanwhile keeps its contact.
+        where: { id: r.id, contactErasedAt: null, status: { in: ['CLOSED', 'REJECTED'] } },
+        data: {
+          contactName: null, contactEmail: null, contactPhone: null, wantsUpdates: false, citizenTokenHash: null,
+          description: maskContacts(r.description), citizenComment: maskContacts(r.citizenComment),
+          contactErasedAt: now,
+        },
+      });
+      if (updated.count === 0) return;
+      erased += 1;
+      await tx.reportFollower.updateMany({ where: { reportId: r.id, email: { not: null } }, data: { email: null } });
+      if (addresses.length) await tx.emailLog.deleteMany({ where: { reportId: r.id, toAddress: { in: addresses } } });
+    });
+  }
+  return erased;
+}
+
 export async function runDaily(now = new Date()) {
   const closed = await autoCloseResolved(now);
+  const erased = await eraseOldContacts(now);
   const digests = await sendOverdueDigests(now);
   const retried = await retryStuckEmails();
   const stuck = await stuckPendingReports();
   for (const reportId of stuck) await enqueue('triage', { reportId });
   const cleaned = await cleanupTemporaryUploads();
-  return { closed, sent: digests, retriedEmails: retried, rechecked: stuck.length, removedUploads: cleaned };
+  return { closed, erasedContacts: erased, sent: digests, retriedEmails: retried, rechecked: stuck.length, removedUploads: cleaned };
 }

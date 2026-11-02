@@ -135,6 +135,7 @@ The public site is only for reporting. Residents never sign up or sign in, and l
 - **"I have this problem too"** while reporting adds one supporter, with no contact details.
 - **The header** has no sign-in link. Staff sign in from the footer ("Hyrja për stafin", `/hyrje`); a signed-in staff member sees "Paneli" in the header.
 - **Old links** to the former account pages (`/llogaria…`) land on the home page.
+- **The contact is deleted automatically** by the daily job `CONTACT_RETENTION_DAYS` (default 90) after a report is closed, or after its last change if rejected: name, phone and email, any phone or email typed in the description or comment, followers' emails and the emails sent to those addresses. The report stays for the statistics; the panel shows when the contact was deleted (`reports.contact_erased_at`), and the privacy page shows the real number of days. The Municipality decides the period (its archiving rules and the personal-data law).
 
 Older data is kept as it is (no schema change, nothing deleted): accounts with role `USER` from the prototype cannot sign in, and an older report that has an email still gets the status and "was it fixed?" emails. A report the admin records at `/admin/reports/new` can still carry an email.
 

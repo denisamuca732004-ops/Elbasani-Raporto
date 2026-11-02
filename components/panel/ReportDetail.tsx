@@ -566,7 +566,9 @@ export default function ReportDetail({ principal, report: initial, assignable, b
           )}
 
           <Card title={t('detail.contact.title')} icon="phone">
-            {report.anonymous ? <p className="muted">{t('detail.contact.anonymous')}</p> : (
+            {report.anonymous ? <p className="muted">{t('detail.contact.anonymous')}</p> : report.contact.erasedAt ? (
+              <p className="muted">{t('detail.contact.erased', { date: formatDate(report.contact.erasedAt, lang) })}</p>
+            ) : (
               <dl className="kv">
                 <dt>{t('detail.contact.name')}</dt><dd>{report.contact.name || '–'}</dd>
                 <dt>{t('detail.contact.phone')}</dt><dd>{report.contact.phone ? <a href={`tel:${report.contact.phone.replace(/\s/g, '')}`}>{report.contact.phone}</a> : '–'}</dd>

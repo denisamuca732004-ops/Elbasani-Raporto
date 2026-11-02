@@ -290,6 +290,8 @@ model Report {
   contactEmail        String?       @map("contact_email") @db.VarChar(200)
   contactPhone        String?       @map("contact_phone") @db.VarChar(40)
   wantsUpdates        Boolean       @default(false) @map("wants_updates")
+  /// When the daily job deleted the contact (CONTACT_RETENTION_DAYS after closing or rejecting).
+  contactErasedAt     DateTime?     @map("contact_erased_at") @db.Timestamptz(3)
   assignedToId        String?       @map("assigned_to_id") @db.Uuid
   assignedTo          User?         @relation("ReportAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdById         String?       @map("created_by_id") @db.Uuid

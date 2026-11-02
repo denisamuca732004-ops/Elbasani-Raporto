@@ -170,7 +170,8 @@ export interface ReportDetail extends ReportListItem {
   departmentId: number | null;
   requestTypeId: number;
   anonymous: boolean;
-  contact: { name: string | null; email: string | null; phone: string | null; wantsUpdates: boolean };
+  /** erasedAt: when the daily job deleted the contact (CONTACT_RETENTION_DAYS after closing). */
+  contact: { name: string | null; email: string | null; phone: string | null; wantsUpdates: boolean; erasedAt: string | null };
   ai: {
     status: string;
     summary: string | null;
