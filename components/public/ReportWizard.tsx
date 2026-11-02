@@ -439,6 +439,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     );
   }
 
+  const chosenType = category ? [lang === 'en' ? category.nameEn : category.nameSq, type ? typeName(type, lang) : ''].filter(Boolean).join(' · ') : '';
   const placeSummary = [placeText.trim() || (location ? t('report.pinOnMap') : ''), pinZone?.name].filter(Boolean).join(' · ');
   return (
     <div className="wizard" ref={topRef}>
@@ -449,13 +450,21 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             <li key={s} className={i === step ? 'current' : done ? 'done' : ''} aria-current={i === step ? 'step' : undefined}>
               <button type="button" disabled={!done} onClick={() => goTo(i)} aria-label={`${i + 1}. ${t(`report.steps.${s}`)}`}>
                 <span className="num">{done ? <Icon name="check" size={14} strokeWidth={3} /> : i + 1}</span>
-                <span className="name">{t(`report.steps.${s}`)}</span>
+                <span className="name">
+                  <span className="name-step">{t(`report.steps.${s}`)}</span>
+                  {/* "Lloji": the chosen category under it, as soon as it is chosen. */}
+                  {s === 'type' && category && <span className="name-sub" title={chosenType}>{lang === 'en' ? category.nameEn : category.nameSq}</span>}
+                </span>
               </button>
             </li>
           );
         })}
       </ol>
       <div className="step-label">{t('report.stepOf', { n: step + 1, total: STEPS.length })} · {t(`report.steps.${stepName}`)}</div>
+      {/* On phones the step names are hidden: the chosen category and problem are shown here instead. */}
+      {category && stepName !== 'type' && (
+        <div className="chosen-type"><CategoryIcon icon={category.icon} size={18} /><span>{chosenType}</span></div>
+      )}
 
       {stepName === 'type' && (
         <section>

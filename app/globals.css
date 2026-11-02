@@ -412,15 +412,25 @@ pre.code { background: #10200F; color: #D8F5D8; padding: 14px; border-radius: va
 
 /* ── Reporting wizard ── */
 .stepper { list-style: none; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 0 0 10px; padding: 0; counter-reset: step; }
-.stepper li { min-width: 0; }
-.stepper button { width: 100%; appearance: none; border: 0; background: none; padding: 0 0 8px; border-bottom: 5px solid var(--line-soft); display: flex; gap: 8px; align-items: center; font-family: var(--font-head); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); text-align: left; cursor: default; }
+.stepper li { min-width: 0; display: flex; }
+.stepper button { width: 100%; align-self: stretch; appearance: none; border: 0; background: none; padding: 0 0 8px; border-bottom: 5px solid var(--line-soft); display: flex; gap: 8px; align-items: center; font-family: var(--font-head); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); text-align: left; cursor: default; }
 .stepper li.done button { border-bottom-color: var(--brand-button); color: var(--ink); cursor: pointer; }
 .stepper li.done button:hover .name { text-decoration: underline; }
 .stepper li.current button { border-bottom-color: var(--brand-header); color: var(--ink); }
 .stepper .num { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid currentColor; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; }
 .stepper li.done .num { background: var(--brand-button); border-color: var(--brand-button); color: #fff; }
-.stepper .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 640px) { .stepper .name { display: none; } .stepper button { justify-content: center; } }
+.stepper .name { min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.2; }
+.stepper .name-step, .stepper .name-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The chosen category under "Lloji" */
+.stepper .name-sub { font-family: var(--font-body); font-weight: 600; font-size: 0.8rem; text-transform: none; letter-spacing: 0; color: var(--brand-button); }
+.chosen-type { display: none; }
+@media (max-width: 640px) {
+  .stepper .name { display: none; }
+  .stepper button { justify-content: center; }
+  .chosen-type { display: flex; align-items: center; gap: 8px; margin: -2px 0 10px; color: var(--brand-button); font-weight: 600; font-size: 0.92rem; }
+  .chosen-type svg { flex: none; }
+  .chosen-type span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
 .choice-cards { border: 0; margin: 0 0 16px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 .choice-cards legend { margin-bottom: 8px; }
 .choice-card { display: flex; gap: 12px; align-items: flex-start; border: 2px solid var(--line); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; background: #fff; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 400; color: var(--ink); font-size: 1rem; margin: 0; }
