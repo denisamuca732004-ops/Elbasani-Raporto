@@ -14,6 +14,7 @@ export const CACHE_KEYS = {
   settings: 'settings:v1',
   guide: 'guide:active:v2', // v2: answers without accounts or e-mails
   publicStats: 'stats:public:v1',
+  frequentTypes: 'home:frequent-types:v1',
   userState: (userId: string) => `user:${userId}:state:v3`,
 } as const;
 

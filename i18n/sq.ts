@@ -42,6 +42,7 @@ const sq = {
     trackButton: 'Ndiq raportimin',
     categories: 'Zgjidhni kategorinë',
     recent: 'Raportimet e fundit',
+    frequent: 'Raportohen më shpesh', allCategories: 'Zgjidhni nga të gjitha kategoritë',
     seeMap: 'Shiko hartën',
     noRecent: 'Ende nuk ka raportime publike.',
     how: {

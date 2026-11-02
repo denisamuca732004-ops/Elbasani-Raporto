@@ -7,12 +7,13 @@
  */
 import 'server-only';
 import type { z } from 'zod';
-import { FINAL_STATUSES, LIMITS, OPEN_STATUSES, PUBLIC_LISTED_STATUSES, publicStatusOf, type Status } from '@/lib/shared/domain';
+import { FINAL_STATUSES, LIMITS, OPEN_STATUSES, PUBLIC_LISTED_STATUSES, isOtherChoice, publicStatusOf, type Status } from '@/lib/shared/domain';
 import type { FieldError } from '@/lib/shared/result';
 import type { MapPoint, PublicCard, PublicCase } from '@/lib/shared/types';
 import { citizenReportShape, type FeedbackInput, type MapQuery, type RecentQuery } from '@/lib/validation/report';
 import { check } from '@/lib/validation/zod';
 import type { RequestType } from '@/lib/generated/prisma/client';
+import { CACHE_KEYS, cached } from '../cache';
 import { Prisma, db } from '../db';
 import { config } from '../env';
 import { AppError, conflict, notFound } from '../errors';
@@ -359,6 +360,40 @@ function publicStatusFilter(status: 'open' | 'closed' | 'all' | undefined): Stat
   if (status === 'open') return [...OPEN_STATUSES]; // received, open and in progress
   if (status === 'closed') return ['RESOLVED', 'CLOSED'];
   return [...PUBLIC_LISTED_STATUSES];
+}
+
+/** How many shortcuts "Raportohen më shpesh" shows on the home page. */
+export const FREQUENT_COUNT = 4;
+/** Common problems of a city, used while there are not enough reports yet. */
+const COMMON_TYPES = ['waste.overflowing_bin', 'streets.pothole', 'lighting.light_out', 'animals.stray_dog', 'waste.illegal_dumping', 'water.leak'];
+
+/**
+ * "Raportohen më shpesh" on the home page: the report types reported most in the last 90 days
+ * (rejected reports not counted), each a shortcut straight into the form. While there are few
+ * reports the list is completed with common problems. Never a "Tjetër" choice or a type that is
+ * hidden. Cached for 10 minutes.
+ */
+export async function frequentTypeIds(): Promise<number[]> {
+  return cached(CACHE_KEYS.frequentTypes, 600, async () => {
+    const since = new Date(Date.now() - 90 * 86_400_000);
+    const [counts, types] = await Promise.all([
+      db.report.groupBy({
+        by: ['requestTypeId'],
+        where: { createdAt: { gte: since }, status: { not: 'REJECTED' } },
+        _count: { _all: true },
+        orderBy: [{ _count: { requestTypeId: 'desc' } }, { requestTypeId: 'asc' }],
+        take: 20,
+      }),
+      db.requestType.findMany({ where: { active: true, category: { active: true } }, select: { id: true, code: true, category: { select: { code: true } } } }),
+    ]);
+    const usable = new Map(types.filter((t) => !isOtherChoice(t.code) && t.category.code !== 'other').map((t) => [t.id, t]));
+    const ids = counts.map((c) => c.requestTypeId).filter((id) => usable.has(id));
+    for (const code of COMMON_TYPES) {
+      const type = types.find((t) => t.code === code);
+      if (type && usable.has(type.id) && !ids.includes(type.id)) ids.push(type.id);
+    }
+    return ids.slice(0, FREQUENT_COUNT);
+  });
 }
 
 export async function listRecent(query: RecentQuery): Promise<PublicCard[]> {

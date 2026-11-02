@@ -1,12 +1,19 @@
 import Home from '@/components/public/Home';
-import { listRecent } from '@/lib/server/services/publicReport';
+import { frequentTypeIds, listRecent } from '@/lib/server/services/publicReport';
 import type { PublicCard } from '@/lib/shared/types';
 import { recentSchema } from '@/lib/validation/report';
 
 export default async function HomePage() {
-  const recent = await listRecent(recentSchema.parse({ limit: 8 })).catch((err: unknown): PublicCard[] | null => {
-    console.error('[home] recent reports unavailable', err);
-    return null;
-  });
-  return <Home recent={recent} />;
+  const [recent, frequent] = await Promise.all([
+    listRecent(recentSchema.parse({ limit: 8 })).catch((err: unknown): PublicCard[] | null => {
+      console.error('[home] recent reports unavailable', err);
+      return null;
+    }),
+    // Without it the home page simply has no "Raportohen më shpesh".
+    frequentTypeIds().catch((err: unknown): number[] => {
+      console.error('[home] frequent types unavailable', err);
+      return [];
+    }),
+  ]);
+  return <Home recent={recent} frequent={frequent} />;
 }

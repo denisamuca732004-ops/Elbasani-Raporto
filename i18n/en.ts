@@ -42,6 +42,7 @@ const en = {
     trackButton: 'Track a report',
     categories: 'Choose a category',
     recent: 'Recent reports',
+    frequent: 'Frequently reported', allCategories: 'Choose from all categories',
     seeMap: 'See the map',
     noRecent: 'There are no public reports yet.',
     how: {

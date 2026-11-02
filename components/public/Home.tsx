@@ -1,8 +1,8 @@
 'use client';
 /**
- * Home page in the style of 311.boston.gov: the "Report a problem" and
- * "Track a report" buttons, the categories, the latest public reports and
- * how it works. Questions, report numbers, problems and streets are also
+ * Home page: the "Report a problem" and "Track a report" buttons, the
+ * categories, the latest public reports, the problems reported most often
+ * (each a shortcut straight into the form) and how it works. Questions, report numbers, problems and streets are also
  * searched in the box at the top right of the menu
  * (components/site/SiteSearch.tsx), on every page.
  */
@@ -14,9 +14,11 @@ import { useI18n } from '@/i18n';
 import type { PublicCard } from '@/lib/shared/types';
 import { CaseCard } from './Cases';
 
-export default function Home({ recent }: { recent: PublicCard[] | null }) {
+export default function Home({ recent, frequent = [] }: { recent: PublicCard[] | null; frequent?: number[] }) {
   const { t, lang } = useI18n();
-  const { catalog } = useCatalog();
+  const { catalog, typeById } = useCatalog();
+  // Only types still in the catalogue (active), in the order the server counted them.
+  const frequentTypes = frequent.map((id) => typeById(id)).filter((ty) => ty !== undefined);
 
   return (
     <>
@@ -55,6 +57,31 @@ export default function Home({ recent }: { recent: PublicCard[] | null }) {
           {recent && recent.length > 0 && <div className="case-list">{recent.map((r) => <CaseCard key={r.caseNumber} item={r} />)}</div>}
         </div>
       </section>
+
+      {frequentTypes.length > 0 && (
+        <section className="section">
+          <div className="container">
+            <div className="section-title"><h2>{t('home.frequent')}</h2></div>
+            <ul className="frequent-list">
+              {frequentTypes.map((ty) => (
+                <li key={ty.id}>
+                  <Link href={`/raporto?kategoria=${ty.category.code}&lloji=${ty.id}`}>
+                    <span className="frequent-icon" aria-hidden="true"><CategoryIcon icon={ty.category.icon} size={24} /></span>
+                    <span className="frequent-name">
+                      <strong>{lang === 'en' ? ty.nameEn : ty.nameSq}</strong>
+                      <span>{lang === 'en' ? ty.category.nameEn : ty.category.nameSq}</span>
+                    </span>
+                    <Icon name="chevronRight" size={20} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="frequent-all">
+              <Link href="/raporto" className="btn btn-outline">{t('home.allCategories')}</Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="section">
         <div className="container grid-3">

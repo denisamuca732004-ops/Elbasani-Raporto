@@ -7,7 +7,7 @@ import { isOtherChoice } from '@/lib/shared/domain';
 import { getPublicSettings } from '@/lib/server/services/settings';
 import { brandNames } from '@/lib/shared/branding';
 import {
-  createCitizenReport, findNearbyOpen, followReport, getFeedbackInfo, getPublicCase, getPublicPhoto, listRecent, mapPoints,
+  FREQUENT_COUNT, createCitizenReport, findNearbyOpen, followReport, frequentTypeIds, getFeedbackInfo, getPublicCase, getPublicPhoto, listRecent, mapPoints,
   searchOpenByPlace, submitCitizenFeedback,
 } from '@/lib/server/services/publicReport';
 import { changeStatus, getReport, rejectReport, resolveReport } from '@/lib/server/services/report';
@@ -366,3 +366,36 @@ describe('home page search: open reports on a street', () => {
   });
 });
 
+describe('"Raportohen më shpesh" on the home page', () => {
+  test('the types reported most come first, completed with common problems; never "Tjetër", a rejected or a hidden one', async () => {
+    const lightOut = await typeId('lighting.light_out');
+    const stray = await typeId('animals.stray_dog');
+    for (let i = 0; i < 3; i++) await submitReport({ requestTypeId: stray, description: 'Qen endacakë që sulmojnë kalimtarët te shkolla.' });
+    const otherAnimals = await typeId('animals.other');
+    for (let i = 0; i < 5; i++) await submitReport({ requestTypeId: otherAnimals, description: 'Një dhi e lidhur në mes të trotuarit prej dy ditësh.' });
+    const signage = await typeId('streets.signage');
+    for (let i = 0; i < 9; i++) {
+      const { report } = await submitReport({ requestTypeId: signage, description: 'Semafori i kryqëzimit nuk punon prej mëngjesit.' });
+      await rejectReport(admin, report.id, { reason: 'Raportim i dyfishtë.' });
+    }
+
+    await invalidate(CACHE_KEYS.frequentTypes);
+    const ids = await frequentTypeIds();
+    assert.equal(ids.length, FREQUENT_COUNT);
+    assert.equal(new Set(ids).size, ids.length, 'no type twice');
+    const pothole = await typeId('streets.pothole'); // the type of most reports in this file
+    assert.deepEqual(ids.slice(0, 2), [pothole, stray], 'most reported first');
+    assert.ok(!ids.includes(otherAnimals), 'never "Tjetër"');
+    assert.ok(!ids.includes(signage), 'rejected reports are not counted');
+    assert.ok(ids.includes(lightOut), 'completed with a common problem');
+
+    await db.requestType.update({ where: { id: stray }, data: { active: false } });
+    try {
+      await invalidate(CACHE_KEYS.frequentTypes);
+      assert.ok(!(await frequentTypeIds()).includes(stray), 'a hidden type is never offered');
+    } finally {
+      await db.requestType.update({ where: { id: stray }, data: { active: true } });
+      await invalidate(CACHE_KEYS.frequentTypes);
+    }
+  });
+});
