@@ -114,7 +114,7 @@ Fotoja kontrollohet sapo qytetari e zgjedh, te hapi “Shtoni një foto”.
   Kërkon AI-në.
 - **Kur AI nuk përgjigjet** (çelës i gabuar, pa kredit): qytetari sheh “Fotoja nuk u kontrollua
   automatikisht”, dhe raportimi vazhdon. Shkakun e tregon butoni **Provo lidhjen me AI** te
-  *Administrimi → Integrimi*.
+  faqja Integrimi (`/admin/integration`, nuk është në menu).
 - **Përshkrimi** kontrollohet kur qytetari shtyp “Vazhdo”: shkronja të rastit (“asdfkz kcp”)
   refuzohen edhe pa AI; me AI refuzohen edhe tekstet që nuk thonë asgjë (“test test”) dhe ato
   fyese ose të turpshme (zemërimi apo kritika ndaj Bashkisë lejohen). Nëse përshkrimi flet për
@@ -147,15 +147,16 @@ Llogaritë krijohen me këtë radhë:
    * Fjalëkalimi i përkohshëm shfaqet **vetëm një herë**. Jepjani personit drejtpërdrejt.
    * Në hyrjen e parë, personi detyrohet ta ndryshojë.
 
-Për prezantim: *Administrimi → Të dhëna demo → Krijo të dhëna shembull*. Krijohen 60 raportime
+Për prezantim: faqja *Të dhëna demo* (`/admin/demo`, nuk është në menu) → *Krijo të dhëna shembull*. Krijohen 60 raportime
 të shënuara "Demo", që nuk llogariten në statistikat publike dhe fshihen me një klik. Paneli i
 shfaq gjithmonë (nuk ka më çelës "Shfaq të dhënat demo"). Fshijini para përdorimit zyrtar.
 
 ## Paneli i administratorit
 
 - **Menuja** ka vetëm punën e përditshme: Paneli, **Departamentet**, Kërkesat për rishikim, dhe
-  te *Administrimi*: Zonat, Emailet, Integrimi, Të dhëna demo. Logoja lart të çon te faqja
-  kryesore publike. Sektorët nuk renditen më në menu:
+  te *Administrimi*: Zonat dhe Emailet. Logoja lart të çon te faqja kryesore publike, dhe emri
+  lart djathtas hap “Llogaria ime”. Integrimi (`/admin/integration`) dhe Të dhëna demo
+  (`/admin/demo`) nuk janë në menu, por hapen me adresën e tyre. Sektorët nuk renditen më në menu:
   *Departamentet* (`/admin/sectors`) hap kartat e tyre në të djathtë, dhe çdo kartë hap
   raportimet e atij sektori (me lidhjen “← Departamentet” për t'u kthyer).
 - **Jo në menu**, por faqet punojnë me adresën e tyre: Sektorët (`/admin/departments`),

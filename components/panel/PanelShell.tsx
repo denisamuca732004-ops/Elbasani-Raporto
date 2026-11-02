@@ -74,16 +74,15 @@ function navGroups(principal: Principal, counts: SidebarCounts | null, t: (k: st
       {
         title: t('panel.nav.administration'),
         items: [
-          // Sectors, accounts, report types, the search guide and the appearance are not in the
-          // menu (kept simple for daily work). Their pages still work: the "first steps" card of
-          // the dashboard links to them, and they open at their address (/admin/users…).
+          // Sectors, accounts, report types, the search guide, the appearance, the integration
+          // (AI test), the demo data and "my account" are not in the menu (kept simple for daily
+          // work). Their pages still work at their address (/admin/users, /admin/integration,
+          // /admin/demo…); the dashboard's "first steps" card links to the first ones, and the
+          // name at the top right opens "my account".
           { href: '/admin/areas', icon: 'map', label: t('panel.nav.areas') },
           { href: '/admin/emails', icon: 'mail', label: t('panel.nav.emails') },
-          { href: '/admin/integration', icon: 'code', label: t('panel.nav.integration') },
-          { href: '/admin/demo', icon: 'sparkle', label: t('panel.nav.demo') },
         ],
       },
-      { items: [{ href: '/admin/account', icon: 'user', label: t('panel.nav.account') }] },
     ];
   }
   return [
@@ -95,7 +94,6 @@ function navGroups(principal: Principal, counts: SidebarCounts | null, t: (k: st
         { href: '/admin/transfers', icon: 'transfer', label: t('panel.nav.sectorReviews'), badge: counts?.pendingTransfers, badgeLabel: t('panel.pendingShort') },
       ],
     },
-    { items: [{ href: '/admin/account', icon: 'user', label: t('panel.nav.account') }] },
   ];
 }
 
@@ -165,9 +163,6 @@ export default function PanelShell({ principal, counts, children }: {
               </div>
             ))}
           </nav>
-          <div className="sidebar-footer">
-            <a href="/" target="_blank" rel="noreferrer" className="small"><Icon name="external" size={14} /> {t('panel.publicSite')}</a>
-          </div>
         </aside>
         {open && <button type="button" className="sidebar-backdrop" aria-label={t('common.close')} onClick={() => setOpen(false)} />}
         <main className="panel-main" id="panel-main">
