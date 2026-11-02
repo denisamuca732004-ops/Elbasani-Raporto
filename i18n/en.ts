@@ -416,7 +416,7 @@ const en = {
     sectorMail: {
       title: 'The department works by email',
       sent: 'Sent to {email} on {date}.', notSent: 'Not sent to the department yet ({email}).',
-      used: 'The department last opened the link on {date}', unused: 'The department has not used the link yet', expires: 'the link works until {date}',
+      used: 'The department last opened the link on {date}', unused: 'The department has not opened the link yet', expires: 'the link works until {date}',
       resend: 'Send the email again', send: 'Send to the department', resent: 'The email was sent to the department.', open: 'Open the department’s page',
       byLink: 'the department, from its email ({email})',
     },

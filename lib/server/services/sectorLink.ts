@@ -77,10 +77,15 @@ async function useLink(token: string) {
 
 const via = (email: string): Prisma.InputJsonValue => ({ via: 'sector_link', email });
 
-export async function sectorView(token: string): Promise<SectorLookup> {
+/**
+ * The report as its sector sees it. countOpen: the sector itself opened the page (not a signed-in
+ * staff member checking it from the panel), so the admin's report page shows when it was last opened.
+ */
+export async function sectorView(token: string, opts: { countOpen?: boolean } = {}): Promise<SectorLookup> {
   const found = await findLink(token);
   if (found.problem) return { ok: false, problem: found.problem, message: GONE[found.problem] };
   const link = found.link;
+  if (opts.countOpen) await markOpened(link.id);
   const [report, events, departments, transfers] = await Promise.all([
     db.report.findUnique({
       where: { id: link.reportId },
@@ -145,6 +150,19 @@ export async function sectorPhoto(token: string, attachmentId: string) {
 }
 
 const touch = (linkId: string) => db.reportLink.update({ where: { id: linkId }, data: { lastUsedAt: new Date() } });
+
+/** Opening the page counts as using the link (at most once a minute; a failure never stops the page). */
+async function markOpened(linkId: string): Promise<void> {
+  const now = new Date();
+  try {
+    await db.reportLink.updateMany({
+      where: { id: linkId, OR: [{ lastUsedAt: null }, { lastUsedAt: { lt: new Date(now.getTime() - 60_000) } }] },
+      data: { lastUsedAt: now },
+    });
+  } catch (err) {
+    console.error('[sector] could not record the opening', err);
+  }
+}
 
 /** "Po merremi": the sector takes the report into work. */
 export async function sectorStart(token: string, input: { note?: string | null }): Promise<void> {

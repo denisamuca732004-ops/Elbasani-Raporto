@@ -416,7 +416,7 @@ const sq = {
     sectorMail: {
       title: 'Sektori punon me email',
       sent: 'U dërgua te {email} më {date}.', notSent: 'Ende nuk i është dërguar sektorit ({email}).',
-      used: 'Sektori e hapi lidhjen së fundi më {date}', unused: 'Sektori ende nuk e ka përdorur lidhjen', expires: 'lidhja vlen deri më {date}',
+      used: 'Sektori e hapi lidhjen së fundi më {date}', unused: 'Sektori ende nuk e ka hapur lidhjen', expires: 'lidhja vlen deri më {date}',
       resend: 'Dërgo përsëri emailin', send: 'Dërgo te sektori', resent: 'Emaili iu dërgua sektorit.', open: 'Hap faqen e sektorit',
       byLink: 'sektori nga emaili ({email})',
     },

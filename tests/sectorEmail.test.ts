@@ -150,6 +150,21 @@ describe('a sector that works by e-mail', () => {
     assert.ok(!digest.bodyText.includes(`/admin/reports/${report.id}`));
   });
 
+  test('opening the page is recorded for the admin, but not when staff open it from the panel', async () => {
+    const { report } = await wasteReport('Kontejneri pranë shkollës nuk është zbrazur prej katër ditësh.');
+    const token = await linkIn(report.id, WASTE_MAIL);
+    const opened = async () => (await db.reportLink.findFirstOrThrow({ where: { reportId: report.id } })).lastUsedAt;
+    await sectorView(token);
+    assert.equal(await opened(), null, 'staff checking the page');
+    assert.equal((await getReport(admin, report.id)).sectorMail?.lastUsedAt, null);
+    await sectorView(token, { countOpen: true });
+    const first = await opened();
+    assert.ok(first, 'the sector opened it');
+    assert.ok((await getReport(admin, report.id)).sectorMail?.lastUsedAt);
+    await sectorView(token, { countOpen: true });
+    assert.equal((await opened())?.getTime(), first.getTime(), 'at most once a minute');
+  });
+
   test('a sector in the panel is unchanged: panel notice, no link', async () => {
     const { report } = await submitReport({ requestTypeId: await typeId('streets.pothole') });
     assert.equal(await db.reportLink.count({ where: { reportId: report.id } }), 0);
