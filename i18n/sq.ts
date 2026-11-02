@@ -208,6 +208,7 @@ const sq = {
     unplacedTitle: 'Raportime me adresë, pa pikë në hartë ({n})',
     unplacedText: 'U dërguan me adresë në një zonë pa kufi në hartë. Dalin në hartë sapo stafi i Bashkisë t’i vendosë pikën.',
     approximate: 'Vendndodhje e përafërt',
+    statusHint: 'Klikoni një status për të parë vetëm ato raportime (edhe brenda kategorisë së zgjedhur).',
     approximateNote: '≈ Vendndodhje e përafërt (nga adresa e shkruar)',
     approximateCase: 'Pika është e përafërt: raportimi u dërgua me adresë të shkruar, jo me pikë në hartë.',
   },

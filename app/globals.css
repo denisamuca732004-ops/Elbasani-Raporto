@@ -370,6 +370,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand-button); o
 .legend { display: flex; gap: 16px; font-size: 0.85rem; color: var(--muted); margin: 8px 0; flex-wrap: wrap; }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 .legend .legend-note { margin-left: auto; font-style: italic; }
+/* Map: the legend's statuses are buttons that filter the map */
+.status-chips { align-items: center; gap: 8px; }
+.status-chips button { display: inline-flex; align-items: center; gap: 2px; min-height: 38px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); font: inherit; font-size: 0.88rem; cursor: pointer; }
+.status-chips button:hover { border-color: var(--brand-button); }
+.status-chips button[aria-pressed='true'] { border-color: var(--brand-button); background: var(--bg-tint); box-shadow: inset 0 0 0 1px var(--brand-button); font-weight: 600; }
+.status-chips .chip-count { margin-left: 6px; min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--bg-soft); font-size: 0.78rem; font-weight: 700; text-align: center; color: var(--ink-soft); }
+.status-chips .legend-approx-note { margin-left: 6px; }
 
 /* ── Lists, tables, detail ── */
 .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 16px; }

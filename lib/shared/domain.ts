@@ -50,6 +50,11 @@ export const PUBLIC_STATUSES = ['RECEIVED', 'OPEN', 'IN_PROGRESS', 'RESOLVED', '
 export type PublicStatus = (typeof PUBLIC_STATUSES)[number];
 
 /** The simplified status residents see. */
+/** The statuses of the public map's legend, in the order a report goes through them. "Zgjidhur" also covers closed reports. */
+export const MAP_STATUSES = ['RECEIVED', 'OPEN', 'IN_PROGRESS', 'RESOLVED'] as const;
+export type MapStatus = (typeof MAP_STATUSES)[number];
+export const inMapStatus = (publicStatus: string, s: MapStatus): boolean => publicStatus === s || (s === 'RESOLVED' && publicStatus === 'CLOSED');
+
 export function publicStatusOf(status: Status): PublicStatus {
   if (status === 'PENDING' || status === 'NEEDS_REVIEW') return 'RECEIVED';
   if (status === 'VERIFIED' || status === 'ASSIGNED') return 'OPEN';

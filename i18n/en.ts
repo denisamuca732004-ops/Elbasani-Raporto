@@ -208,6 +208,7 @@ const en = {
     unplacedTitle: 'Reports with an address, without a pin on the map ({n})',
     unplacedText: 'They were sent with an address in an area without a border on the map. They appear on the map as soon as municipal staff place their pin.',
     approximate: 'Approximate location',
+    statusHint: 'Click a status to see only those reports (also within the chosen category).',
     approximateNote: '≈ Approximate location (from the typed address)',
     approximateCase: 'The pin is approximate: the report was sent with a typed address, not a pin on the map.',
   },
