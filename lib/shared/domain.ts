@@ -70,6 +70,14 @@ export function maxPriority(...values: Array<Priority | null | undefined>): Prio
 export const REQUEST_KINDS = ['PROBLEM', 'SERVICE'] as const;
 export type RequestKind = (typeof REQUEST_KINDS)[number];
 
+/**
+ * The last choice of every category, "Tjetër" in the form ("<category>.other"): a problem of the
+ * category that is not in the list. The report keeps the full name (e.g. "Problem tjetër me kafshët").
+ */
+export const isOtherChoice = (typeCode: string): boolean => typeCode.endsWith('.other');
+/** Its place in the list of the category: always last. */
+export const OTHER_SORT_ORDER = 99;
+
 export const CITIZEN_CHANNELS = ['WEB', 'APP', 'EMBED'] as const;
 export const STAFF_CHANNELS = ['IN_PERSON', 'PHONE', 'FACEBOOK', 'EMAIL'] as const;
 export const CHANNELS = [...CITIZEN_CHANNELS, ...STAFF_CHANNELS] as const;

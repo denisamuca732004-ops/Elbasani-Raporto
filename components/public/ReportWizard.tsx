@@ -33,7 +33,7 @@ import { distanceLabel, insideArea, key, phoneDigits, typeName, type LatLng } fr
 import { isMine, rememberMine, rememberSupported } from '@/lib/client/myReports';
 import { newClientRef, queueReport } from '@/lib/client/offlineQueue';
 import { uploadPhoto } from '@/lib/client/upload';
-import { LIMITS } from '@/lib/shared/domain';
+import { LIMITS, isOtherChoice } from '@/lib/shared/domain';
 import { looksLikeGibberish } from '@/lib/shared/text';
 import type { PublicCard } from '@/lib/shared/types';
 import { otherZonePlace, zoneCenter, zoneCodeAt } from '@/lib/shared/zones';
@@ -444,10 +444,18 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               <ul className="type-list">
                 {category.types.map((ty) => (
                   <li key={ty.id}>
-                    <button type="button" className={ty.id === typeId ? 'selected' : ''} aria-pressed={ty.id === typeId} onClick={() => { setTypeId(ty.id); goTo(1); }}>
-                      <span>{lang === 'en' ? ty.nameEn : ty.nameSq}</span>
-                      <span className="badge status-received">{t(`kind.${key(ty.kind)}`)}</span>
-                    </button>
+                    {/* The last choice, "Tjetër": a problem of this category that is not in the list. */}
+                    {isOtherChoice(ty.code) ? (
+                      <button type="button" className={`type-other${ty.id === typeId ? ' selected' : ''}`} aria-pressed={ty.id === typeId} onClick={() => { setTypeId(ty.id); goTo(1); }}>
+                        <span>{t('report.otherOption')}<span className="type-hint">{t('report.otherOptionHint')}</span></span>
+                        <Icon name="arrowRight" size={18} />
+                      </button>
+                    ) : (
+                      <button type="button" className={ty.id === typeId ? 'selected' : ''} aria-pressed={ty.id === typeId} onClick={() => { setTypeId(ty.id); goTo(1); }}>
+                        <span>{lang === 'en' ? ty.nameEn : ty.nameSq}</span>
+                        <span className="badge status-received">{t(`kind.${key(ty.kind)}`)}</span>
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -571,7 +579,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       {stepName === 'details' && (
         <section>
           <h2>{t('report.detailsTitle')}</h2>
-          <Field label={t('report.description')} hint={t('report.descriptionHint')} htmlFor="desc" error={visibleError('description')} required>
+          <Field label={t('report.description')} hint={type && isOtherChoice(type.code) ? t('report.descriptionHintOther') : t('report.descriptionHint')} htmlFor="desc" error={visibleError('description')} required>
             <textarea id="desc" value={description} maxLength={LIMITS.maxDescription} aria-required="true" aria-describedby="desc-count" onChange={(e) => setDescription(e.target.value)} />
           </Field>
           <p id="desc-count" className={`hint${description.trim().length < LIMITS.minDescription ? '' : ' ok'}`}>

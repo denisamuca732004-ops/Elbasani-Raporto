@@ -9,7 +9,7 @@ import { Redis } from '@upstash/redis';
 import { config } from './env';
 
 export const CACHE_KEYS = {
-  catalog: 'catalog:v2', // v2: zones carry their code and their lagje/villages
+  catalog: 'catalog:v3', // v3: every category ends with "Tjetër" (<category>.other)
   departments: 'departments:active:v1',
   settings: 'settings:v1',
   guide: 'guide:active:v2', // v2: answers without accounts or e-mails

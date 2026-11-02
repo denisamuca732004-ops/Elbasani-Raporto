@@ -6,7 +6,7 @@
  * NOTE: department names, deadlines and default priorities are a sensible
  * starting point and must be confirmed with the Municipality of Elbasan.
  */
-import type { GuideAction, Priority, RequestKind } from '@/lib/shared/domain';
+import { OTHER_SORT_ORDER, isOtherChoice, type GuideAction, type Priority, type RequestKind } from '@/lib/shared/domain';
 import type { AppSettings } from '@/lib/shared/types';
 import type { PrismaClient } from '@/lib/generated/prisma/client';
 import { approximatePoint, mentions, zoneCenter } from '@/lib/shared/zones';
@@ -27,6 +27,12 @@ export const DEPARTMENTS = [
 
 type TypeRow = [code: string, nameSq: string, nameEn: string, kind: RequestKind, department: string, slaDays: number, priority: Priority, keywords: string];
 
+/**
+ * Every category ends with "<category>.other" ("Tjetër" in the form): a problem of that category
+ * that is not in the list. It goes to the category's main department, is always last (OTHER_SORT_ORDER,
+ * also when it is added to a database that already has the other types) and has no keywords.
+ */
+
 export const CATEGORIES: Array<{ code: string; icon: string; nameSq: string; nameEn: string; types: TypeRow[] }> = [
   {
     code: 'animals', icon: 'paw', nameSq: 'Kafshë', nameEn: 'Animals',
@@ -34,6 +40,7 @@ export const CATEGORIES: Array<{ code: string; icon: string; nameSq: string; nam
       ['animals.stray_dog', 'Qen endacak', 'Stray dog', 'PROBLEM', 'public_health', 3, 'MEDIUM', 'qen,qenë,endacak,dog'],
       ['animals.dead_animal', 'Kafshë e ngordhur në rrugë', 'Dead animal on the street', 'PROBLEM', 'public_services', 1, 'MEDIUM', 'ngordhur,kufomë,dead'],
       ['animals.injured_animal', 'Kafshë e lënduar', 'Injured animal', 'PROBLEM', 'public_health', 1, 'HIGH', 'lënduar,plagosur,injured'],
+      ['animals.other', 'Problem tjetër me kafshët', 'Other animal problem', 'PROBLEM', 'public_health', 5, 'MEDIUM', ''],
     ],
   },
   {
@@ -44,6 +51,7 @@ export const CATEGORIES: Array<{ code: string; icon: string; nameSq: string; nam
       ['waste.damaged_bin', 'Kontejner i dëmtuar ose që mungon', 'Damaged or missing bin', 'SERVICE', 'public_services', 7, 'LOW', 'kontejner,dëmtuar,mungon'],
       ['waste.bulky_pickup', 'Marrje e mbetjeve të mëdha (divan, frigorifer)', 'Bulky item pickup (sofa, fridge)', 'SERVICE', 'public_services', 7, 'LOW', 'divan,frigorifer,dyshek,mobilie,bulky'],
       ['waste.construction_debris', 'Mbetje inerte nga ndërtimi', 'Construction debris', 'PROBLEM', 'urban_control', 5, 'MEDIUM', 'inerte,ndërtim,beton,tulla,debris'],
+      ['waste.other', 'Problem tjetër me mbeturinat', 'Other trash or recycling problem', 'PROBLEM', 'public_services', 5, 'MEDIUM', ''],
     ],
   },
   {
@@ -55,6 +63,7 @@ export const CATEGORIES: Array<{ code: string; icon: string; nameSq: string; nam
       ['streets.abandoned_vehicle', 'Automjet i braktisur', 'Abandoned vehicle', 'PROBLEM', 'municipal_police', 14, 'LOW', 'makinë,automjet,braktisur,vehicle'],
       ['streets.graffiti', 'Grafite', 'Graffiti', 'PROBLEM', 'public_services', 14, 'LOW', 'grafite,shkrime,graffiti'],
       ['streets.cleaning', 'Kërkesë për pastrim rruge', 'Street cleaning request', 'SERVICE', 'public_services', 3, 'LOW', 'pastrim,fshirje,cleaning'],
+      ['streets.other', 'Problem tjetër në rrugë ose trotuar', 'Other street or sidewalk problem', 'PROBLEM', 'infrastructure', 10, 'MEDIUM', ''],
     ],
   },
   {
@@ -62,6 +71,7 @@ export const CATEGORIES: Array<{ code: string; icon: string; nameSq: string; nam
     types: [
       ['lighting.light_out', 'Dritë rruge e fikur', 'Street light out', 'PROBLEM', 'infrastructure', 5, 'MEDIUM', 'dritë,llambë,ndriçim,fikur,light'],
       ['lighting.damaged_pole', 'Shtyllë e dëmtuar ose kabllo e zhveshur', 'Damaged pole or exposed cable', 'PROBLEM', 'infrastructure', 1, 'HIGH', 'shtyllë,kabllo,tel,zhveshur,cable'],
+      ['lighting.other', 'Problem tjetër me ndriçimin', 'Other street lighting problem', 'PROBLEM', 'infrastructure', 5, 'MEDIUM', ''],
     ],
   },
   {
@@ -71,6 +81,7 @@ export const CATEGORIES: Array<{ code: string; icon: string; nameSq: string; nam
       ['water.blocked_drain', 'Kanal ose pusetë e bllokuar', 'Blocked drain', 'PROBLEM', 'water', 3, 'MEDIUM', 'kanal,bllokuar,pusetë,drain'],
       ['water.open_manhole', 'Pus i hapur', 'Open manhole', 'PROBLEM', 'water', 1, 'HIGH', 'pus,hapur,kapak,manhole'],
       ['water.drain_cleaning', 'Kërkesë për pastrim kanalesh', 'Drain cleaning request', 'SERVICE', 'water', 7, 'LOW', 'pastrim,kanal,shira'],
+      ['water.other', 'Problem tjetër me ujin ose kanalizimet', 'Other water or sewer problem', 'PROBLEM', 'water', 5, 'MEDIUM', ''],
     ],
   },
   {
@@ -80,6 +91,7 @@ export const CATEGORIES: Array<{ code: string; icon: string; nameSq: string; nam
       ['parks.tree_pruning', 'Krasitje peme', 'Tree pruning', 'SERVICE', 'public_services', 14, 'LOW', 'krasitje,degë,pruning'],
       ['parks.playground', 'Lodër e dëmtuar në park', 'Damaged playground', 'PROBLEM', 'public_services', 7, 'MEDIUM', 'lodër,park,kënd lojrash,playground'],
       ['parks.unmaintained_green', 'Gjelbërim i pamirëmbajtur', 'Unmaintained green area', 'PROBLEM', 'public_services', 10, 'LOW', 'bar,gjelbërim,lulishte,green'],
+      ['parks.other', 'Problem tjetër në parqe ose me pemët', 'Other park or tree problem', 'PROBLEM', 'public_services', 10, 'MEDIUM', ''],
     ],
   },
   {
@@ -87,6 +99,7 @@ export const CATEGORIES: Array<{ code: string; icon: string; nameSq: string; nam
     types: [
       ['construction.illegal_building', 'Ndërtim pa leje', 'Construction without permit', 'PROBLEM', 'urban_control', 10, 'MEDIUM', 'leje,ndërtim,paligjshëm,kat'],
       ['construction.unsafe_site', 'Kantier pa masa sigurie', 'Unsafe construction site', 'PROBLEM', 'urban_control', 3, 'HIGH', 'kantier,siguri,rrezik'],
+      ['construction.other', 'Problem tjetër me ndërtimet', 'Other housing or construction problem', 'PROBLEM', 'urban_control', 10, 'MEDIUM', ''],
     ],
   },
   {
@@ -94,6 +107,7 @@ export const CATEGORIES: Array<{ code: string; icon: string; nameSq: string; nam
     types: [
       ['health.pest_control', 'Dezinsektim ose deratizim', 'Pest control', 'SERVICE', 'public_health', 7, 'LOW', 'minj,insekte,dezinsektim,deratizim,pest'],
       ['health.standing_water', 'Ujë i ndenjur ose mushkonja', 'Standing water or mosquitoes', 'PROBLEM', 'public_health', 5, 'MEDIUM', 'mushkonja,ujë i ndenjur,mosquito'],
+      ['health.other', 'Problem tjetër i shëndetit publik', 'Other public health problem', 'PROBLEM', 'public_health', 7, 'MEDIUM', ''],
     ],
   },
   {
@@ -101,6 +115,7 @@ export const CATEGORIES: Array<{ code: string; icon: string; nameSq: string; nam
     types: [
       ['business.noise', 'Zhurmë nga lokal ose biznes', 'Noise from a venue or business', 'PROBLEM', 'municipal_police', 3, 'MEDIUM', 'zhurmë,muzikë,lokal,noise'],
       ['business.sidewalk_occupation', 'Zënie e trotuarit nga biznesi', 'Business blocking the sidewalk', 'PROBLEM', 'municipal_police', 7, 'LOW', 'tavolina,zënie,trotuar'],
+      ['business.other', 'Problem tjetër me bizneset', 'Other business problem', 'PROBLEM', 'municipal_police', 7, 'MEDIUM', ''],
     ],
   },
   {
@@ -364,7 +379,7 @@ export async function seedReferenceData(db: PrismaClient): Promise<void> {
         where: { code },
         create: {
           code, nameSq, nameEn, kind, slaDays, defaultPriority, keywords: keywords || null,
-          categoryId: category.id, departmentId: departmentId[department] ?? null, sortOrder: ti,
+          categoryId: category.id, departmentId: departmentId[department] ?? null, sortOrder: isOtherChoice(code) ? OTHER_SORT_ORDER : ti,
         },
         update: {},
       });

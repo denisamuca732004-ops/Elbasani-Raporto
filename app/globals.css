@@ -265,6 +265,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand-button); o
 .type-list li + li { border-top: 1px solid var(--line-soft); }
 .type-list button { width: 100%; background: #fff; border: 0; text-align: left; padding: 14px 16px; font: inherit; cursor: pointer; display: flex; justify-content: space-between; gap: 12px; align-items: center; }
 .type-list button:hover, .type-list button.selected { background: var(--bg-tint); }
+/* "Tjetër": the last choice of a category */
+.type-list .type-other > span:first-child { font-weight: 600; }
+.type-list .type-hint { display: block; font-weight: 400; font-size: 0.875rem; color: var(--muted); margin-top: 2px; }
+.type-list .type-other svg { flex: none; color: var(--brand-button); }
 .wizard-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
 .map-box { height: 360px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .map-box.tall { height: min(70vh, 640px); }

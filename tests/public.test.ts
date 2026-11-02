@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import sharp from 'sharp';
 import { getCatalog } from '@/lib/server/services/catalog';
+import { isOtherChoice } from '@/lib/shared/domain';
 import { getPublicSettings } from '@/lib/server/services/settings';
 import { brandNames } from '@/lib/shared/branding';
 import {
@@ -47,6 +48,20 @@ describe('catalogue', () => {
     assert.ok(!catalog.neighbourhoods.some((n) => n.name === 'Mollas'), 'Mollas belongs to the Municipality of Cërrik');
     assert.ok(catalog.neighbourhoods.every((n) => n.code && n.localities.length > 0));
     assert.equal(catalog.departments.length, 7);
+  });
+
+  test('every category ends with "Tjetër" (a problem not in the list), routed to the department of that category', async () => {
+    const catalog = await getCatalog();
+    for (const c of catalog.categories.filter((c) => c.code !== 'other')) {
+      const last = c.types.at(-1)!;
+      assert.equal(last.code, `${c.code}.other`, `${c.code}: "Tjetër" is the last choice`);
+      assert.ok(isOtherChoice(last.code));
+      assert.ok(last.departmentId, `${c.code}.other goes to a department`);
+      assert.equal(c.types.filter((t) => isOtherChoice(t.code)).length, 1);
+    }
+    const animals = catalog.categories.find((c) => c.code === 'animals')!;
+    assert.equal(animals.types.at(-1)!.nameSq, 'Problem tjetër me kafshët', 'the report keeps a name that is clear outside the form');
+    assert.equal(animals.types.at(-1)!.departmentId, animals.types.find((t) => t.code === 'animals.stray_dog')!.departmentId);
   });
 
   test('public settings include branding and the service area', async () => {
