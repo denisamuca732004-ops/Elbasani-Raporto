@@ -13,8 +13,10 @@ import { db, type Prisma } from '../db';
 import { assertAdmin } from './access';
 import { listInclude, toListItem, toTransferSummary, transferInclude, type ListRow } from './mapper';
 import { buildWhere } from './report';
+import { SECTOR_TEMPLATES, mailStatusOf } from './sectorMail';
 
 const WAITING: Status[] = ['PENDING', 'NEEDS_REVIEW', 'VERIFIED', 'ASSIGNED'];
+
 const PENDING_TRANSFER = { some: { status: 'PENDING' as const } };
 const NO_PENDING_TRANSFER = { none: { status: 'PENDING' as const } };
 
@@ -40,6 +42,8 @@ const boardInclude = {
   ...listInclude,
   links: { where: { revokedAt: null }, orderBy: { sentAt: 'desc' }, take: 1 },
   transfers: { where: { status: 'PENDING' }, include: transferInclude },
+  emails: { where: { template: { in: [...SECTOR_TEMPLATES] } }, orderBy: { id: 'desc' }, take: 1, select: { status: true, createdAt: true, sentAt: true, error: true } },
+  events: { where: { toStatus: 'IN_PROGRESS' }, orderBy: { createdAt: 'desc' }, take: 1, select: { createdAt: true } },
 } satisfies Prisma.ReportInclude;
 type BoardRow = Prisma.ReportGetPayload<{ include: typeof boardInclude }>;
 
@@ -54,6 +58,8 @@ function toBoardItem(r: BoardRow): BoardItem {
       lastUsedAt: link.lastUsedAt?.toISOString() ?? null, expiresAt: link.expiresAt.toISOString(),
     } : null,
     returned: transfer ? toTransferSummary(transfer) : null,
+    mail: mailStatusOf(r.emails[0]),
+    acceptedAt: r.events[0]?.createdAt.toISOString() ?? null,
     closingNote: r.closingNote,
     rejectionReason: r.rejectionReason,
     resolvedAt: r.resolvedAt?.toISOString() ?? null,

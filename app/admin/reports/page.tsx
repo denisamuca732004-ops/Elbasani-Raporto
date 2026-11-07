@@ -22,6 +22,7 @@ import Board, { type BoardFilters } from '@/components/panel/Board';
 import ReportList, { type ReportListView } from '@/components/panel/ReportList';
 import { getT } from '@/i18n/server';
 import { PANEL_INCLUDES_DEMO, flatParams, pageStaff } from '@/lib/server/pageData';
+import { config } from '@/lib/server/env';
 import { boardCounts, reportBoard } from '@/lib/server/services/board';
 import { listReports, priorityCounts, statusCounts } from '@/lib/server/services/report';
 import { PRIORITIES, type Priority } from '@/lib/shared/domain';
@@ -64,7 +65,7 @@ async function adminBoard(principal: Principal, params: Record<string, string | 
   } catch (err) {
     console.error('[reports] board failed', err);
   }
-  return <Board data={data} filters={filters} />;
+  return <Board data={data} filters={filters} mailEnabled={config().mail.driver === 'smtp'} />;
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: SearchParams }) {

@@ -21,6 +21,7 @@ import { departmentName, timeAgo, typeName } from '@/lib/client/format';
 import { PRIORITIES, type Priority } from '@/lib/shared/domain';
 import { BOARD_ATTENTION, BOARD_BUCKETS, type BoardBucket } from '@/lib/shared/reportViews';
 import type { Board as BoardData, BoardItem } from '@/lib/shared/types';
+import { DeliveryLine, StatusLine } from './SectorStatus';
 import TransferDecision from './TransferDecision';
 
 const DAY_MS = 86_400_000;
@@ -31,7 +32,7 @@ const REMIND_AFTER_MS = 2 * DAY_MS;
 
 export interface BoardFilters { departmentId: number | null; priority: Priority | null; overdue: boolean; q: string }
 
-export default function Board({ data, filters }: { data: BoardData | null; filters: BoardFilters }) {
+export default function Board({ data, filters, mailEnabled = true }: { data: BoardData | null; filters: BoardFilters; mailEnabled?: boolean }) {
   const { t, lang } = useI18n();
   const { departments } = useCatalog();
   const router = useRouter();
@@ -64,6 +65,7 @@ export default function Board({ data, filters }: { data: BoardData | null; filte
           <p className="muted" style={{ margin: 0 }}>{t('board.intro')}</p>
         </div>
       </div>
+      {!mailEnabled && <div className="alert alert-warn" role="status"><Icon name="alert" size={18} /> {t('board.mailOff')}</div>}
 
       <nav className="board-tabs" aria-label={t('panel.nav.reports')}>
         {BOARD_BUCKETS.map((b, i) => {
@@ -159,7 +161,7 @@ function BoardRow({ r, bucket, href, onChanged }: { r: BoardItem; bucket: BoardB
         <div className="board-meta" suppressHydrationWarning>
           {[place, t('board.received', { when: timeAgo(r.createdAt, t) }), bucket !== 'new' && sector ? sector : null].filter(Boolean).join(' · ')}
         </div>
-        {bucket === 'sent' && r.sent && <SentInfo r={r} />}
+        {bucket !== 'new' && bucket !== 'rejected' && <SectorStatus r={r} bucket={bucket} />}
         {bucket === 'returned' && r.returned && (
           <div className="board-info warn">
             <strong>{t('board.returnedBy')}</strong> “{r.returned.reason}”
@@ -182,18 +184,25 @@ function BoardRow({ r, bucket, href, onChanged }: { r: BoardItem; bucket: BoardB
   );
 }
 
-function SentInfo({ r }: { r: BoardItem }) {
+/** Two plain lines: did the request reach the sector, and has the sector accepted it. */
+function SectorStatus({ r, bucket }: { r: BoardItem; bucket: BoardBucket }) {
   const { t } = useI18n();
-  const sent = r.sent!;
-  const waited = Date.now() - new Date(sent.sentAt).getTime();
-  const expired = new Date(sent.expiresAt).getTime() < Date.now();
+  const sent = r.sent;
+  const waited = sent ? Date.now() - new Date(sent.sentAt).getTime() : 0;
   return (
-    <div className="board-info" suppressHydrationWarning>
-      <Icon name="mail" size={14} /> {t('board.sentTo', { email: sent.email, when: timeAgo(sent.sentAt, t) })}
-      {' · '}{sent.lastUsedAt ? t('board.opened', { when: timeAgo(sent.lastUsedAt, t) }) : t('board.notOpened')}
-      {sent.remindedAt && <> · {t('board.reminded', { when: timeAgo(sent.remindedAt, t) })}</>}
-      {waited >= REMIND_AFTER_MS && <div><span className="badge badge-overdue">{t('board.unanswered', { n: Math.max(2, Math.round(waited / DAY_MS)) })}</span></div>}
-      {expired && <div className="small">{t('board.expired')}</div>}
+    <div className="board-status">
+      <DeliveryLine mail={r.mail} email={sent?.email ?? r.departmentEmail ?? ''} sentAt={sent?.sentAt} />
+      {bucket === 'sent' && (
+        <StatusLine tone="warn" icon="clock" extra={waited >= REMIND_AFTER_MS && <span className="badge badge-overdue">{t('board.unanswered', { n: Math.max(2, Math.round(waited / DAY_MS)) })}</span>}>
+          {t('board.accept.waiting')}
+          {sent && <> · {sent.lastUsedAt ? t('board.opened', { when: timeAgo(sent.lastUsedAt, t) }) : t('board.notOpened')}</>}
+          {sent?.remindedAt && <> · {t('board.reminded', { when: timeAgo(sent.remindedAt, t) })}</>}
+        </StatusLine>
+      )}
+      {bucket === 'sent' && sent && new Date(sent.expiresAt).getTime() < Date.now() && <StatusLine tone="bad" icon="alert">{t('board.expired')}</StatusLine>}
+      {bucket === 'returned' && <StatusLine tone="bad" icon="transfer">{t('board.accept.returned')}</StatusLine>}
+      {bucket === 'working' && <StatusLine tone="ok" icon="check">{r.acceptedAt ? t('board.accept.accepted', { when: timeAgo(r.acceptedAt, t) }) : t('board.accept.acceptedPlain')}</StatusLine>}
+      {bucket === 'resolved' && r.resolvedAt && <StatusLine tone="ok" icon="check">{t('board.accept.resolved', { when: timeAgo(r.resolvedAt, t) })}</StatusLine>}
     </div>
   );
 }

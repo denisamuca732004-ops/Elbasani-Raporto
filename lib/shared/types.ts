@@ -150,6 +150,8 @@ export interface ReportListItem {
   updatedAt: string;
 }
 
+export interface SectorMailStatus { status: 'QUEUED' | 'SENDING' | 'LOGGED' | 'SENT' | 'FAILED'; at: string; error: string | null }
+
 /** A row of the admin's board: the list item, plus where it was sent and why it came back. */
 export interface BoardItem extends ReportListItem {
   departmentEmail: string | null;
@@ -157,6 +159,10 @@ export interface BoardItem extends ReportListItem {
   sent: { email: string; sentAt: string; remindedAt: string | null; lastUsedAt: string | null; expiresAt: string } | null;
   /** The sector's "Nuk mund ta trajtojmë", waiting for the admin. */
   returned: TransferSummary | null;
+  /** The last e-mail to the sector about it (report or reminder): did it really leave? LOGGED = SMTP is not set up. */
+  mail: SectorMailStatus | null;
+  /** When the sector pressed "E pranojmë" (the report went "Në punë"). */
+  acceptedAt: string | null;
   closingNote: string | null;
   rejectionReason: string | null;
   resolvedAt: string | null;
@@ -239,7 +245,10 @@ export interface ReportDetail extends ReportListItem {
    * The report's sector works by e-mail (no panel account): where and when its link was sent, and
    * when the sector last used it. url: only for the admin ("Hap faqen e sektorit").
    */
-  sectorMail: { email: string | null; sentAt: string | null; expiresAt: string | null; lastUsedAt: string | null; url: string | null } | null;
+  sectorMail: {
+    email: string | null; sentAt: string | null; expiresAt: string | null; lastUsedAt: string | null; url: string | null;
+    mail: SectorMailStatus | null; acceptedAt: string | null;
+  } | null;
   transfers: TransferSummary[];
   attachments: ReportAttachment[];
   events: ReportEventItem[];

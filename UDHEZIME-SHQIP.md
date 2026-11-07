@@ -192,7 +192,7 @@ Sektorët nuk kanë llogari dhe as panel. Llogaritë e vjetra të përgjegjësve
   * pasi e pranon, **U zgjidh:** me shënim (i detyrueshëm) dhe foto "pas" (jo e detyrueshme).
 - **Kujtesa:** nëse sektori nuk përgjigjet brenda 48 orësh, i vjen një kujtesë me të njëjtën lidhje, dhe pastaj çdo 48 orë.
 - **Siguria:** lidhja nuk merret me mend, vlen 90 ditë dhe ndalon kur raportimi kalon te një sektor tjetër.
-- **Duhet SMTP** (`MAIL_DRIVER=smtp`). Deri atëherë emailet vetëm shkruhen dhe duken te *Emailet*.
+- **Duhet SMTP** (`MAIL_DRIVER=smtp`). Deri atëherë emailet vetëm shkruhen dhe duken te *Emailet*. Paneli e thotë këtë me një shirit të verdhë në krye të *Raportimeve*.
 
 ## Paneli i administratorit: Raportimet sipas statusit
 
@@ -200,6 +200,7 @@ Menuja ka vetëm **Raportimet**, **Paneli**, dhe te Administrimi **Sektorët**, 
 
 - **Të reja:** nuk iu dërguan dot asnjë sektori (pa sektor ose sektori pa email). Butoni "Dërgo te …" ose "Ose te sektori".
 - **Dërguar te sektori:** presin "E pranojmë" ose "Nuk mund ta trajtojmë". Shihet kur u dërgua, kur e hapi sektori, kujtesa, dhe "Pa përgjigje prej N ditësh".
+- Nën çdo raportim janë dy rreshta: **"Kërkesa u dërgua te sektori"** (jeshile; e verdhë nëse emaili vetëm u ruajt sepse SMTP s'është aktiv, e kuqe nëse dështoi) dhe **a e ka pranuar sektori** ("Sektori ende nuk e ka pranuar" / "Sektori e pranoi, para …" / "Sektori nuk mund ta trajtojë").
 - **Kthyer nga sektori:** arsyeja e sektorit, me "Prano dhe kaloje" ose "Refuzo kërkesën".
 - **Në punë**, **Zgjidhur**, **Refuzuar**.
 

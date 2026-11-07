@@ -30,6 +30,7 @@ import { departmentName, formatDate, key, typeName, type LatLng } from '@/lib/cl
 import { uploadPhoto } from '@/lib/client/upload';
 import { LIMITS, type Priority, type Status } from '@/lib/shared/domain';
 import type { Principal, ReportDetail as Report } from '@/lib/shared/types';
+import { DeliveryLine, StatusLine } from './SectorStatus';
 import TransferDecision from './TransferDecision';
 
 /** Statuses a department head moves to with one button (resolve and reject have their own forms). */
@@ -594,11 +595,16 @@ export default function ReportDetail({ principal, report: initial, assignable, b
 
           {report.sectorMail && (
             <Card title={t('detail.sectorMail.title')} icon="mail">
-              <p className="small" style={{ marginTop: 0 }}>
-                {report.sectorMail.sentAt
-                  ? t('detail.sectorMail.sent', { email: report.sectorMail.email ?? '', date: formatDate(report.sectorMail.sentAt, lang, true) })
-                  : t('detail.sectorMail.notSent', { email: report.sectorMail.email ?? '' })}
-              </p>
+              <div className="board-status" style={{ marginTop: 0, marginBottom: 10 }}>
+                {report.sectorMail.mail || report.sectorMail.sentAt
+                  ? <DeliveryLine mail={report.sectorMail.mail} email={report.sectorMail.email ?? ''} sentAt={report.sectorMail.sentAt} />
+                  : <StatusLine tone="muted" icon="mail">{t('detail.sectorMail.notSent', { email: report.sectorMail.email ?? '' })}</StatusLine>}
+                {report.sectorMail.acceptedAt
+                  ? <StatusLine tone="ok" icon="check">{t('board.accept.accepted', { when: formatDate(report.sectorMail.acceptedAt, lang, true) })}</StatusLine>
+                  : report.pendingTransfer
+                    ? <StatusLine tone="bad" icon="transfer">{t('board.accept.returned')}</StatusLine>
+                    : report.sectorMail.sentAt && !['RESOLVED', 'CLOSED', 'REJECTED'].includes(report.status) && <StatusLine tone="warn" icon="clock">{t('board.accept.waiting')}</StatusLine>}
+              </div>
               {report.sectorMail.sentAt && (
                 <p className="small muted">
                   {report.sectorMail.lastUsedAt ? t('detail.sectorMail.used', { date: formatDate(report.sectorMail.lastUsedAt, lang, true) }) : t('detail.sectorMail.unused')}

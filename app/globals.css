@@ -950,3 +950,13 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
   .send-other select { max-width: none; flex: 1; }
   .warn-text { text-align: left; }
 }
+/* The two lines under a report on the board: did the request reach the sector, has the sector accepted it. */
+.board-status { display: grid; gap: 4px; margin-top: 8px; }
+.board-status .st { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 8px; padding: 6px 10px; border-radius: 4px; font-size: 0.9rem; line-height: 1.35; }
+.board-status .st > svg { flex: none; margin-top: 2px; }
+.board-status .st > span { flex: 1 1 14rem; min-width: 0; }
+.board-status .st > .badge { flex: none; }
+.board-status .st-ok { background: var(--ok-bg); color: #145A14; }
+.board-status .st-warn { background: var(--warn-bg); color: var(--warn); }
+.board-status .st-bad { background: var(--danger-bg); color: var(--danger); }
+.board-status .st-muted { background: var(--bg-soft); color: var(--ink-soft); }

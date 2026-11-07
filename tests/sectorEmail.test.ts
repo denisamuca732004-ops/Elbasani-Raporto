@@ -193,6 +193,8 @@ describe('a sector that works by e-mail', () => {
     assert.equal(await column(report.id), 'sent');
     const sent = (await reportBoard(admin, boardSchema.parse({ bucket: 'sent', pageSize: 100 }))).items.find((i) => i.id === report.id);
     assert.equal(sent?.sent?.email, WASTE_MAIL);
+    assert.equal(sent?.mail?.status, 'LOGGED', 'the board says the e-mail was only saved: MAIL_DRIVER=log in tests');
+    assert.equal(sent?.acceptedAt, null, 'not accepted yet');
     const token = await linkIn(report.id, WASTE_MAIL);
 
     await sectorRequestReview(token, { reason: 'Kontejnerët e shkollave i mban vetë shkolla.' });
@@ -204,6 +206,8 @@ describe('a sector that works by e-mail', () => {
 
     await sectorStart(token, { note: 'E pranuam, ekipi del sot.' });
     assert.equal(await column(report.id), 'working');
+    const working = (await reportBoard(admin, boardSchema.parse({ bucket: 'working', pageSize: 100 }))).items.find((i) => i.id === report.id);
+    assert.ok(working?.acceptedAt, 'the board shows when the sector accepted it');
     await sectorResolve(token, { note: 'Kontejneri u zbraz.' });
     assert.equal(await column(report.id), 'resolved');
 

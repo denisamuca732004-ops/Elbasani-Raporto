@@ -25,6 +25,7 @@ import { insideMunicipality, zoneOfPoint } from './geo';
 import { allowedStatusesFor, detailInclude, listInclude, toDetail, toListItem } from './mapper';
 import { citizenRecipients, notifyCitizenStatus, notifyDepartmentOfReport, sendReportToSector } from './notification';
 import { currentLink, linkUrl } from './reportLinks';
+import { SECTOR_TEMPLATES, mailStatusOf } from './sectorMail';
 import { persistNewReport, routeDepartmentId } from './reportCreation';
 import { moveToDepartment, settlePendingTransfer } from './routing';
 
@@ -61,13 +62,19 @@ export async function buildDetail(user: Principal, id: string): Promise<ReportDe
   if (!report) throw notFound('Raportimi nuk u gjet.');
   const detail = toDetail(report, user, events);
   if (report.department?.worksByEmail) {
-    const link = await currentLink(id, report.departmentId);
+    const [link, lastMail, accepted] = await Promise.all([
+      currentLink(id, report.departmentId),
+      db.emailLog.findFirst({ where: { reportId: id, template: { in: [...SECTOR_TEMPLATES] } }, orderBy: { id: 'desc' }, select: { status: true, createdAt: true, sentAt: true, error: true } }),
+      db.reportEvent.findFirst({ where: { reportId: id, toStatus: 'IN_PROGRESS' }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
+    ]);
     detail.sectorMail = {
       email: link?.email ?? report.department.email,
       sentAt: link?.sentAt.toISOString() ?? null,
       expiresAt: link?.expiresAt.toISOString() ?? null,
       lastUsedAt: link?.lastUsedAt?.toISOString() ?? null,
       url: link && isAdmin(user) ? linkUrl(link) : null,
+      mail: mailStatusOf(lastMail ?? undefined),
+      acceptedAt: report.status === 'IN_PROGRESS' || ['RESOLVED', 'CLOSED'].includes(report.status) ? accepted?.createdAt.toISOString() ?? null : null,
     };
   }
   return detail;

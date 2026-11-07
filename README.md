@@ -85,7 +85,7 @@ Departments have no accounts and no panel. The migration `20261107120000_sectors
   - after accepting, **U zgjidh** → `RESOLVED`, with a required note and an optional "after" photo.
 - **Reminder:** a department that has not answered a report for 48 hours gets a reminder with the same link (`sector_reminder`, daily job, again every 48 hours, `report_links.reminded_at`); the board shows "Pa përgjigje prej N ditësh".
 - **Safety:** the address is `<id>.<HMAC of the id with AUTH_SECRET>` ([`lib/server/services/reportLinks.ts`](lib/server/services/reportLinks.ts)): a changed or guessed address is refused. A link lasts 90 days from the last time it was sent, and stops when the report moves. The page is not indexed, not cached, sends no referrer, and its actions are rate-limited (`sector`). The e-mail asks not to forward it, since the link shows the resident's phone.
-- **Needs SMTP** (`MAIL_DRIVER=smtp`): until then these e-mails are only logged, visible at *Emailet*.
+- **Needs SMTP** (`MAIL_DRIVER=smtp`): until then these e-mails are only logged, visible at *Emailet*. The board shows a yellow warning on top while it is off.
 
 ### The admin's board (`/admin/reports`)
 
@@ -99,6 +99,8 @@ The menu is short: **Raportimet**, **Paneli**, and under Administrimi **Sektorë
 | Në punë | accepted by the department | open it |
 | Zgjidhur | resolved or closed (with the note) | open it |
 | Refuzuar | rejected (with the reason) | open it |
+
+Each row says, in two lines, whether the request reached the sector (the last sector e-mail: sent, only logged because SMTP is off, or failed) and whether the sector accepted it (waiting / accepted, with when / cannot handle it).
 
 Filters: department, priority, overdue, search; they live in the address (`?tab=sent&departmentId=3`). Without a tab it opens the first one with reports (Të reja, Kthyer, Dërguar, Në punë). The menu badge is the number waiting for the admin (Të reja + Kthyer).
 
