@@ -165,6 +165,8 @@ export interface BoardItem extends ReportListItem {
 export interface Board {
   bucket: string;
   counts: Record<string, number>;
+  /** How many reports of each priority are in this column (the groups "E lartë / Mesatare / E ulët"). */
+  byPriority: Record<string, number>;
   items: BoardItem[];
   total: number;
   page: number;

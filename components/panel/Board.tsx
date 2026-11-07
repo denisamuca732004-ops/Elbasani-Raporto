@@ -24,6 +24,9 @@ import type { Board as BoardData, BoardItem } from '@/lib/shared/types';
 import TransferDecision from './TransferDecision';
 
 const DAY_MS = 86_400_000;
+/** The columns grouped by priority (high first); the finished ones are listed by date. */
+const BY_PRIORITY: readonly BoardBucket[] = ['new', 'sent', 'returned', 'working'];
+const PRIORITY_ORDER: Priority[] = ['HIGH', 'MEDIUM', 'LOW'];
 const REMIND_AFTER_MS = 2 * DAY_MS;
 
 export interface BoardFilters { departmentId: number | null; priority: Priority | null; overdue: boolean; q: string }
@@ -109,6 +112,22 @@ export default function Board({ data, filters }: { data: BoardData | null; filte
         <div className={loading ? 'refreshing' : ''} aria-busy={loading}>
           {data.items.length === 0 ? (
             <EmptyState icon="inbox" title={t('board.empty')} />
+          ) : BY_PRIORITY.includes(bucket) ? (
+            // Waiting and in work: grouped by priority, high first (it needs action at once), oldest first inside.
+            PRIORITY_ORDER.filter((p) => data.items.some((r) => r.priority === p)).map((p) => (
+              <section key={p} className={`board-group group-${p.toLowerCase()}`} aria-labelledby={`bg-${p}`}>
+                <h2 id={`bg-${p}`} className="board-group-title">
+                  <PriorityBadge priority={p} />
+                  <span>{t(`board.groups.${p}`)}</span>
+                  <span className="board-group-count">{data.byPriority[p] ?? 0}</span>
+                </h2>
+                <ul className="board-list">
+                  {data.items.filter((r) => r.priority === p).map((r) => (
+                    <BoardRow key={r.id} r={r} bucket={bucket} href={detailHref(r.id)} onChanged={() => router.refresh()} />
+                  ))}
+                </ul>
+              </section>
+            ))
           ) : (
             <ul className="board-list">
               {data.items.map((r) => (
@@ -128,10 +147,10 @@ function BoardRow({ r, bucket, href, onChanged }: { r: BoardItem; bucket: BoardB
   const sector = departmentName(r.department, lang);
   const place = [r.address, r.neighbourhood].filter(Boolean).join(' · ');
   return (
-    <li className={`board-row${r.overdue ? ' overdue' : ''}`}>
+    <li className={`board-row priority-row-${r.priority.toLowerCase()}${r.overdue ? ' overdue' : ''}`}>
       <div className="board-main">
         <div className="board-title">
-          <PriorityBadge priority={r.priority} compact />
+          <PriorityBadge priority={r.priority} />
           <Link href={href} className="board-type">{typeName(r.type, lang)}</Link>
           <Link href={href} className="case-number">{r.caseNumber}</Link>
           <OverdueBadge show={r.overdue} />

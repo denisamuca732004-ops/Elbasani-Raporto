@@ -32,7 +32,7 @@ export function bucketWhere(bucket: BoardBucket): Prisma.ReportWhereInput {
 function orderFor(bucket: BoardBucket): Prisma.ReportOrderByWithRelationInput[] {
   if (bucket === 'resolved') return [{ resolvedAt: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }];
   if (bucket === 'rejected') return [{ updatedAt: 'desc' }, { id: 'asc' }];
-  // Waiting and in work: high priority first, then the oldest (first in, first out).
+  // Waiting and in work: high priority first (it needs action at once), then the oldest (first in, first out).
   return [{ priority: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }];
 }
 
@@ -77,13 +77,16 @@ export async function boardCounts(user: Principal, q: Partial<BoardQuery> = {}):
 export async function reportBoard(user: Principal, query: BoardQuery): Promise<Board> {
   assertAdmin(user);
   const where = { AND: [sharedWhere(user, query), bucketWhere(query.bucket)] };
-  const [rows, total, counts] = await Promise.all([
+  const [rows, total, counts, priorities] = await Promise.all([
     db.report.findMany({ where, include: boardInclude, orderBy: orderFor(query.bucket), take: query.pageSize, skip: (query.page - 1) * query.pageSize }),
     db.report.count({ where }),
     boardCounts(user, query),
+    db.report.groupBy({ by: ['priority'], where, _count: { _all: true } }),
   ]);
+  const byPriority = { HIGH: 0, MEDIUM: 0, LOW: 0 } as Record<string, number>;
+  for (const p of priorities) byPriority[p.priority] = p._count._all;
   return {
-    bucket: query.bucket, counts, items: rows.map(toBoardItem), total, page: query.page,
+    bucket: query.bucket, counts, byPriority, items: rows.map(toBoardItem), total, page: query.page,
     pages: Math.max(1, Math.ceil(total / query.pageSize)),
   };
 }

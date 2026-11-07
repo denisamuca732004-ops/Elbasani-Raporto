@@ -209,6 +209,15 @@ describe('a sector that works by e-mail', () => {
 
     const counts = await boardCounts(admin);
     assert.ok(counts.resolved >= 1 && counts.sent >= 0);
+
+    // High priority first: it needs action at once (then the oldest first).
+    const urgent = await submitReport({ requestTypeId: await typeId('streets.pothole'), description: 'Gropë shumë e rrezikshme, urgjent, fëmijët bien.' });
+    assert.equal(urgent.report.priority, 'HIGH');
+    const fresh = await reportBoard(admin, boardSchema.parse({ bucket: 'new', pageSize: 100 }));
+    const rank = { HIGH: 3, MEDIUM: 2, LOW: 1 } as const;
+    assert.equal(fresh.items[0]!.id, urgent.report.id);
+    assert.ok(fresh.items.every((r, i) => i === 0 || rank[fresh.items[i - 1]!.priority] >= rank[r.priority]));
+    assert.equal(Object.values(fresh.byPriority).reduce((a, b) => a + b, 0), fresh.total);
   });
 
   test('a sector that does not answer for 48 hours is reminded, every 48 hours, until it answers', async () => {
