@@ -13,7 +13,6 @@ import TrendChart from '@/components/charts/TrendChart';
 import Icon from '@/components/Icon';
 import { useCatalog } from '@/components/providers';
 import { BarList, KpiTile, Segmented } from '@/components/ui';
-import { SectorCards } from './SectorCards';
 import { useI18n } from '@/i18n';
 import { departmentName, formatDate, key } from '@/lib/client/format';
 import { storage } from '@/lib/client/storage';
@@ -124,14 +123,6 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
               <span>{admin ? t('dashboard.pendingReviewsAdmin', { n: data.pendingTransfers }) : t('dashboard.pendingReviewsSector', { n: data.pendingTransfers })}</span>
               <Icon name="chevronRight" size={18} />
             </Link>
-          )}
-
-          {data.byDepartment && (
-            <section aria-labelledby="dash-sectors">
-              <h2 className="section-label" id="dash-sectors">{t('dashboard.sectorsTitle')}</h2>
-              <p className="hint" style={{ marginTop: 0 }}>{t('dashboard.sectorsHint')}</p>
-              <SectorCards rows={data.byDepartment} period={period} />
-            </section>
           )}
 
           <section aria-label={t('dashboard.kpis', { period: periodLabel })}>
