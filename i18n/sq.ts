@@ -246,6 +246,12 @@ const sq = {
     statusHint: 'Klikoni një status për të parë vetëm ato raportime (edhe brenda kategorisë së zgjedhur).',
     approximateNote: '≈ Vendndodhje e përafërt (nga adresa e shkruar)',
     approximateCase: 'Pika është e përafërt: raportimi u dërgua me adresë të shkruar, jo me pikë në hartë.',
+    groups: { received: 'Marrë', working: 'Në punë', fixed: 'Rregulluar' },
+    zone: 'Zona', allZones: 'Të gjitha zonat',
+    search: 'Rrugë, numër ose problem', order: 'Renditja', newest: 'Më të rejat', oldest: 'Më të vjetrat',
+    listLabel: 'Lista e raportimeve', listCount: { one: '1 raportim', other: '{n} raportime' },
+    none: 'Asnjë raportim me këto filtra.', more: 'Shfaq më shumë', notPlaced: 'pa pikë në hartë',
+    keyNote: 'Pikat me rreth me vija janë të përafërta: raportimi u dërgua me adresë të shkruar, jo me pikë në hartë.',
   },
   stats: {
     title: 'Statistikat', intro: 'Sa raportime merr Bashkia dhe sa shpejt i zgjidh. Të dhënat përditësohen në kohë reale.',

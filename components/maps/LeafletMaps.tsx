@@ -4,13 +4,13 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import Icon from '@/components/Icon';
 import { useSettings } from '@/components/providers';
 import { useI18n } from '@/i18n';
 import { ELBASAN_CENTER, formatDate, insideArea, key, type LatLng } from '@/lib/client/format';
+import { mapStatusOf } from '@/lib/shared/domain';
 import type { MapPoint } from '@/lib/shared/types';
-import { STATUS_COLORS } from './colors';
 
 // Neutral attribution prefix (the OpenStreetMap credit stays, as its licence requires).
 L.Control.Attribution.prototype.options.prefix = '<a href="https://leafletjs.com">Leaflet</a>';
@@ -18,6 +18,28 @@ L.Control.Attribution.prototype.options.prefix = '<a href="https://leafletjs.com
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 const pinIcon = L.divIcon({ className: '', html: '<div class="pin"></div>', iconSize: [30, 30], iconAnchor: [15, 30] });
+
+/**
+ * The marks of the map of reports, as in its key: received = a yellow ring, being fixed = a blue
+ * dot, fixed = a green dot with a tick; a point worked out from a typed address has a dashed ring.
+ */
+const CHECK = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const MARK_CLASS = { RECEIVED: 'received', IN_PROGRESS: 'working', RESOLVED: 'fixed' } as const;
+const markIcons = new Map<string, L.DivIcon>();
+function markIcon(publicStatus: string, approximate: boolean): L.DivIcon {
+  const group = mapStatusOf(publicStatus) ?? 'RECEIVED';
+  const id = `${group}:${approximate}`;
+  let icon = markIcons.get(id);
+  if (!icon) {
+    icon = L.divIcon({
+      className: 'map-mark-wrap',
+      html: `<span class="map-mark ${MARK_CLASS[group]}${approximate ? ' approx' : ''}">${group === 'RESOLVED' ? CHECK : ''}</span>`,
+      iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -12],
+    });
+    markIcons.set(id, icon);
+  }
+  return icon;
+}
 
 function ClickToMove({ onPick }: { onPick: (p: LatLng) => void }) {
   useMapEvents({ click: (e) => onPick({ latitude: e.latlng.lat, longitude: e.latlng.lng }) });
@@ -136,15 +158,7 @@ export function CasesMap({ points, tall = true, linkPrefix = '/ndiq' }: CasesMap
       <MapContainer center={ELBASAN_CENTER} zoom={14} style={{ height: '100%' }}>
         <TileLayer url={TILE_URL} attribution={ATTRIBUTION} />
         {points.map((p) => (
-          <CircleMarker
-            key={p.caseNumber}
-            center={[p.latitude, p.longitude]}
-            radius={8}
-            // An approximate point (address typed by hand) has a dashed dark ring and a lighter fill.
-            pathOptions={p.approximate
-              ? { color: '#1B2A1B', weight: 2, dashArray: '3 3', fillColor: STATUS_COLORS[key(p.publicStatus)] ?? '#777', fillOpacity: 0.55 }
-              : { color: '#fff', weight: 2, fillColor: STATUS_COLORS[key(p.publicStatus)] ?? '#777', fillOpacity: 0.95 }}
-          >
+          <Marker key={p.caseNumber} position={[p.latitude, p.longitude]} icon={markIcon(p.publicStatus, p.approximate)}>
             <Popup>
               <strong className="case-number">{p.caseNumber}</strong><br />
               {lang === 'en' ? p.typeNameEn : p.typeNameSq}<br />
@@ -152,7 +166,7 @@ export function CasesMap({ points, tall = true, linkPrefix = '/ndiq' }: CasesMap
               {p.approximate && <><span className="small muted">{t('map.approximateNote')}</span><br /></>}
               <Link href={`${linkPrefix}/${p.caseNumber}`}>{t('common.details')} →</Link>
             </Popup>
-          </CircleMarker>
+          </Marker>
         ))}
       </MapContainer>
     </div>

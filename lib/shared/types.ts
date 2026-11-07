@@ -98,6 +98,9 @@ export interface MapPoint {
   createdAt: string;
   /** Worked out from a typed address: drawn as an approximate point. */
   approximate: boolean;
+  /** The zone (administrative unit) and the place as the resident wrote it (contacts masked). */
+  zoneId: number | null;
+  place: string | null;
 }
 
 /* ─── Staff ─── */

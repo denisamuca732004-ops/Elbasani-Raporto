@@ -12,13 +12,18 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('map.title') };
 }
 
+/**
+ * Every public report of the last 180 days is loaded once; the status, area and category of the
+ * address (?status=in_progress&zone=3&category=streets) only choose what the page shows first, and
+ * the filters then work in the browser.
+ */
 export default async function MapRoute({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = flatParams(await searchParams);
-  // Every public status is loaded; the status of the address (?status=in_progress) only chooses what the map shows first.
-  const parsed = mapSchema.safeParse({ status: 'all', category: params.category });
-  const query = parsed.success ? parsed.data : mapSchema.parse({ status: 'all' });
+  const query = mapSchema.parse({ status: 'all' });
   const wanted = (params.status ?? '').toUpperCase();
   const status = (MAP_STATUSES as readonly string[]).includes(wanted) ? (wanted as MapStatus) : null;
+  const category = params.category && /^[a-z0-9_.-]{1,60}$/.test(params.category) ? params.category : '';
+  const zone = /^\d{1,6}$/.test(params.zone ?? '') ? Number(params.zone) : null;
   let points: MapPoint[] | null;
   let unplaced: PublicCard[] = [];
   try {
@@ -27,5 +32,5 @@ export default async function MapRoute({ searchParams }: { searchParams: Promise
     console.error('[map] points unavailable', err);
     points = null;
   }
-  return <MapPage points={points} unplaced={unplaced} status={status} category={query.category ?? ''} />;
+  return <MapPage points={points} unplaced={unplaced} initial={{ status, category, zone }} />;
 }

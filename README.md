@@ -219,6 +219,7 @@ The public site follows the mentors' design v2 ([`components/site/SiteFrame.tsx`
 - **First screen:** "Raporto. Ndiqe. U rregullua." / "Report. Track. Fixed.", the "What needs fixing?" search (a matching problem opens the form at that type, otherwise at the categories), the categories as chips, and a schematic map of the city centre with the reports of the last 3 months as dots (open, in progress, fixed), the number open, fixed this month and the average days to fix. It ends in castle-wall battlements.
 - **Below:** "Recently fixed" (with the municipality's note) next to "Frequently reported" (information only), then "How it works".
 - **Footer:** about, contact e-mail, emergency numbers (112, 129, 128, 127), privacy, elbasani.gov.al, staff login.
+- **Map page** (`/harta`): status (all / received / being fixed / fixed), area and category on top; the OpenStreetMap map (colours made livelier with a CSS filter) with its key on the left; the list of the same reports on the right, with a search (street, number or problem) and newest / oldest first. Marks: received = yellow ring, being fixed = blue dot, fixed = green tick, dashed ring = approximate point. The filters live in the address (`?status=in_progress&zone=3&category=streets`).
 - **Type:** Source Sans 3 (self-hosted), sentence case.
 
 ## Help chat (the guide)

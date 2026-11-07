@@ -25,7 +25,7 @@ import { looksLikeGibberish } from '@/lib/shared/text';
 import { localityPlace } from '@/lib/shared/places';
 import { approximatePoint, otherZonePlace, zoneCenter } from '@/lib/shared/zones';
 import { boundingBox, distanceMeters, insideMunicipality, roundCoord, zoneOfPoint } from './geo';
-import { isPubliclyVerified, publicInclude, toPublicCard, toPublicCase } from './mapper';
+import { isPubliclyVerified, maskContacts, publicInclude, toPublicCard, toPublicCase } from './mapper';
 import { departmentRecipients } from './notification';
 import { REFUSED_DESCRIPTIONS, checkDescription } from './descriptionCheck';
 import { REFUSED_VERDICTS, checkPhoto } from './photoCheck';
@@ -514,6 +514,7 @@ export async function mapPoints(query: MapQuery): Promise<MapPoint[]> {
     },
     select: {
       caseNumber: true, status: true, latitude: true, longitude: true, locationApproximate: true, createdAt: true, isTest: true,
+      address: true, neighbourhoodId: true, neighbourhood: { select: { name: true } },
       requestType: { select: { nameSq: true, nameEn: true } },
       category: { select: { code: true, icon: true } },
     },
@@ -532,6 +533,8 @@ export async function mapPoints(query: MapQuery): Promise<MapPoint[]> {
     isTest: r.isTest,
     createdAt: r.createdAt.toISOString(),
     approximate: r.locationApproximate,
+    zoneId: r.neighbourhoodId,
+    place: [maskContacts(r.address || null), r.neighbourhood?.name].filter(Boolean).join(' · ') || null,
   }));
 }
 

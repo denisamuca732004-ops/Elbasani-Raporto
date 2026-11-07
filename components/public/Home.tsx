@@ -16,6 +16,7 @@ import Icon from '@/components/Icon';
 import { useCatalog, type TypeWithCategory } from '@/components/providers';
 import { CategoryIcon, TestBadge } from '@/components/ui';
 import { useI18n } from '@/i18n';
+import { mapStatusOf } from '@/lib/shared/domain';
 import { matchTypes } from '@/lib/shared/guide';
 import type { FixedReport, MapPoint } from '@/lib/shared/types';
 
@@ -74,7 +75,7 @@ export default function Home({ numbers, fixed, points, frequent = [] }: Props) {
           <div>
             <div className="home-section-head">
               <h2>{t('home.fixed.title')}</h2>
-              <Link href="/harta">{t('home.fixed.seeMap')}</Link>
+              <Link href="/harta?status=resolved">{t('home.fixed.seeMap')}</Link>
             </div>
             {fixed.length === 0 && <p className="muted">{t('home.fixed.none')}</p>}
             <ul className="home-list">
@@ -234,13 +235,15 @@ function CityMap({ points, openNow }: { points: MapPoint[]; openNow: number | nu
   );
 }
 
+/** The same marks as the map page: received = yellow ring, being fixed = blue dot, fixed = green dot with a tick. */
 function Dot({ p }: { p: MapPoint }) {
   const cx = x(p.longitude), cy = y(p.latitude);
-  if (p.publicStatus === 'IN_PROGRESS') return <circle className="m-dot-work" cx={cx} cy={cy} r="7" />;
-  if (p.publicStatus === 'RESOLVED' || p.publicStatus === 'CLOSED') {
+  const group = mapStatusOf(p.publicStatus);
+  if (group === 'IN_PROGRESS') return <circle className="m-dot-work" cx={cx} cy={cy} r="7" />;
+  if (group === 'RESOLVED') {
     return <g className="m-dot-done"><circle cx={cx} cy={cy} r="8" /><path d={`M${cx - 3.5} ${cy} l2.5 2.5 l4.5 -5`} /></g>;
   }
-  return <circle className="m-dot-open" cx={cx} cy={cy} r="7" />;
+  return <circle className="m-dot-received" cx={cx} cy={cy} r="6" />;
 }
 
 // Browsers do not all carry Albanian month names, so they are written here.

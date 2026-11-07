@@ -765,12 +765,12 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .m-castle { fill: #3D3830; }
 .m-label { fill: #C9D3CC; font: 600 15px var(--font-body); }
 .m-river-label { font-style: italic; font-weight: 400; fill: #AEBBB3; }
-.m-dot-open { fill: var(--v2-green); }
-.m-dot-work { fill: none; stroke: #F5B82E; stroke-width: 3.5; }
-.m-dot-done circle { fill: #C8D1CB; }
-.m-dot-done path { fill: none; stroke: #1E2823; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.m-dot-received { fill: none; stroke: #F5B82E; stroke-width: 3.5; }
+.m-dot-work { fill: #4C9BEB; }
+.m-dot-done circle { fill: var(--v2-green); }
+.m-dot-done path { fill: none; stroke: #0E2A17; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .home-map-pill { position: absolute; left: 30px; bottom: 30px; display: inline-flex; align-items: center; gap: 10px; padding: 9px 16px; border-radius: 999px; background: #2A3630; color: var(--v2-text); font-weight: 700; font-size: 1rem; }
-.home-map-pill .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--v2-green); }
+.home-map-pill .dot { width: 12px; height: 12px; border-radius: 50%; border: 3px solid #F5B82E; }
 .home-numbers { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 20px 0 22px; color: var(--v2-text-soft); font-size: 1.1rem; }
 .home-numbers strong { color: #fff; font-weight: 800; }
 .home-track { display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; border: 1.5px solid var(--v2-green); border-radius: var(--radius); color: var(--v2-text); text-decoration: none; font-weight: 700; font-size: 1.2rem; }
@@ -836,3 +836,71 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .site .footer-bottom .container { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; }
 @media (max-width: 900px) { .site .footer-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .site .footer-grid { grid-template-columns: 1fr; gap: 28px; } }
+
+/* ── Map page (design v2): filters, the map with its key, the list beside it ── */
+.site {
+  --mark-received: #E8A317;
+  --mark-working: #1767B5;
+  --mark-fixed: #1A8F3C;
+}
+/* OpenStreetMap's own colours, a little livelier: greener parks, bluer water, crisper roads. */
+.site .leaflet-tile-pane { filter: saturate(1.5) contrast(1.06) brightness(1.03); }
+.site .map-box { border-radius: 14px; border-color: #D5DBD6; }
+.map-page h1 { margin-bottom: 20px; }
+.map-filters { display: flex; flex-wrap: wrap; gap: 20px 28px; align-items: flex-end; margin-bottom: 22px; }
+.map-filters .field { margin: 0; min-width: 210px; }
+.map-filters select { min-height: 52px; }
+.status-toggle { display: flex; flex-wrap: wrap; gap: 10px; }
+.status-toggle button { display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 20px; border: 1.5px solid #C3CAC4; border-radius: 999px; background: #fff; color: var(--ink); font: 600 1.08rem var(--font-body); cursor: pointer; }
+.status-toggle button:hover { border-color: var(--v2-brand); }
+.status-toggle button[aria-pressed='true'] { background: #17692E; border-color: #17692E; color: #fff; }
+.status-mark { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; box-sizing: border-box; }
+.status-mark.received { border: 3px solid var(--mark-received); background: #fff; }
+.status-mark.working { background: var(--mark-working); }
+.status-mark.fixed { background: var(--mark-fixed); color: #fff; }
+.status-mark.approx { border: 2px dashed var(--ink); background: transparent; }
+.status-toggle button[aria-pressed='true'] .status-mark.working { box-shadow: 0 0 0 2px #fff; }
+.map-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.site .map-layout .map-box.tall { height: min(72vh, 620px); }
+.map-key { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 14px 0 6px; color: var(--ink-soft); font-size: 1.02rem; }
+.map-key > span { display: inline-flex; align-items: center; gap: 8px; }
+.map-list { display: flex; flex-direction: column; min-width: 0; }
+.map-list-tools { display: flex; gap: 12px; }
+.map-search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 0 14px; min-height: 56px; border: 1px solid #B9C1BB; border-radius: var(--radius); background: #fff; color: var(--muted); }
+.map-search:focus-within { border-color: var(--v2-brand); box-shadow: 0 0 0 1px var(--v2-brand); }
+.map-search input { flex: 1; min-width: 0; border: 0; padding: 0; background: transparent; font: 1.08rem var(--font-body); color: var(--ink); outline: none; box-shadow: none; }
+.map-list-tools select { flex: none; width: auto; min-height: 56px; }
+.map-list-count { margin: 10px 0 8px; color: var(--muted); font-size: 0.95rem; }
+.map-list-scroll { max-height: calc(min(72vh, 620px) - 100px); overflow-y: auto; padding-right: 6px; }
+.map-list-scroll ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.map-list-scroll .btn { margin: 12px 0 4px; }
+.map-card { display: block; padding: 18px 20px; border: 1px solid #DCE1DD; border-radius: 12px; background: #fff; color: var(--ink); text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.map-card:hover { border-color: var(--v2-brand); color: var(--ink); }
+.map-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.map-card-head strong { font-size: 1.18rem; line-height: 1.3; }
+.map-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; margin-top: 8px; color: var(--muted); font-size: 1rem; }
+.map-card-meta > span:not(.badge) + span:not(.badge)::before { content: '·'; margin: 0 7px; }
+.map-card-meta .nowrap { white-space: nowrap; }
+.map-card-meta .badge { margin-left: 8px; }
+.status-pill { flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; font-size: 0.95rem; font-weight: 700; white-space: nowrap; }
+.status-pill.received { background: #FFF3D4; color: #7A5300; }
+.status-pill.working { background: #E2EEFB; color: #0D4E8C; }
+.status-pill.fixed { background: #DFF2E4; color: #0F6B2A; }
+/* The marks on the map itself (Leaflet markers). */
+.map-mark-wrap { background: none; border: 0; }
+.map-mark { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; margin: 2px; border-radius: 50%; box-sizing: border-box; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); }
+.map-mark.received { background: #fff; border: 4.5px solid var(--mark-received, #E8A317); }
+.map-mark.working { background: var(--mark-working, #1767B5); border: 3px solid #fff; }
+.map-mark.fixed { background: var(--mark-fixed, #1A8F3C); border: 2px solid #fff; color: #fff; }
+.map-mark.approx { outline: 2px dashed #1B2A1B; outline-offset: 2px; opacity: 0.85; }
+@media (max-width: 900px) {
+  .map-layout { grid-template-columns: 1fr; }
+  .site .map-layout .map-box.tall { height: 420px; }
+  .map-list-scroll { max-height: none; overflow: visible; padding-right: 0; }
+  .map-filters .field { min-width: 0; flex: 1 1 160px; }
+}
+@media (max-width: 520px) {
+  .status-toggle button { min-height: 44px; padding: 0 14px; font-size: 1rem; }
+  .map-list-tools { flex-wrap: wrap; }
+  .map-list-tools select { width: 100%; }
+}

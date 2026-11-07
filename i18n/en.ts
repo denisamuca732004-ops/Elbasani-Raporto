@@ -246,6 +246,12 @@ const en = {
     statusHint: 'Click a status to see only those reports (also within the chosen category).',
     approximateNote: '≈ Approximate location (from the typed address)',
     approximateCase: 'The pin is approximate: the report was sent with a typed address, not a pin on the map.',
+    groups: { received: 'Received', working: 'Being fixed', fixed: 'Fixed' },
+    zone: 'Area', allZones: 'All areas',
+    search: 'Street, number or problem', order: 'Order', newest: 'Newest first', oldest: 'Oldest first',
+    listLabel: 'List of reports', listCount: { one: '1 report', other: '{n} reports' },
+    none: 'No reports match these filters.', more: 'Show more', notPlaced: 'not on the map yet',
+    keyNote: 'Points with a dashed ring are approximate: the report was sent with a typed address, not a point on the map.',
   },
   stats: {
     title: 'Statistics', intro: 'How many reports the municipality receives and how fast it resolves them. Updated in real time.',
