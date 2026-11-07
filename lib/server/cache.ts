@@ -13,7 +13,7 @@ export const CACHE_KEYS = {
   departments: 'departments:active:v1',
   settings: 'settings:v1',
   guide: 'guide:active:v4', // v4: answers for the help chat and the wider "Ndiq raportimin"
-  publicStats: 'stats:public:v1',
+  publicStats: 'stats:public:v2', // v2: openNow (every report still being worked on)
   frequentTypes: 'home:frequent-types:v2', // v2: with the number of reports
   userState: (userId: string) => `user:${userId}:state:v3`,
 } as const;

@@ -212,6 +212,15 @@ When "Vazhdo" is pressed at the description step ([`lib/server/services/descript
 
 E-mail addresses and phone numbers are masked before the text goes to the AI. One call per text and type, cached; rate limit `textCheck` per IP.
 
+## Public site design (v2)
+
+The public site follows the mentors' design v2 ([`components/site/SiteFrame.tsx`](components/site/SiteFrame.tsx), [`components/public/Home.tsx`](components/public/Home.tsx), the `.site` block at the end of [`app/globals.css`](app/globals.css)); the staff panel keeps its own look.
+- **Header:** the green elbasani.gov.al strip, then a white header with the pin mark, Report, Map, Track, Statistics and the language button ("English" / "Shqip"). Staff login is in the footer; a signed-in staff member also gets "Paneli" in the header.
+- **First screen:** "Raporto. Ndiqe. U rregullua." / "Report. Track. Fixed.", the "What needs fixing?" search (a matching problem opens the form at that type, otherwise at the categories), the categories as chips, and a schematic map of the city centre with the reports of the last 3 months as dots (open, in progress, fixed), the number open, fixed this month and the average days to fix. It ends in castle-wall battlements.
+- **Below:** "Recently fixed" (with the municipality's note) next to "Frequently reported" (information only), then "How it works".
+- **Footer:** about, contact e-mail, emergency numbers (112, 129, 128, 127), privacy, elbasani.gov.al, staff login.
+- **Type:** Source Sans 3 (self-hosted), sentence case.
+
 ## Help chat (the guide)
 
 A round **chat button** sits at the bottom right of every page of the public site ([`components/site/ChatHelp.tsx`](components/site/ChatHelp.tsx)); on phones the chat takes the whole screen. It replaced the search box of the menu. It answers, instantly and without AI:

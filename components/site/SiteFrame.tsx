@@ -1,7 +1,8 @@
 'use client';
 /**
- * Public site frame: green header like elbasani.gov.al, dark green footer,
- * offline bar, and the help chat (the button at the bottom right, every page).
+ * Public site frame (design v2 by the mentors): the elbasani.gov.al strip, a white header with
+ * the four pages and the language, a dark footer with contact, emergency numbers and the staff
+ * login, the offline bar, and the help chat (the button at the bottom right, every page).
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -71,60 +72,88 @@ function OfflineBar() {
   return null;
 }
 
-function NavLink({ href, children }: { href: string; children: ReactNode }) {
+function NavLink({ href, icon, children }: { href: string; icon: string; children: ReactNode }) {
   const pathname = usePathname();
   const active = pathname === href || pathname.startsWith(`${href}/`);
-  return <Link href={href} className={active ? 'active' : undefined} aria-current={active ? 'page' : undefined}>{children}</Link>;
+  return (
+    <Link href={href} className={active ? 'active' : undefined} aria-current={active ? 'page' : undefined}>
+      <Icon name={icon} size={20} />{children}
+    </Link>
+  );
+}
+
+/** The other language, by its own name ("English" / "Shqip"), with a globe. */
+function LanguageButton() {
+  const { lang, setLang, t } = useI18n();
+  return (
+    <button type="button" className="lang-button" onClick={() => setLang(lang === 'sq' ? 'en' : 'sq')} aria-label={t('nav.language')}>
+      <Icon name="globe" size={20} /><span lang={lang === 'sq' ? 'en' : 'sq'}>{t('nav.otherLanguage')}</span>
+    </button>
+  );
+}
+
+/** A signed-in staff member gets a way back to the panel; the staff login itself is in the footer. */
+function PanelLink() {
+  const { t } = useI18n();
+  const viewer = useViewer();
+  if (viewer?.kind !== 'staff') return null;
+  return <Link href="/admin" className="panel-link"><Icon name="dashboard" size={18} /><span>{t('nav.panel')}</span></Link>;
+}
+
+/** The pin in a green square: the platform's mark in the header (the coat of arms stays in the panel). */
+function BrandMark() {
+  return <span className="brand-mark" aria-hidden="true"><Icon name="pin" size={26} /></span>;
 }
 
 /**
- * Top right: "Paneli" for a signed-in staff member, otherwise "Hyrja për stafin" (residents have no
- * accounts). On phones the staff link is in the menu instead.
+ * The strip of elbasani.gov.al on top (the platform is one of the municipality's services), then
+ * the white header: name, the four pages, the language.
  */
-function AccountLink() {
-  const { t } = useI18n();
-  const viewer = useViewer();
-  if (viewer?.kind !== 'staff') return <Link href="/hyrje" className="staff-link">{t('nav.staff')}</Link>;
-  return <Link href="/admin" className="account-link"><Icon name="dashboard" size={16} /><span>{t('nav.panel')}</span></Link>;
-}
-
 export function SiteHeader() {
   const { t } = useI18n();
   const names = useBrandNames();
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   useEffect(() => setOpen(false), [pathname]);
-  const links: Array<[string, string]> = [
-    ['/raporto', t('nav.report')],
-    ['/harta', t('nav.map')],
-    ['/statistika', t('nav.stats')],
+  const links: Array<[string, string, string]> = [
+    ['/raporto', 'pin', t('nav.report')],
+    ['/harta', 'map', t('nav.map')],
+    ['/ndiq', 'route', t('nav.trackShort')],
+    ['/statistika', 'chart', t('nav.stats')],
   ];
   return (
     <header className="site-header">
+      <div className="gov-strip">
+        <div className="container">
+          <a href="https://elbasani.gov.al" rel="noreferrer"><Icon name="chevronRight" size={14} className="flip" />elbasani.gov.al</a>
+          <span aria-hidden="true">/</span>
+          <span>{t('nav.services')}</span>
+        </div>
+      </div>
       <div className="container header-top">
         <Link href="/" className="brand" aria-label={names.app}>
-          <Logo />
+          <BrandMark />
           <span className="brand-name">{names.app}<span className="brand-sub">{names.municipality}</span></span>
         </Link>
+        <nav id="main-nav" className={`main-nav${open ? ' open' : ''}`} aria-label={t('nav.menu')}>
+          <ul className="nav-links">
+            {links.map(([to, icon, label]) => <li key={to}><NavLink href={to} icon={icon}>{label}</NavLink></li>)}
+          </ul>
+        </nav>
         <div className="header-actions">
-          <AccountLink />
-          <LanguageToggle />
+          <PanelLink />
+          <LanguageButton />
           <button type="button" className="menu-btn" aria-expanded={open} aria-controls="main-nav" onClick={() => setOpen(!open)}>
-            <Icon name={open ? 'close' : 'menu'} size={28} /><span className="sr-only">{t('nav.menu')}</span>
+            <Icon name={open ? 'close' : 'menu'} size={26} /><span className="sr-only">{t('nav.menu')}</span>
           </button>
         </div>
       </div>
-      <nav id="main-nav" className={`main-nav${open ? ' open' : ''}`} aria-label={t('nav.menu')}>
-        <div className="container nav-row">
-          <ul className="nav-links">
-            {links.map(([to, label]) => <li key={to}><NavLink href={to}>{label}</NavLink></li>)}
-            {open && <li><NavLink href="/hyrje">{t('nav.staff')}</NavLink></li>}
-          </ul>
-        </div>
-      </nav>
     </header>
   );
 }
+
+const EMERGENCY: Array<['emergency' | 'police' | 'fire' | 'ambulance', string]> = [['emergency', '112'], ['police', '129'], ['fire', '128'], ['ambulance', '127']];
+const CONTACT_EMAIL = 'bashkiaelbasan@elbasani.gov.al';
 
 export function SiteFooter() {
   const { t } = useI18n();
@@ -133,30 +162,34 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="container">
         <div className="footer-grid">
-          <div>
-            <div className="row"><Logo small /><strong className="head" style={{ color: '#fff', margin: 0 }}>{names.municipality}</strong></div>
-            <p className="small" style={{ marginTop: 12 }}>{t('footer.about')}</p>
-          </div>
-          <div>
-            <h4>{t('footer.services')}</h4>
+          <section>
+            <h2 className="footer-title"><Icon name="home" size={20} />{t('footer.aboutTitle')}</h2>
+            <p>{t('footer.about')}</p>
+          </section>
+          <section>
+            <h2 className="footer-title"><Icon name="mail" size={20} />{t('footer.contact')}</h2>
+            <p><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
+          </section>
+          <section>
+            <h2 className="footer-title"><Icon name="phone" size={20} />{t('footer.emergencyTitle')}</h2>
+            <dl className="footer-numbers">
+              {EMERGENCY.map(([k, n]) => (
+                <div key={k}><dt>{t(`footer.numbers.${k}`)}</dt><dd><a href={`tel:${n}`}>{n}</a></dd></div>
+              ))}
+            </dl>
+          </section>
+          <section>
+            <h2 className="footer-title"><Icon name="info" size={20} />{t('footer.info')}</h2>
             <ul>
-              <li><Link href="/raporto">{t('nav.report')}</Link></li>
-              <li><Link href="/harta">{t('nav.map')}</Link></li>
-              <li><Link href="/statistika">{t('nav.stats')}</Link></li>
+              <li><Link href="/privatesia">{t('footer.privacyNotice')}</Link></li>
+              <li><a href="https://elbasani.gov.al" rel="noreferrer">elbasani.gov.al</a></li>
+              <li><Link href="/hyrje">{t('nav.staff')}</Link></li>
             </ul>
-          </div>
-          <div>
-            <h4>{t('footer.info')}</h4>
-            <ul>
-              <li><Link href="/privatesia">{t('nav.privacy')}</Link></li>
-              <li><a href="https://elbasani.gov.al" target="_blank" rel="noreferrer">elbasani.gov.al</a></li>
-            </ul>
-          </div>
+          </section>
         </div>
-        <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} {names.municipality}</span>
-          <span>{t('footer.emergency')}</span>
-        </div>
+      </div>
+      <div className="footer-bottom">
+        <div className="container"><span>© {new Date().getFullYear()} {names.municipality}</span><span>{t('footer.emergency')}</span></div>
       </div>
     </footer>
   );
@@ -168,13 +201,13 @@ export default function SiteFrame({ children, guide }: { children: ReactNode; gu
   // The help chat is for residents: not on a sector's report page (/sektori/…).
   const forResidents = !usePathname().startsWith('/sektori');
   return (
-    <>
+    <div className="site">
       <a href="#main" className="sr-only">{t('common.skip')}</a>
       <SiteHeader />
       <OfflineBar />
       <main id="main">{children}</main>
       <SiteFooter />
       {forResidents && <ChatHelp guide={guide ?? []} />}
-    </>
+    </div>
   );
 }

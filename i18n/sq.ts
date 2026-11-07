@@ -14,12 +14,14 @@ const sq = {
   time: { now: 'tani', minutes: 'para {n} min', hours: { one: 'para 1 ore', other: 'para {n} orësh' }, days: { one: 'para 1 dite', other: 'para {n} ditësh' } },
   nav: {
     report: 'Raporto', track: 'Ndiq raportimin', map: 'Harta', stats: 'Statistikat', privacy: 'Privatësia',
-    staff: 'Hyrja për stafin', menu: 'Menyja', language: 'Ndrysho gjuhën', panel: 'Paneli',
+    staff: 'Hyrja për stafin', trackShort: 'Ndiq', services: 'Shërbime', otherLanguage: 'English', menu: 'Menyja', language: 'Ndrysho gjuhën', panel: 'Paneli',
   },
   meta: { description: 'Raportoni probleme në qytet dhe kërkoni shërbime nga Bashkia Elbasan. Ndiqni kërkesën tuaj deri në zgjidhje.' },
   footer: {
     about: 'Elbasani Raporton është kanali zyrtar digjital i Bashkisë Elbasan për raportimin e problemeve dhe kërkesat për shërbime.',
     services: 'Shërbimet', info: 'Informacion',
+    aboutTitle: 'Rreth platformës', contact: 'Kontakt', emergencyTitle: 'Numrat e emergjencës', privacyNotice: 'Njoftimi i privatësisë',
+    numbers: { emergency: 'Emergjenca', police: 'Policia', fire: 'Zjarrfikësit', ambulance: 'Ambulanca' },
     emergency: 'Për emergjenca telefononi 112. Kjo platformë nuk është për urgjenca.',
   },
   offline: {
@@ -35,10 +37,21 @@ const sq = {
     seeMap: 'Shiko hartën',
     noRecent: 'Ende nuk ka raportime publike.',
     how: {
-      step1: { title: 'Raportoni', text: 'Zgjidhni kategorinë, shënoni vendin në hartë, shtoni foton dhe përshkrimin. Nuk ju duhet llogari.' },
-      step2: { title: 'Merrni numrin', text: 'Çdo raportim merr një numër (p.sh. EL-2026-00042) dhe dërgohet automatikisht te sektori përgjegjës.' },
-      step3: { title: 'Ndiqeni deri në zgjidhje', text: 'Shikoni statusin në çdo kohë te “Ndiq raportimin”: me numrin e raportimit, ose sipas datës, zonës, kategorisë, ose emrit dhe telefonit.' },
+      title: 'Si funksionon',
+      step1: { title: 'Raportoni', text: 'Zgjidhni kategorinë, shënoni vendin dhe shtoni një foto. Zgjat rreth dy minuta.' },
+      step2: { title: 'Merrni numrin', text: 'Raportimi shkon direkt te sektori përgjegjës, me një numër si EL-2026-00042.' },
+      step3: { title: 'Ndiqeni', text: 'Shihni çdo hap, datën e pritshme dhe shënimin e ekipit kur rregullohet.' },
     },
+    hero: {
+      l1: 'Raporto.', l2: 'Ndiqe.', l3: 'U rregullua.',
+      text: 'Tregojini Bashkisë Elbasan çfarë duhet rregulluar. Nuk ju duhet llogari, dhe e ndiqni deri në fund.',
+      ask: 'Çfarë duhet rregulluar?', placeholder: 'Gropë, kontejner, dritë…', button: 'Raporto një problem',
+      suggestions: 'Problemet që përputhen', categories: 'Ose zgjidhni kategorinë',
+    },
+    map: { label: 'Harta e raportimeve në qytet: hapni hartën', open: { one: '1 raportim i hapur në qytet', other: '{n} raportime të hapura në qytet' } },
+    numbers: { fixedIn: 'të rregulluara në {month}', avgDays: 'ditë mesatarisht për rregullim', openNow: 'të hapura tani' },
+    fixed: { title: 'Rregulluar së fundmi', seeMap: 'Shihini në hartë', badge: 'U rregullua', none: 'Ende asnjë raportim i rregulluar.' },
+    when: { today: 'sot', yesterday: 'dje', days: { one: '1 ditë më parë', other: '{n} ditë më parë' } },
   },
   sector: {
     title: 'Raportimi për sektorin',

@@ -173,6 +173,14 @@ shfaq gjithmonë (nuk ka më çelës "Shfaq të dhënat demo"). Fshijini para p�
 - **Kur raportimi nuk i përket sektorit:** sektori dërgon **kërkesë për rishikim**. Administratori
   e sheh te *Kërkesat për rishikim* dhe e dërgon raportimin te sektori i duhur.
 
+## Pamja e faqes publike (dizajni v2)
+
+Faqja publike ndjek dizajnin v2 të mentorëve; paneli i stafit mbetet si ishte.
+- **Lart:** shiriti i gjelbër i elbasani.gov.al, pastaj kreu i bardhë me Raporto, Harta, Ndiq, Statistikat dhe butonin e gjuhës. "Hyrja për stafin" është në fund të faqes.
+- **Ekrani i parë:** "Raporto. Ndiqe. U rregullua.", kërkimi "Çfarë duhet rregulluar?" (problemi i gjetur hap formularin te ai lloj), kategoritë, dhe një hartë skematike e qendrës me raportimet e 3 muajve të fundit, sa janë të hapura, sa u rregulluan këtë muaj dhe ditët mesatare.
+- **Poshtë:** "Rregulluar së fundmi" (me shënimin e Bashkisë) dhe "Raportohen më shpesh", pastaj "Si funksionon".
+- **Fundi i faqes:** kontakti, numrat e emergjencës (112, 129, 128, 127), privatësia, elbasani.gov.al dhe hyrja për stafin.
+
 ## Sektorët që punojnë me email (pa panel)
 
 Kur sektori nuk ka njeri që ndjek panelin, administratori te `/admin/departments` e hap sektorin,

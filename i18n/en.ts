@@ -14,12 +14,14 @@ const en = {
   time: { now: 'just now', minutes: '{n} min ago', hours: { one: '1 hour ago', other: '{n} hours ago' }, days: { one: '1 day ago', other: '{n} days ago' } },
   nav: {
     report: 'Report', track: 'Track a report', map: 'Map', stats: 'Statistics', privacy: 'Privacy',
-    staff: 'Staff login', menu: 'Menu', language: 'Change language', panel: 'Panel',
+    staff: 'Staff login', trackShort: 'Track', services: 'Services', otherLanguage: 'Shqip', menu: 'Menu', language: 'Change language', panel: 'Panel',
   },
   meta: { description: 'Report problems in the city and request services from the Municipality of Elbasan. Follow your request until it is resolved.' },
   footer: {
     about: 'Elbasan Reports is the official digital channel of the Municipality of Elbasan for reporting problems and requesting services.',
     services: 'Services', info: 'Information',
+    aboutTitle: 'About', contact: 'Contact', emergencyTitle: 'Emergency numbers', privacyNotice: 'Privacy notice',
+    numbers: { emergency: 'Emergency', police: 'Police', fire: 'Fire service', ambulance: 'Ambulance' },
     emergency: 'For emergencies call 112. This platform is not for emergencies.',
   },
   offline: {
@@ -35,10 +37,21 @@ const en = {
     seeMap: 'See the map',
     noRecent: 'There are no public reports yet.',
     how: {
-      step1: { title: 'Report', text: 'Choose the category, mark the place on the map, add a photo and a description. No account needed.' },
-      step2: { title: 'Get a number', text: 'Every report gets a number (e.g. EL-2026-00042) and goes automatically to the responsible sector.' },
-      step3: { title: 'Follow it until it is fixed', text: 'Check the status at any time under “Track a report”: with the report number, or by date, area, category, or your name and phone.' },
+      title: 'How it works',
+      step1: { title: 'Report', text: 'Pick what it is, mark the spot and add a photo. It takes about two minutes.' },
+      step2: { title: 'Get a number', text: 'Your report goes straight to the sector responsible, with a number like EL-2026-00042.' },
+      step3: { title: 'Follow it', text: 'See every step, the expected date and a note from the team when it is fixed.' },
     },
+    hero: {
+      l1: 'Report.', l2: 'Track.', l3: 'Fixed.',
+      text: 'Tell the Municipality of Elbasan what needs fixing. No account needed, and you can follow it until it is done.',
+      ask: 'What needs fixing?', placeholder: 'Pothole, full bin, street light…', button: 'Report a problem',
+      suggestions: 'Matching problems', categories: 'Or choose a category',
+    },
+    map: { label: 'Map of reports in the city: open the map', open: { one: '1 report open across the city', other: '{n} reports open across the city' } },
+    numbers: { fixedIn: 'fixed in {month}', avgDays: 'days on average to fix', openNow: 'open now' },
+    fixed: { title: 'Recently fixed', seeMap: 'See them on the map', badge: 'Fixed', none: 'Nothing has been fixed yet.' },
+    when: { today: 'today', yesterday: 'yesterday', days: { one: '1 day ago', other: '{n} days ago' } },
   },
   sector: {
     title: 'Report for the department',

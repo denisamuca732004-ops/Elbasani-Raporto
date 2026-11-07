@@ -2,7 +2,7 @@
   "name": "elbasani-raporton",
   "version": "3.0.0",
   "private": true,
-  "description": "Elbasani Raporton \u2013 Next.js (App Router) + Prisma + Auth.js + Vercel Blob + Upstash",
+  "description": "Elbasani Raporton – Next.js (App Router) + Prisma + Auth.js + Vercel Blob + Upstash",
   "type": "module",
   "engines": {
     "node": "24.x"
@@ -28,6 +28,7 @@
   "dependencies": {
     "@fontsource/lora": "^5.3.0",
     "@fontsource/montserrat": "^5.3.0",
+    "@fontsource/source-sans-3": "^5.3.1",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "@upstash/qstash": "^2.12.1",

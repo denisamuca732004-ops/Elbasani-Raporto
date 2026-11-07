@@ -73,6 +73,18 @@ export interface PublicCard {
   isTest: boolean;
 }
 
+/** A report the municipality fixed, for "Rregulluar së fundmi" on the home page. */
+export interface FixedReport {
+  caseNumber: string;
+  category: CategoryRef | null;
+  type: TypeRef | null;
+  place: string | null;
+  resolvedAt: string;
+  /** The municipality's note for the resident ("Shënimi i Bashkisë"), public on the report's page too. */
+  note: string | null;
+  isTest: boolean;
+}
+
 export interface MapPoint {
   caseNumber: string;
   publicStatus: PublicStatus;

@@ -1,5 +1,5 @@
 /**
- * Root layout: fonts (self-hosted, no request to Google), the v2 design
+ * Root layout: fonts (self-hosted, no request to Google; Source Sans 3 for the public site), the design
  * system (globals.css), the visitor's language and the municipality's
  * branding colours as CSS variables.
  */
@@ -10,6 +10,11 @@ import '@fontsource/montserrat/latin-800.css';
 import '@fontsource/lora/latin-400.css';
 import '@fontsource/lora/latin-400-italic.css';
 import '@fontsource/lora/latin-600.css';
+import '@fontsource/source-sans-3/latin-400.css';
+import '@fontsource/source-sans-3/latin-600.css';
+import '@fontsource/source-sans-3/latin-700.css';
+import '@fontsource/source-sans-3/latin-800.css';
+import '@fontsource/source-sans-3/latin-900.css';
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import type { CSSProperties, ReactNode } from 'react';

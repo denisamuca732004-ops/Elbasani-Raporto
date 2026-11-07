@@ -9,7 +9,7 @@ import 'server-only';
 import type { z } from 'zod';
 import { FINAL_STATUSES, LIMITS, OPEN_STATUSES, PUBLIC_LISTED_STATUSES, isOtherChoice, publicStatusOf, type Status } from '@/lib/shared/domain';
 import type { FieldError } from '@/lib/shared/result';
-import type { MapPoint, PublicCard, PublicCase } from '@/lib/shared/types';
+import type { FixedReport, MapPoint, PublicCard, PublicCase } from '@/lib/shared/types';
 import { citizenReportShape, type FeedbackInput, type MapQuery, type RecentQuery, type TrackSearch } from '@/lib/validation/report';
 import { check } from '@/lib/validation/zod';
 import type { RequestType } from '@/lib/generated/prisma/client';
@@ -434,6 +434,28 @@ export async function frequentTypes(): Promise<Array<{ id: number; count: number
       if (type && usable.has(type.id) && !list.some((l) => l.id === type.id)) list.push({ id: type.id, count: 0 });
     }
     return list.slice(0, FREQUENT_COUNT);
+  });
+}
+
+/** The reports fixed most recently (real ones before demo ones), with the municipality's note. */
+export async function recentlyFixed(limit = 3): Promise<FixedReport[]> {
+  const rows = await db.report.findMany({
+    where: { status: { in: ['RESOLVED', 'CLOSED'] }, resolvedAt: { not: null } },
+    include: publicInclude,
+    orderBy: [{ isTest: 'asc' }, { resolvedAt: 'desc' }],
+    take: limit,
+  });
+  return rows.map((r) => {
+    const card = toPublicCard(r);
+    return {
+      caseNumber: card.caseNumber,
+      category: card.category,
+      type: card.type,
+      place: card.neighbourhood && card.address ? `${card.address} · ${card.neighbourhood}` : card.address || card.neighbourhood,
+      resolvedAt: r.resolvedAt!.toISOString(),
+      note: r.closingNote?.trim() || null,
+      isTest: card.isTest,
+    };
   });
 }
 

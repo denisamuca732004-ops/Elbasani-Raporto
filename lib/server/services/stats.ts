@@ -18,7 +18,8 @@ const num = (v: unknown, digits = 1): number | null => (v === null || v === unde
 const OPEN_SQL = Prisma.raw(`(${OPEN_STATUSES.map((s) => `'${s}'`).join(',')})`);
 
 export interface PublicStats {
-  totals: { total: number; open: number; resolved: number; avgDaysToResolve: number | null; onTimePct: number | null };
+  /** open: verified and not yet resolved; openNow: every report still being worked on (also just received). */
+  totals: { total: number; open: number; openNow: number; resolved: number; avgDaysToResolve: number | null; onTimePct: number | null };
   months: Array<{ month: string; received: number; resolved: number; avgDaysToResolve: number | null }>;
   byCategory: Array<{ code: string; nameSq: string; nameEn: string; total: number; resolved: number }>;
 }
@@ -41,9 +42,10 @@ export async function publicStats(): Promise<PublicStats> {
                   WHERE r.is_test = false AND r.resolved_at IS NOT NULL
                   AND date_trunc('month', r.resolved_at AT TIME ZONE ${tz}::text) = m.month)::float8 AS avg_days
         FROM m ORDER BY m.month`,
-      db.$queryRaw<Array<{ total: number; open: number; resolved: number; avg_days: number | null; on_time_pct: number | null }>>`
+      db.$queryRaw<Array<{ total: number; open: number; open_now: number; resolved: number; avg_days: number | null; on_time_pct: number | null }>>`
         SELECT count(*)::int AS total,
                count(*) FILTER (WHERE status IN ('VERIFIED', 'ASSIGNED', 'IN_PROGRESS'))::int AS open,
+               count(*) FILTER (WHERE status IN ('PENDING', 'NEEDS_REVIEW', 'VERIFIED', 'ASSIGNED', 'IN_PROGRESS'))::int AS open_now,
                count(*) FILTER (WHERE status IN ('RESOLVED', 'CLOSED'))::int AS resolved,
                (avg(extract(epoch FROM (resolved_at - created_at)) / 86400) FILTER (WHERE resolved_at IS NOT NULL))::float8 AS avg_days,
                (100.0 * count(*) FILTER (WHERE resolved_at IS NOT NULL AND resolved_at <= due_at)
@@ -62,6 +64,7 @@ export async function publicStats(): Promise<PublicStats> {
       totals: {
         total: totals?.total ?? 0,
         open: totals?.open ?? 0,
+        openNow: totals?.open_now ?? 0,
         resolved: totals?.resolved ?? 0,
         avgDaysToResolve: num(totals?.avg_days),
         onTimePct: num(totals?.on_time_pct, 0),
