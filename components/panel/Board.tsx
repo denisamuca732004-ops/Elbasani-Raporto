@@ -250,9 +250,8 @@ function SendControls({ r, onChanged }: { r: BoardItem; onChanged: () => void })
         </button>
       )}
       <div className="send-other">
-        <label htmlFor={`b-other-${r.id}`} className="sr-only">{t('board.otherSector')}</label>
+        <label htmlFor={`b-other-${r.id}`} className="small muted">{t('board.otherSector')}</label>
         <div className="row" style={{ gap: 6, flexWrap: 'nowrap' }}>
-          <span className="small muted" aria-hidden="true">{t('board.otherSector')}</span>
           <select id={`b-other-${r.id}`} value={other} onChange={(e) => setOther(e.target.value)}>
             <option value="">{t('board.chooseSector')}</option>
             {departments.filter((d) => d.id !== r.department?.id).map((d) => <option key={d.id} value={d.id}>{departmentName(d, lang)}</option>)}

@@ -526,7 +526,7 @@ const en = {
       activated: 'The sector was activated.', deactivated: 'The sector was deactivated.',
     },
     users: {
-      intro: 'The accounts of the panel. For every sector, create the account of the head who handles the sector’s reports.',
+      intro: 'The accounts that can log in to the panel: only administrators. Sectors have no accounts; they get their reports by email.',
       add: 'Create account', addFor: 'New account for: {sector}', create: 'Create the account',
       name: 'Full name', phone: 'Phone', role: 'Role', sector: 'Sector', chooseSector: '— Choose the sector —',
       sectorRequired: 'A sector head needs a sector.', status: 'State', lastLogin: 'Last login', never: 'Never',

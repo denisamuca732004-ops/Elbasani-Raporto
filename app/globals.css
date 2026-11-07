@@ -940,7 +940,7 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .send-other { display: grid; gap: 4px; justify-items: end; }
 .send-other select { width: 230px; max-width: 100%; min-height: 0; padding: 6px 30px 6px 10px; font-size: 0.88rem; }
 .send-other .btn { padding: 7px 12px; }
-.send-other .small { white-space: nowrap; }
+.send-other label.small { margin: 0; font-weight: 400; text-transform: none; letter-spacing: 0; white-space: nowrap; }
 .send-controls .alert { margin: 0; }
 .warn-text { margin: 0; color: var(--warn); text-align: right; }
 @media (max-width: 760px) {

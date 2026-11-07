@@ -118,7 +118,7 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
       {data && (
         <div className={`stack${loading ? ' refreshing' : ''}`} aria-busy={loading}>
           {data.pendingTransfers > 0 && (
-            <Link href="/admin/transfers" className="callout">
+            <Link href={admin ? '/admin/reports?tab=returned' : '/admin/transfers'} className="callout">
               <Icon name="transfer" size={20} />
               <span>{admin ? t('dashboard.pendingReviewsAdmin', { n: data.pendingTransfers }) : t('dashboard.pendingReviewsSector', { n: data.pendingTransfers })}</span>
               <Icon name="chevronRight" size={18} />

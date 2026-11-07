@@ -526,7 +526,7 @@ const sq = {
       activated: 'Sektori u aktivizua.', deactivated: 'Sektori u çaktivizua.',
     },
     users: {
-      intro: 'Llogaritë e panelit. Krijoni për çdo sektor llogarinë e përgjegjësit që trajton raportimet e sektorit.',
+      intro: 'Llogaritë që hyjnë në panel: vetëm administratorët. Sektorët nuk kanë llogari; raportimet u shkojnë me email.',
       add: 'Krijo llogari', addFor: 'Llogari e re për: {sector}', create: 'Krijo llogarinë',
       name: 'Emri dhe mbiemri', phone: 'Telefoni', role: 'Roli', sector: 'Sektori', chooseSector: '— Zgjidhni sektorin —',
       sectorRequired: 'Përgjegjësi duhet të ketë një sektor.', status: 'Gjendja', lastLogin: 'Hyrja e fundit', never: 'Asnjëherë',
