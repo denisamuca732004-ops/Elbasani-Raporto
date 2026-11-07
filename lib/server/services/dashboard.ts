@@ -19,6 +19,7 @@ import { config } from '../env';
 import { isAdmin } from './access';
 import { departmentRef } from './mapper';
 import { pendingTransferCount } from './transfer';
+import { bucketWhere } from './board';
 
 const PERIODS: Record<DashboardPeriod, { unit: 'day' | 'month'; count: number; step: string }> = {
   week: { unit: 'day', count: 7, step: '1 day' },
@@ -243,6 +244,8 @@ export interface SidebarCounts {
   openTotal: number;
   highTotal: number;
   pendingTransfers: number;
+  /** Admin: the reports that wait for the admin ("Të reja" and "Kthyer nga sektori" on the board). */
+  attention?: number;
   unrouted?: number;
   departments?: Array<NamedRef & { open: number; high: number }>;
   assignedToMe?: number;
@@ -253,11 +256,12 @@ export async function sidebarCounts(user: Principal, includeTest = false): Promi
   const testFilter = includeTest ? Prisma.empty : Prisma.sql`AND r.is_test = false`;
   const pendingTransfers = await pendingTransferCount(user);
   if (isAdmin(user)) {
-    const [rows, departments] = await Promise.all([
+    const [rows, departments, attention] = await Promise.all([
       db.$queryRaw<Array<{ department_id: number | null; open: number; high: number }>>`
         SELECT r.department_id, count(*)::int AS open, count(*) FILTER (WHERE r.priority = 'HIGH')::int AS high
         FROM reports r WHERE r.status IN ${OPEN_SQL} ${testFilter} GROUP BY r.department_id`,
       db.department.findMany({ where: { active: true }, orderBy: { nameSq: 'asc' } }),
+      db.report.count({ where: { AND: [includeTest ? {} : { isTest: false }, { OR: [bucketWhere('new'), bucketWhere('returned')] }] } }),
     ]);
     const byDepartment = new Map(rows.map((r) => [r.department_id === null ? null : Number(r.department_id), r]));
     return {
@@ -265,6 +269,7 @@ export async function sidebarCounts(user: Principal, includeTest = false): Promi
       openTotal: rows.reduce((acc, r) => acc + int(r.open), 0),
       highTotal: rows.reduce((acc, r) => acc + int(r.high), 0),
       unrouted: int(byDepartment.get(null)?.open),
+      attention,
       departments: departments.map((d) => ({
         id: d.id, code: d.code, nameSq: d.nameSq, nameEn: d.nameEn,
         open: int(byDepartment.get(d.id)?.open), high: int(byDepartment.get(d.id)?.high),

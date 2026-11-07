@@ -43,7 +43,7 @@ function Onboarding({ info }: { info: OnboardingInfo }) {
         <li><Link href="/admin/departments">{t('dashboard.onboarding.sectors', { n: info.activeDepartments })}</Link></li>
         <li><Link href="/admin/report-types">{t('dashboard.onboarding.types')}</Link></li>
         <li>
-          <Link href="/admin/users">{t('dashboard.onboarding.heads')}</Link>
+          <Link href="/admin/departments">{t('dashboard.onboarding.heads')}</Link>
           <div className="small muted">{t('dashboard.onboarding.missing', { list: info.withoutHead.map((s) => (lang === 'en' ? s.nameEn : s.nameSq)).join(', ') })}</div>
         </li>
       </ol>

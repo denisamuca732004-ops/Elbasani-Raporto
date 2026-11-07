@@ -181,28 +181,29 @@ Faqja publike ndjek dizajnin v2 të mentorëve; paneli i stafit mbetet si ishte.
 - **Poshtë:** "Rregulluar së fundmi" (me shënimin e Bashkisë) dhe "Raportohen më shpesh", pastaj "Si funksionon".
 - **Fundi i faqes:** kontakti, numrat e emergjencës (112, 129, 128, 127), privatësia, elbasani.gov.al dhe hyrja për stafin.
 
-## Sektorët që punojnë me email (pa panel)
+## Sektorët punojnë vetëm me email (pa llogari)
 
-Kur sektori nuk ka njeri që ndjek panelin, administratori te `/admin/departments` e hap sektorin,
-shënon **"Punon me email"** dhe vendos emailin e stafit të sektorit (detyrueshëm). Pastaj:
+Sektorët nuk kanë llogari dhe as panel. Llogaritë e vjetra të përgjegjësve u çaktivizuan (nuk u fshinë), dhe te Përdoruesit krijohen vetëm administratorë.
 
-- **Çdo raportim i sektorit i shkon direkt në email:** problemi, prioriteti, afati, vendi me hartë,
-  përshkrimi, emri dhe telefoni i qytetarit (ose "Anonim"), dhe një lidhje personale `/sektori/...`.
-  Sektori nuk ka nevojë për llogari në panel.
-- **Lidhja** hap raportimin pa hyrje, me fotot dhe historikun, dhe ka tre butona:
-  * **Po merremi**: raportimi kalon "Në punë", me një shënim që e sheh qytetari (jo i detyrueshëm);
-  * **U zgjidh**: me shënim për qytetarin (i detyrueshëm) dhe foto "pas" (jo e detyrueshme);
-  * **Nuk është për ne**: me komentin pse nuk i përket, dhe sipas dëshirës sektorin e duhur.
-    Kërkesa i shkon administratorit te *Kërkesat për rishikim*. Nëse e pranon, raportimi i dërgohet
-    me email sektorit tjetër dhe lidhja e vjetër nuk vlen më. Nëse e refuzon, sektori merr përgjigjen
-    me të njëjtën lidhje.
-- **Qytetari** e sheh çdo hap te "Ndiq raportimin". Në historik shkruhet që u bë "nga emaili i sektorit".
-- **Te raportimi**, administratori sheh kartën "Sektori punon me email": kur u dërgua, nëse sektori e
-  hapi, kur skadon lidhja, dhe butonat **"Dërgo përsëri emailin"** dhe **"Hap faqen e sektorit"**.
-- **Siguria:** lidhja nuk mund të merret me mend; vlen 90 ditë nga dërgimi i fundit dhe ndalon kur
-  raportimi kalon te një sektor tjetër. Emaili kërkon që lidhja të mos përcillet, sepse tregon
-  telefonin e qytetarit.
+- **Dërgimi automatik:** çdo raportim i ri i shkon automatikisht emailit të sektorit të tij (sipas llojit të problemit), me një lidhje personale. Nëse sektori nuk ka email, raportimi nuk dërgohet dhe pret te "Të reja". Emaili vendoset te **Sektorët** (`/admin/departments`).
+- **Nga lidhja**, pa llogari, sektori shtyp:
+  * **E pranojmë:** raportimi kalon "Në punë" (me shënim për qytetarin, jo i detyrueshëm);
+  * **Nuk mund ta trajtojmë:** me arsyen (dhe sipas dëshirës sektorin e duhur). Raportimi i kthehet administratorit te "Kthyer nga sektori". Admini e kalon te sektori tjetër (i shkon me email), ose e mban aty me shpjegim;
+  * pasi e pranon, **U zgjidh:** me shënim (i detyrueshëm) dhe foto "pas" (jo e detyrueshme).
+- **Kujtesa:** nëse sektori nuk përgjigjet brenda 48 orësh, i vjen një kujtesë me të njëjtën lidhje, dhe pastaj çdo 48 orë.
+- **Siguria:** lidhja nuk merret me mend, vlen 90 ditë dhe ndalon kur raportimi kalon te një sektor tjetër.
 - **Duhet SMTP** (`MAIL_DRIVER=smtp`). Deri atëherë emailet vetëm shkruhen dhe duken te *Emailet*.
+
+## Paneli i administratorit: Raportimet sipas statusit
+
+Menuja ka vetëm **Raportimet**, **Paneli**, dhe te Administrimi **Sektorët**, **Zonat**, **Emailet**. Te **Raportimet** (`/admin/reports`) raportimet janë të ndara në skeda, secila me numrin e vet:
+
+- **Të reja:** nuk iu dërguan dot asnjë sektori (pa sektor ose sektori pa email). Butoni "Dërgo te …" ose "Ose te sektori".
+- **Dërguar te sektori:** presin "E pranojmë" ose "Nuk mund ta trajtojmë". Shihet kur u dërgua, kur e hapi sektori, kujtesa, dhe "Pa përgjigje prej N ditësh".
+- **Kthyer nga sektori:** arsyeja e sektorit, me "Prano dhe kaloje" ose "Refuzo kërkesën".
+- **Në punë**, **Zgjidhur**, **Refuzuar**.
+
+Filtrat (sektori, prioriteti, me vonesë, kërkimi) ruhen në adresë. Numri te menuja tregon sa raportime presin administratorin (Të reja + Kthyer).
 
 ## Vendosja në Vercel
 

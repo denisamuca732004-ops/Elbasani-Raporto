@@ -67,7 +67,8 @@ export async function createDepartment(admin: Principal, input: DepartmentInput)
   return saveUnique(() => db.department.create({
     data: {
       code: input.code, nameSq: input.nameSq, nameEn: input.nameEn, description: input.description ?? null, email: input.email ?? null,
-      worksByEmail: input.worksByEmail, active: input.active,
+      // Sectors work only by e-mail: with an address, its reports are e-mailed to it.
+      worksByEmail: Boolean(input.email), active: input.active,
     },
   }));
 }
@@ -76,12 +77,8 @@ export async function updateDepartment(admin: Principal, id: number, input: Depa
   assertAdmin(admin);
   const department = await db.department.findUnique({ where: { id } });
   if (!department) throw notFound('Sektori nuk u gjet.');
-  // A sector that works by e-mail needs the address its reports go to.
+  // Sectors work only by e-mail: the address decides it (without one, reports wait at the admin's "Të reja").
   const nextEmail = 'email' in input ? input.email ?? null : department.email;
-  const nextByEmail = input.worksByEmail ?? department.worksByEmail;
-  if (nextByEmail && !nextEmail) {
-    throw badRequest('Për të punuar me email, vendosni emailin e sektorit.', [{ field: 'email', code: 'required', message: 'Vendosni emailin e sektorit.' }]);
-  }
   if (input.active === false && department.active) {
     const [types, open] = await Promise.all([
       db.requestType.count({ where: { departmentId: id, active: true } }),
@@ -104,8 +101,7 @@ export async function updateDepartment(admin: Principal, id: number, input: Depa
       ...(input.nameSq !== undefined ? { nameSq: input.nameSq } : {}),
       ...(input.nameEn !== undefined ? { nameEn: input.nameEn } : {}),
       ...('description' in input ? { description: input.description ?? null } : {}),
-      ...('email' in input ? { email: input.email ?? null } : {}),
-      ...(input.worksByEmail !== undefined ? { worksByEmail: input.worksByEmail } : {}),
+      ...('email' in input ? { email: input.email ?? null, worksByEmail: Boolean(nextEmail) } : {}),
       ...(input.active !== undefined ? { active: input.active } : {}),
     },
   }));

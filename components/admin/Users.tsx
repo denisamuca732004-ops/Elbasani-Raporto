@@ -89,7 +89,8 @@ function UserForm({ initial, onSubmit, onCancel, busy, isNew, selfId }: {
         </Field>
         <Field label={t('admin.users.role')} htmlFor={`uf-role-${idp}`} required>
           <select id={`uf-role-${idp}`} value={form.role} disabled={isSelf} onChange={set('role')}>
-            <option value="MUNICIPALITY_STAFF">{t('roles.municipality_staff')}</option>
+            {/* Sectors work by e-mail and get no new accounts; an older sector account can still be edited. */}
+            {!isNew && initial.role === 'MUNICIPALITY_STAFF' && <option value="MUNICIPALITY_STAFF">{t('roles.municipality_staff')}</option>}
             <option value="ADMIN">{t('roles.admin')}</option>
           </select>
         </Field>
@@ -140,7 +141,7 @@ export default function Users({ selfId, items, presetDepartmentId }: { selfId: s
           <h2 className="card-title">{presetName ? t('admin.users.addFor', { sector: presetName }) : t('admin.users.add')}</h2>
           <UserForm
             isNew busy={busy} selfId={selfId}
-            initial={{ name: '', email: '', phone: '', role: 'MUNICIPALITY_STAFF', departmentId: presetDepartmentId ? String(presetDepartmentId) : '' }}
+            initial={{ name: '', email: '', phone: '', role: 'ADMIN', departmentId: '' }}
             onCancel={() => { setAdding(false); clearPreset(); }}
             onSubmit={async (body) => {
               const res = await run(() => call(createUserAction(body)), '');

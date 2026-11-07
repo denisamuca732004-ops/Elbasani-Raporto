@@ -150,6 +150,27 @@ export interface ReportListItem {
   updatedAt: string;
 }
 
+/** A row of the admin's board: the list item, plus where it was sent and why it came back. */
+export interface BoardItem extends ReportListItem {
+  departmentEmail: string | null;
+  /** The e-mail to the sector (the working link): when it was sent, reminded, opened. */
+  sent: { email: string; sentAt: string; remindedAt: string | null; lastUsedAt: string | null; expiresAt: string } | null;
+  /** The sector's "Nuk mund ta trajtojmë", waiting for the admin. */
+  returned: TransferSummary | null;
+  closingNote: string | null;
+  rejectionReason: string | null;
+  resolvedAt: string | null;
+}
+
+export interface Board {
+  bucket: string;
+  counts: Record<string, number>;
+  items: BoardItem[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
 export interface ReportAttachment { id: string; kind: AttachmentKind; isPublic: boolean; url: string; width: number | null; height: number | null; createdAt: string }
 
 export interface ReportEventItem {

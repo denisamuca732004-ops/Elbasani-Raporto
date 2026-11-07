@@ -1,11 +1,13 @@
 /**
- * A sector that works by e-mail (no panel account): each report is e-mailed to it with a link
- * where it marks "Po merremi" / "U zgjidh" or asks for a review ("Nuk është për ne"), which the
- * admin decides as usual; the report then goes by e-mail to the new sector.
+ * Sectors work only by e-mail (no accounts): each report is e-mailed to its sector automatically,
+ * with a link where the sector presses "E pranojmë" (→ "Në punë") or "Nuk mund ta trajtojmë" (a
+ * reason, back to the admin), then "U zgjidh". The admin follows it on the board (Të reja, Dërguar,
+ * Kthyer, Në punë, Zgjidhur, Refuzuar); after 48 hours without an answer the sector is reminded.
  */
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import { updateDepartment } from '@/lib/server/services/admin';
+import { boardCounts, reportBoard } from '@/lib/server/services/board';
 import { runDaily } from '@/lib/server/services/maintenance';
 import { getPublicCase } from '@/lib/server/services/publicReport';
 import { getReport, resendToSector } from '@/lib/server/services/report';
@@ -14,6 +16,7 @@ import { sectorRequestReview, sectorResolve, sectorStart, sectorView } from '@/l
 import { decideTransfer } from '@/lib/server/services/transfer';
 import type { Principal } from '@/lib/shared/types';
 import { departmentPatchSchema } from '@/lib/validation/admin';
+import { boardSchema } from '@/lib/validation/report';
 import { adminSession, backdate, db, departmentId, drainJobs, rejects, setupTestDb, submitReport, teardown, typeId } from './helpers';
 
 let admin: Principal;
@@ -40,16 +43,21 @@ before(async () => {
 after(teardown);
 
 describe('a sector that works by e-mail', () => {
-  test('a sector cannot work by e-mail without the address to send to', async () => {
+  test('a sector works by e-mail exactly when it has an address', async () => {
     const water = await departmentId('water');
-    assert.equal((await rejects(() => updateDepartment(admin, water, departmentPatchSchema.parse({ worksByEmail: true })))).status, 400);
+    await updateDepartment(admin, water, departmentPatchSchema.parse({ worksByEmail: true }));
+    assert.equal((await db.department.findUniqueOrThrow({ where: { id: water } })).worksByEmail, false, 'no address, no e-mail mode');
+    await updateDepartment(admin, water, departmentPatchSchema.parse({ email: WATER_MAIL }));
+    assert.equal((await db.department.findUniqueOrThrow({ where: { id: water } })).worksByEmail, true);
+    await updateDepartment(admin, water, departmentPatchSchema.parse({ email: '' }));
+    assert.equal((await db.department.findUniqueOrThrow({ where: { id: water } })).worksByEmail, false);
   });
 
   test('gets the whole report with its link; works from it; the resident sees each step', async () => {
     const { report, result } = await wasteReport();
     const mail = await db.emailLog.findFirstOrThrow({ where: { reportId: report.id, template: 'sector_report' } });
     assert.equal(mail.toAddress, WASTE_MAIL);
-    for (const part of [result.caseNumber, 'Kontejner i mbushur', 'Kontejneri është plot', 'Arben Hoxha', '069 777 8899', 'Po merremi', 'Nuk është për ne']) {
+    for (const part of [result.caseNumber, 'Kontejner i mbushur', 'Kontejneri është plot', 'Arben Hoxha', '069 777 8899', 'E pranojmë', 'Nuk mund ta trajtojmë']) {
       assert.ok(mail.bodyText.includes(part), `the e-mail has "${part}"`);
     }
     assert.equal(await db.emailLog.count({ where: { reportId: report.id, template: 'department_new_report' } }), 0, 'no panel notice');
@@ -165,9 +173,61 @@ describe('a sector that works by e-mail', () => {
     assert.equal((await opened())?.getTime(), first.getTime(), 'at most once a minute');
   });
 
-  test('a sector in the panel is unchanged: panel notice, no link', async () => {
+  test('a sector without an e-mail gets nothing: the report waits under "Të reja" until the admin sends it', async () => {
     const { report } = await submitReport({ requestTypeId: await typeId('streets.pothole') });
     assert.equal(await db.reportLink.count({ where: { reportId: report.id } }), 0);
     assert.equal(await db.emailLog.count({ where: { reportId: report.id, template: 'sector_report' } }), 0);
+    const board = await reportBoard(admin, boardSchema.parse({ bucket: 'new' }));
+    assert.ok(board.items.some((i) => i.id === report.id && i.departmentEmail === null && i.sent === null));
+  });
+
+  test('the board puts each report in one column as it goes: sent → in progress → resolved, or back to the admin', async () => {
+    const column = async (id: string) => {
+      for (const bucket of ['new', 'sent', 'returned', 'working', 'resolved', 'rejected'] as const) {
+        const board = await reportBoard(admin, boardSchema.parse({ bucket, pageSize: 100 }));
+        if (board.items.some((i) => i.id === id)) return bucket;
+      }
+      return null;
+    };
+    const { report } = await wasteReport('Kontejneri te shkolla është plot dhe era ndihet larg.');
+    assert.equal(await column(report.id), 'sent');
+    const sent = (await reportBoard(admin, boardSchema.parse({ bucket: 'sent', pageSize: 100 }))).items.find((i) => i.id === report.id);
+    assert.equal(sent?.sent?.email, WASTE_MAIL);
+    const token = await linkIn(report.id, WASTE_MAIL);
+
+    await sectorRequestReview(token, { reason: 'Kontejnerët e shkollave i mban vetë shkolla.' });
+    assert.equal(await column(report.id), 'returned');
+    const returned = (await reportBoard(admin, boardSchema.parse({ bucket: 'returned', pageSize: 100 }))).items.find((i) => i.id === report.id);
+    assert.ok(returned?.returned?.reason.includes('shkolla'));
+    await decideTransfer(admin, returned!.returned!.id, { decision: 'decline', note: 'Kontejnerët publikë janë tuajt.' });
+    assert.equal(await column(report.id), 'sent', 'back with the sector, waiting for its answer');
+
+    await sectorStart(token, { note: 'E pranuam, ekipi del sot.' });
+    assert.equal(await column(report.id), 'working');
+    await sectorResolve(token, { note: 'Kontejneri u zbraz.' });
+    assert.equal(await column(report.id), 'resolved');
+
+    const counts = await boardCounts(admin);
+    assert.ok(counts.resolved >= 1 && counts.sent >= 0);
+  });
+
+  test('a sector that does not answer for 48 hours is reminded, every 48 hours, until it answers', async () => {
+    const { report } = await wasteReport('Kontejneri pranë postës është plot prej disa ditësh.');
+    const token = await linkIn(report.id, WASTE_MAIL);
+    const reminders = () => db.emailLog.count({ where: { reportId: report.id, template: 'sector_reminder' } });
+    await runDaily();
+    assert.equal(await reminders(), 0, 'not before 48 hours');
+    await db.reportLink.updateMany({ where: { reportId: report.id }, data: { sentAt: new Date(Date.now() - 3 * 86_400_000) } });
+    await runDaily();
+    assert.equal(await reminders(), 1);
+    const mail = await db.emailLog.findFirstOrThrow({ where: { reportId: report.id, template: 'sector_reminder' } });
+    assert.equal(mail.toAddress, WASTE_MAIL);
+    assert.ok(mail.bodyText.includes(token), 'the same link');
+    await runDaily();
+    assert.equal(await reminders(), 1, 'not again the same day');
+    await sectorStart(token, {});
+    await db.reportLink.updateMany({ where: { reportId: report.id }, data: { remindedAt: new Date(Date.now() - 3 * 86_400_000) } });
+    await runDaily();
+    assert.equal(await reminders(), 1, 'an accepted report is not reminded');
   });
 });

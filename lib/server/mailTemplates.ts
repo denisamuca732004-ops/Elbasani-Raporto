@@ -149,16 +149,33 @@ ${p.description || '—'}
 
 Qytetari: ${contact}
 
-Hapeni raportimin (me foton) dhe ndryshoni statusin, pa llogari:
+Hapeni raportimin (me foton) dhe tregoni nëse e pranoni, pa llogari:
 ${p.link}
 
 Në faqe gjeni butonat:
-• "Po merremi" – kur e merrni në punë;
-• "U zgjidh" – kur përfundon (me një shënim dhe, nëse mundeni, një foto "pas");
-• "Nuk është për ne" – nëse nuk është në kompetencat e sektorit: shkruani arsyen dhe administratori e kalon te sektori i duhur.
+• "E pranojmë" – sektori e merr përsipër dhe raportimi kalon "Në punë";
+• "Nuk mund ta trajtojmë" – shkruani arsyen dhe raportimi i kthehet administratorit, që e kalon te sektori i duhur;
+• "U zgjidh" – kur përfundon puna (me një shënim dhe, nëse mundeni, një foto "pas").
 Çdo ndryshim e sheh edhe qytetari te "Ndiq raportimin".
 
 Lidhja vlen deri më ${p.linkExpires.toISOString().slice(0, 10)}. Mos e përcillni jashtë sektorit: kushdo që e ka, mund ta ndryshojë raportimin.
+${staffFooter()}`,
+  };
+}
+
+/** The sector has not answered a report it received (not accepted, not sent back): a reminder with the same link. */
+export function sectorReminder(p: { caseNumber: string; typeNameSq: string; departmentNameSq: string; sentAt: Date; priority: Priority; link: string }): MailContent {
+  return {
+    template: 'sector_reminder',
+    subject: `Kujtesë: ${p.caseNumber} – ${p.typeNameSq} pret përgjigjen tuaj`,
+    text: `Përshëndetje,
+
+Raportimi ${p.caseNumber} (${p.typeNameSq}, prioriteti ${PRIORITY_SQ[p.priority].toLowerCase()}) iu dërgua sektorit ${p.departmentNameSq} më ${p.sentAt.toISOString().slice(0, 10)} dhe ende nuk ka përgjigje.
+
+Hapeni lidhjen dhe shtypni "E pranojmë", ose "Nuk mund ta trajtojmë" me arsyen:
+${p.link}
+
+Administratori e sheh që raportimi pret përgjigjen e sektorit.
 ${staffFooter()}`,
   };
 }

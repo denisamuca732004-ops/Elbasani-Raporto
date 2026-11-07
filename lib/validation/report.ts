@@ -6,6 +6,7 @@ import { z } from 'zod';
 import {
   ADMIN_SETTABLE_STATUSES, CITIZEN_CHANNELS, DASHBOARD_PERIODS, LIMITS, PRIORITIES, STAFF_CHANNELS, STATUSES, TRANSFER_STATUSES,
 } from '@/lib/shared/domain';
+import { BOARD_BUCKETS } from '@/lib/shared/reportViews';
 import {
   flag, id, latitude, longitude, nullableId, optionalEmail, optionalText, phone, requiredText, singleLine, uuid,
 } from './zod';
@@ -165,6 +166,19 @@ export const reportListSchema = reportFiltersSchema.extend({
   sort: z.enum(['newest', 'oldest', 'due', 'priority']).default('priority'),
 });
 export type ReportListQuery = z.output<typeof reportListSchema>;
+
+/** The admin's board (/admin/reports): one column, the filters, the page. */
+export const boardSchema = z.object({
+  bucket: z.enum(BOARD_BUCKETS).default('new'),
+  departmentId: id.optional(),
+  priority: priority.optional(),
+  overdue: flag.optional(),
+  includeTest: flag.optional(),
+  q: optionalText(100),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(25),
+});
+export type BoardQuery = z.output<typeof boardSchema>;
 
 export const exportSchema = reportFiltersSchema.extend({
   from: z.iso.date().optional(),

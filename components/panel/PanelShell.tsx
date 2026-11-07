@@ -60,25 +60,20 @@ function NavItem({ href, icon, label, exact, badge, badgeTone, badgeLabel, high,
 
 function navGroups(principal: Principal, counts: SidebarCounts | null, t: (k: string) => string) {
   if (principal.role === 'ADMIN') {
+    // Kept short: the reports (one board, split by status), the numbers, and the settings used
+    // often. Accounts, report types, the chat guide, appearance, integration and demo data are not
+    // in the menu; their pages still work at their address and the dashboard links to them.
     return [
-      { items: [{ href: '/admin', icon: 'dashboard', label: t('panel.nav.dashboard'), exact: true }] },
       {
-        // One item for the sectors: it opens their cards on the right (/admin/sectors), and each
-        // card opens that sector's reports. The badges are the open reports of the whole municipality.
-        title: t('panel.nav.reports'),
         items: [
-          { href: '/admin/sectors', icon: 'layers', label: t('panel.nav.departments'), badge: counts?.openTotal, high: counts?.highTotal, also: ['/admin/reports'] },
-          { href: '/admin/transfers', icon: 'transfer', label: t('panel.nav.reviews'), badge: counts?.pendingTransfers, badgeTone: 'alert', badgeLabel: t('panel.pendingShort') },
+          { href: '/admin/reports', icon: 'inbox', label: t('panel.nav.reports'), badge: counts?.attention, badgeTone: 'alert', badgeLabel: t('panel.waitingShort') },
+          { href: '/admin', icon: 'dashboard', label: t('panel.nav.dashboard'), exact: true },
         ],
       },
       {
         title: t('panel.nav.administration'),
         items: [
-          // Sectors, accounts, report types, the search guide, the appearance, the integration
-          // (AI test), the demo data and "my account" are not in the menu (kept simple for daily
-          // work). Their pages still work at their address (/admin/users, /admin/integration,
-          // /admin/demo…); the dashboard's "first steps" card links to the first ones, and the
-          // name at the top right opens "my account".
+          { href: '/admin/departments', icon: 'layers', label: t('panel.nav.sectors') },
           { href: '/admin/areas', icon: 'map', label: t('panel.nav.areas') },
           { href: '/admin/emails', icon: 'mail', label: t('panel.nav.emails') },
         ],

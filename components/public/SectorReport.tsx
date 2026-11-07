@@ -1,8 +1,8 @@
 'use client';
 /**
  * The report as a sector that works by e-mail sees it from its link (no account): every detail,
- * the photos, the resident's contact, the history, and three buttons: "Po merremi", "U zgjidh"
- * (note + optional "after" photo) and "Nuk është për ne" (reason → the admin's review).
+ * the photos, the resident's contact, the history. First "E pranojmë" (→ "Në punë") or "Nuk mund ta
+ * trajtojmë" (reason → back to the admin); once accepted, "U zgjidh" (note + optional "after" photo).
  */
 import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
@@ -46,6 +46,7 @@ export default function SectorReport({ lookup }: { lookup: SectorLookup }) {
     );
   }
   const r = lookup.view;
+  const accepted = r.status === 'IN_PROGRESS';
 
   function open(next: Panel) {
     setPanel(panel === next ? null : next);
@@ -111,15 +112,19 @@ export default function SectorReport({ lookup }: { lookup: SectorLookup }) {
         {!r.final && (
           <section className="card sector-actions" aria-labelledby="sector-actions-title">
             <h2 id="sector-actions-title">{t('sector.actionsTitle')}</h2>
+            {/* First the sector accepts the report (or sends it back); once accepted, it marks it fixed. */}
+            {!accepted && <p className="hint" style={{ marginTop: 0 }}>{t('sector.acceptIntro')}</p>}
             <div className="row">
-              {r.status !== 'IN_PROGRESS' && (
+              {!accepted && (
                 <button type="button" className={`btn${panel === 'start' ? '' : ' btn-outline'}`} aria-expanded={panel === 'start'} onClick={() => open('start')}>
-                  <Icon name="refresh" size={18} />{t('sector.start')}
+                  <Icon name="check" size={18} />{t('sector.start')}
                 </button>
               )}
-              <button type="button" className={`btn${panel === 'resolve' ? '' : ' btn-outline'}`} aria-expanded={panel === 'resolve'} onClick={() => open('resolve')}>
-                <Icon name="check" size={18} />{t('sector.resolve')}
-              </button>
+              {accepted && (
+                <button type="button" className={`btn${panel === 'resolve' ? '' : ' btn-outline'}`} aria-expanded={panel === 'resolve'} onClick={() => open('resolve')}>
+                  <Icon name="check" size={18} />{t('sector.resolve')}
+                </button>
+              )}
               {!r.pendingReview && (
                 <button type="button" className={`btn btn-ghost${panel === 'review' ? ' active' : ''}`} aria-expanded={panel === 'review'} onClick={() => open('review')}>
                   <Icon name="transfer" size={18} />{t('sector.review')}

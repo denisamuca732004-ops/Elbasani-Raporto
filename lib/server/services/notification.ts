@@ -68,6 +68,7 @@ export async function notifyDepartmentOfReport(reportId: string, reason: tpl.Dep
     await sendReportToSector(r.id, reason);
     return;
   }
+  // A sector without an e-mail address gets nothing: the report waits at the admin's "Të reja" (board).
   const recipients = r.departmentId ? await departmentRecipients(r.departmentId) : await adminRecipients();
   const mail = tpl.departmentNewReport({
     caseNumber: r.caseNumber,

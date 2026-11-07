@@ -71,22 +71,36 @@ Every request is checked in layers.
 |---|---|
 | Resident (no account) | **Ask or search** on the home page: a question ("si raportoj", "sa zgjat") gets a short answer with a button, "zjarr" or "aksident" gets the emergency numbers first, a report number opens its progress, a problem opens its report type, a street lists the open reports there. **Report** in six steps: type → location (either GPS / a tap on the map, with the zone found from the zone borders and no address needed, or by hand: zone → one of its lagje or villages → street, optional) → photo → description (10+ characters) → contact (name + phone number) or anonymous → review. Nothing can be skipped, and the server rejects incomplete reports and names the step to go back to. Works offline (queued on the phone). **Also:** track by case number, map, public statistics. |
 | System | Routes each report to the department of its type and checks it (AI when enabled, keyword rules otherwise). Emails the department in the background (residents leave no email). |
-| Department head (`MUNICIPALITY_STAFF`) | Sees only their department, split into **High / Medium / Low** priority tabs. **Can:** verify, assign, start work, resolve with an "after" photo, reject with a reason, add notes, and call the resident when they left a phone number. **"Not our department":** sends a review request to the admin. |
+| Department head (`MUNICIPALITY_STAFF`, **no longer used**: departments work by e-mail, see below) | Sees only their department, split into **High / Medium / Low** priority tabs. **Can:** verify, assign, start work, resolve with an "after" photo, reject with a reason, add notes, and call the resident when they left a phone number. **"Not our department":** sends a review request to the admin. |
 | Admin (`ADMIN`) | Dashboard for **week / month / year**, starting with **a card per department** (its number of reports, open, high priority, overdue): a click opens that department's reports with the **number in each status** on the status tabs, and each report opens for editing. The platform and municipality names follow the language too ("Elbasani Raporton / Bashkia Elbasan" ↔ "Elbasan Reports / Municipality of Elbasan", also in the tab title); all four are set at `/admin/appearance` (`lib/shared/branding.ts`). The same cards are the menu's **Departamentet** page (`/admin/sectors`): the menu no longer lists every department or "all reports", and a department's reports keep that item highlighted, with a link back. Reports without a department get a red card while any are open. Also the review requests ("not our department" → the admin moves the report to the right department). **Can:** set any status, edit any detail, move or delete reports. The menu keeps only daily work plus *Zonat* and *Emailet*; the logo at the top leads to the public home page, and the name at the top right opens "my account". **Not in the menu, but still at their address:** departments `/admin/departments`, accounts `/admin/users`, report types `/admin/report-types`, the search guide `/admin/guide`, appearance `/admin/appearance`, the integration and AI test `/admin/integration`, demo data `/admin/demo`, my account `/admin/account`, and a report entered by staff `/admin/reports/new`; the dashboard's "first steps" card links to the first three. |
 
-### Departments that work by e-mail (no panel)
+### Departments work only by e-mail (no sector accounts)
 
-When the Municipality has no one to watch a department's panel, the admin ticks **"Punon me email"** for it at `/admin/departments` and enters that department's staff e-mail (required). Then, for every report of that department:
+Departments have no accounts and no panel. The migration `20261107120000_sectors_email_only` turned every department with an e-mail address into an e-mail department and deactivated the old department-head accounts (not deleted; the users page can only create admins now).
 
-- **The whole report goes to that e-mail** (template `sector_report`): problem, priority, deadline, place with a map link, description, the resident's name and phone (or "Anonim"), and a personal link `/sektori/<link>`. No panel account and no panel notice.
-- **The link** opens the report without signing in ([`components/public/SectorReport.tsx`](components/public/SectorReport.tsx)) with the photos, history and resident's phone, and three buttons:
-  - **Po merremi** → `IN_PROGRESS`, with an optional note the resident sees;
-  - **U zgjidh** → `RESOLVED`, with a required note for the resident and an optional "after" photo;
-  - **Nuk është për ne** → a review request to the admin with the reason (and, optionally, the right department), exactly like the panel's. The admin decides at *Kërkesat për rishikim*: approved, the report goes to the new department (by e-mail again if it works by e-mail) and the old link stops working; declined, the department gets the answer with the same link.
-- **Each change** is written in the history as done "from the department's e-mail" and the resident sees it at "Ndiq raportimin". Reminders of overdue reports carry each report's link.
-- **On the report page** the admin sees a card "Sektori punon me email": when it was sent, whether the department opened it, when the link expires, **"Dërgo përsëri emailin"** and **"Hap faqen e sektorit"**.
-- **Safety.** The address is `<id>.<HMAC of the id with AUTH_SECRET>` ([`lib/server/services/reportLinks.ts`](lib/server/services/reportLinks.ts)): a changed or guessed address is refused. A link lasts 90 days from the last time it was sent, and stops when the report moves to another department. The page is not indexed, not cached, sends no referrer, and its actions are rate-limited (`sector`). The e-mail asks not to forward it, since the link shows the resident's phone.
+- **Automatic sending:** every new report goes to the e-mail of its department (by the problem type), with a personal link `/sektori/<link>` ([`components/public/SectorReport.tsx`](components/public/SectorReport.tsx)). A department without an e-mail gets nothing: the report waits under "Të reja" on the admin's board, and the department card says "Pa email".
+- **From the link** (no account) the department presses:
+  - **E pranojmë** → `IN_PROGRESS` ("Në punë"), with an optional note the resident sees;
+  - **Nuk mund ta trajtojmë** → a reason (and, optionally, the right department): the report goes back to the admin ("Kthyer nga sektori"), who moves it (it is e-mailed to the new department, the old link stops working) or keeps it there with a note (the department gets the answer with the same link);
+  - after accepting, **U zgjidh** → `RESOLVED`, with a required note and an optional "after" photo.
+- **Reminder:** a department that has not answered a report for 48 hours gets a reminder with the same link (`sector_reminder`, daily job, again every 48 hours, `report_links.reminded_at`); the board shows "Pa përgjigje prej N ditësh".
+- **Safety:** the address is `<id>.<HMAC of the id with AUTH_SECRET>` ([`lib/server/services/reportLinks.ts`](lib/server/services/reportLinks.ts)): a changed or guessed address is refused. A link lasts 90 days from the last time it was sent, and stops when the report moves. The page is not indexed, not cached, sends no referrer, and its actions are rate-limited (`sector`). The e-mail asks not to forward it, since the link shows the resident's phone.
 - **Needs SMTP** (`MAIL_DRIVER=smtp`): until then these e-mails are only logged, visible at *Emailet*.
+
+### The admin's board (`/admin/reports`)
+
+The menu is short: **Raportimet**, **Paneli**, and under Administrimi **Sektorët**, **Zonat**, **Emailet**. "Raportimet" is one board ([`components/panel/Board.tsx`](components/panel/Board.tsx), [`lib/server/services/board.ts`](lib/server/services/board.ts)) with a tab per place a report can be, each with its number:
+
+| Tab | Holds | The admin can |
+|---|---|---|
+| Të reja | received, not sent to any department (no department, or no e-mail) | send it to its department, or choose another |
+| Dërguar te sektori | e-mailed, waiting for "E pranojmë" / "Nuk mund ta trajtojmë" | see when it was sent, opened, reminded; send it again or elsewhere |
+| Kthyer nga sektori | the department cannot handle it (its reason) | move it to the right department, or keep it there with a note |
+| Në punë | accepted by the department | open it |
+| Zgjidhur | resolved or closed (with the note) | open it |
+| Refuzuar | rejected (with the reason) | open it |
+
+Filters: department, priority, overdue, search; they live in the address (`?tab=sent&departmentId=3`). Without a tab it opens the first one with reports (Të reja, Kthyer, Dërguar, Në punë). The menu badge is the number waiting for the admin (Të reja + Kthyer).
 
 Statuses (PostgreSQL enum):
 

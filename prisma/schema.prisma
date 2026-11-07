@@ -536,6 +536,8 @@ model ReportLink {
   expiresAt    DateTime   @map("expires_at") @db.Timestamptz(3)
   revokedAt    DateTime?  @map("revoked_at") @db.Timestamptz(3)
   lastUsedAt   DateTime?  @map("last_used_at") @db.Timestamptz(3)
+  /// The last reminder for a report the sector has not answered yet.
+  remindedAt   DateTime?  @map("reminded_at") @db.Timestamptz(3)
 
   @@index([reportId])
   @@index([departmentId])

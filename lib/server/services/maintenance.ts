@@ -5,14 +5,15 @@
  *    list of overdue reports;
  *  - retry emails that failed and checks that were lost;
  *  - delete photo uploads that were never attached to a report;
- *  - delete the resident's contact CONTACT_RETENTION_DAYS (90) after a report is closed or rejected.
+ *  - delete the resident's contact CONTACT_RETENTION_DAYS (90) after a report is closed or rejected;
+ *  - remind a sector of the reports it has not answered for 48 hours (not accepted, not sent back).
  */
 import 'server-only';
 import { OPEN_STATUSES, PRIORITY_RANK, type Priority } from '@/lib/shared/domain';
 import { db } from '../db';
 import { config } from '../env';
 import { queueEmails, retryStuckEmails } from '../mail';
-import { overdueDigest } from '../mailTemplates';
+import { overdueDigest, sectorReminder } from '../mailTemplates';
 import { enqueue } from '../queue';
 import { cleanupTemporaryUploads } from '../storage';
 import { maskContacts } from './mapper';
@@ -118,6 +119,39 @@ export async function eraseOldContacts(now = new Date()): Promise<number> {
   return erased;
 }
 
+/** After how long without an answer a sector is reminded of a report (again every 48 hours). */
+export const REMIND_AFTER_HOURS = 48;
+
+/**
+ * Reports a sector received at least 48 hours ago and has neither accepted nor sent back: the sector
+ * gets a reminder with the same link (once every 48 hours) and the admin sees "Pa përgjigje".
+ */
+export async function remindUnanswered(now = new Date()): Promise<number> {
+  const limit = new Date(now.getTime() - REMIND_AFTER_HOURS * 3_600_000);
+  const links = await db.reportLink.findMany({
+    where: {
+      revokedAt: null, expiresAt: { gt: now }, sentAt: { lte: limit },
+      OR: [{ remindedAt: null }, { remindedAt: { lte: limit } }],
+      report: { isTest: false, status: { in: ['PENDING', 'NEEDS_REVIEW', 'VERIFIED', 'ASSIGNED'] }, transfers: { none: { status: 'PENDING' } } },
+    },
+    include: {
+      report: { select: { id: true, caseNumber: true, priority: true, departmentId: true, requestType: { select: { nameSq: true } } } },
+      department: { select: { nameSq: true } },
+    },
+  });
+  let reminded = 0;
+  for (const link of links) {
+    if (link.report.departmentId !== link.departmentId) continue;
+    await queueEmails([link.email], sectorReminder({
+      caseNumber: link.report.caseNumber, typeNameSq: link.report.requestType.nameSq, departmentNameSq: link.department.nameSq,
+      sentAt: link.sentAt, priority: link.report.priority as Priority, link: linkUrl(link),
+    }), link.report.id);
+    await db.reportLink.update({ where: { id: link.id }, data: { remindedAt: now } });
+    reminded++;
+  }
+  return reminded;
+}
+
 export async function runDaily(now = new Date()) {
   const closed = await autoCloseResolved(now);
   const erased = await eraseOldContacts(now);
@@ -126,5 +160,6 @@ export async function runDaily(now = new Date()) {
   const stuck = await stuckPendingReports();
   for (const reportId of stuck) await enqueue('triage', { reportId });
   const cleaned = await cleanupTemporaryUploads();
-  return { closed, erasedContacts: erased, sent: digests, retriedEmails: retried, rechecked: stuck.length, removedUploads: cleaned };
+  const reminded = await remindUnanswered(now);
+  return { closed, erasedContacts: erased, sent: digests, retriedEmails: retried, rechecked: stuck.length, removedUploads: cleaned, remindedSectors: reminded };
 }
