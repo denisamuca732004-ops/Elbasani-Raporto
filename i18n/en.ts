@@ -14,7 +14,7 @@ const en = {
   time: { now: 'just now', minutes: '{n} min ago', hours: { one: '1 hour ago', other: '{n} hours ago' }, days: { one: '1 day ago', other: '{n} days ago' } },
   nav: {
     report: 'Report', track: 'Track a report', map: 'Map', stats: 'Statistics', privacy: 'Privacy',
-    staff: 'Staff login', trackShort: 'Track', services: 'Services', otherLanguage: 'Shqip', menu: 'Menu', language: 'Change language', panel: 'Panel',
+    staff: 'Staff login', adminLogin: 'Admin login', trackShort: 'Track', services: 'Services', otherLanguage: 'Shqip', menu: 'Menu', language: 'Change language', panel: 'Panel',
   },
   meta: { description: 'Report problems in the city and request services from the Municipality of Elbasan. Follow your request until it is resolved.' },
   footer: {

@@ -93,11 +93,16 @@ function LanguageButton() {
 }
 
 /** A signed-in staff member gets a way back to the panel; the staff login itself is in the footer. */
+/** In the header: "Panel" for the logged-in staff, otherwise the way in for the administrator. */
 function PanelLink() {
   const { t } = useI18n();
   const viewer = useViewer();
-  if (viewer?.kind !== 'staff') return null;
-  return <Link href="/admin" className="panel-link"><Icon name="dashboard" size={18} /><span>{t('nav.panel')}</span></Link>;
+  if (viewer?.kind === 'staff') return <Link href="/admin" className="panel-link"><Icon name="dashboard" size={18} /><span>{t('nav.panel')}</span></Link>;
+  return (
+    <Link href="/hyrje" className="panel-link" aria-label={t('nav.adminLogin')} title={t('nav.adminLogin')}>
+      <Icon name="user" size={20} /><span className="panel-link-text">{t('nav.adminLogin')}</span>
+    </Link>
+  );
 }
 
 /** The pin in a green square: the platform's mark in the header (the coat of arms stays in the panel). */

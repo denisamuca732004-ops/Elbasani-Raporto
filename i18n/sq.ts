@@ -14,7 +14,7 @@ const sq = {
   time: { now: 'tani', minutes: 'para {n} min', hours: { one: 'para 1 ore', other: 'para {n} orësh' }, days: { one: 'para 1 dite', other: 'para {n} ditësh' } },
   nav: {
     report: 'Raporto', track: 'Ndiq raportimin', map: 'Harta', stats: 'Statistikat', privacy: 'Privatësia',
-    staff: 'Hyrja për stafin', trackShort: 'Ndiq', services: 'Shërbime', otherLanguage: 'English', menu: 'Menyja', language: 'Ndrysho gjuhën', panel: 'Paneli',
+    staff: 'Hyrja për stafin', adminLogin: 'Hyrja e adminit', trackShort: 'Ndiq', services: 'Shërbime', otherLanguage: 'English', menu: 'Menyja', language: 'Ndrysho gjuhën', panel: 'Paneli',
   },
   meta: { description: 'Raportoni probleme në qytet dhe kërkoni shërbime nga Bashkia Elbasan. Ndiqni kërkesën tuaj deri në zgjidhje.' },
   footer: {
