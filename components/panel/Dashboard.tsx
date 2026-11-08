@@ -154,12 +154,12 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
 
           <section aria-label={t('dashboard.kpis', { period: periodLabel })}>
             <div className="kpis">
-              <KpiTile label={t('dashboard.received')} value={data.totals.received} previous={data.totals.receivedPrevious} upIsGood={null} />
-              <KpiTile label={t('dashboard.resolved')} value={data.totals.resolved} previous={data.totals.resolvedPrevious} />
-              <KpiTile label={t('dashboard.openNow')} value={data.totals.openNow} hint={t('dashboard.waitingReview', { n: data.totals.waitingReviewNow })} />
-              <KpiTile label={t('dashboard.overdueNow')} value={data.totals.overdueNow} accent={data.totals.overdueNow ? 'alert' : undefined} />
-              <KpiTile label={t('dashboard.avgDays')} value={data.totals.avgDaysToResolve} />
-              <KpiTile label={t('dashboard.onTime')} value={data.totals.onTimePct} suffix={data.totals.onTimePct === null ? '' : '%'} />
+              <KpiTile icon="inbox" tone="blue" label={t('dashboard.received')} value={data.totals.received} previous={data.totals.receivedPrevious} upIsGood={null} />
+              <KpiTile icon="check" tone="green" label={t('dashboard.resolved')} value={data.totals.resolved} previous={data.totals.resolvedPrevious} />
+              <KpiTile icon="layers" tone="amber" label={t('dashboard.openNow')} value={data.totals.openNow} hint={t('dashboard.waitingReview', { n: data.totals.waitingReviewNow })} />
+              <KpiTile icon="alert" tone="coral" label={t('dashboard.overdueNow')} value={data.totals.overdueNow} accent={data.totals.overdueNow ? 'alert' : undefined} />
+              <KpiTile icon="clock" tone="violet" label={t('dashboard.avgDays')} value={data.totals.avgDaysToResolve} />
+              <KpiTile icon="flag" tone="teal" label={t('dashboard.onTime')} value={data.totals.onTimePct} suffix={data.totals.onTimePct === null ? '' : '%'} />
             </div>
           </section>
 

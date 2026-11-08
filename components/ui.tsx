@@ -136,15 +136,18 @@ export function Segmented<V extends string>({ options, value, onChange, label, s
 }
 
 /** Stat tile: label, value and the change against the previous period. */
-export function KpiTile({ label, value, previous, suffix = '', upIsGood = true, hint, accent }: {
+export function KpiTile({ label, value, previous, suffix = '', upIsGood = true, hint, accent, icon, tone }: {
   label: ReactNode; value: number | null | undefined; previous?: number; suffix?: string; upIsGood?: boolean | null; hint?: ReactNode; accent?: string;
+  /** Optional: a coloured icon badge (the panel's dashboard). */
+  icon?: Parameters<typeof Icon>[0]['name']; tone?: string;
 }) {
   const { t, lang } = useI18n();
   const d = previous === undefined ? null : delta(value ?? 0, previous ?? 0);
   // upIsGood = null: the change is shown without judging it (e.g. more reports received).
   const good = d && d.pct !== null && d.direction !== 'flat' && upIsGood !== null ? (d.direction === 'up') === upIsGood : null;
   return (
-    <div className={`kpi${accent ? ` kpi-${accent}` : ''}`}>
+    <div className={`kpi${accent ? ` kpi-${accent}` : ''}${tone ? ` tone-${tone}` : ''}`}>
+      {icon && <span className="kpi-icon" aria-hidden="true"><Icon name={icon} size={20} strokeWidth={2.2} /></span>}
       <div className="label">{label}</div>
       <div className="value">{value === null || value === undefined ? '–' : `${formatNumber(value, lang)}${suffix}`}</div>
       {d && (
