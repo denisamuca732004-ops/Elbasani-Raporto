@@ -1156,3 +1156,30 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .dash .grid-stats { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
 @media (max-width: 1000px) { .dash .grid-stats { grid-template-columns: 1fr; } }
 .dash .grid-stats { align-items: start; }
+
+/* ---- Institutional calm: one living emerald, colour only where it means something ---- */
+.panel-shell { --frame: #0B8F4D; --p-bg: #EEF4F0; }
+.pulse { background: radial-gradient(110% 130% at 100% 0%, rgba(38, 201, 120, 0.55) 0%, rgba(38, 201, 120, 0) 55%), linear-gradient(135deg, #0EA05A 0%, #087A3F 100%); }
+.pulse .segmented button.active { color: #087A3F; }
+.panel-sidebar a.active { color: #087A3F; }
+
+.cat-tiles li { --cat: #0B8F4D; background: #F4F8F5; border: 1px solid #E3ECE6; }
+.cat-icon { background: #E1F2E8; color: #087A3F; box-shadow: none; }
+.cat-num { color: var(--ink); font-weight: 800; }
+.cat-fixed .ring-track { stroke: #DCE8E0; }
+.cat-fixed .ring-fill { stroke: #0B8F4D; }
+
+.area-pills li { font-weight: 600; }
+.area-pills .heat-1 { background: #F1F6F3; color: #1E3D2A; }
+.area-pills .heat-2 { background: #D7EEE0; color: #164A2C; }
+.area-pills .heat-3 { background: #9FD8B8; color: #0E3D22; }
+.area-pills .heat-4 { background: #0B8F4D; color: #fff; }
+.area-pills .heat-4 strong { color: #087A3F; }
+
+.prio-high { --prio: #FCEBEA; --prio-ink: #B42318; }
+.prio-medium { --prio: #FDF3E1; --prio-ink: #93590B; }
+.prio-low { --prio: #E9F5EE; --prio-ink: #1F6B43; }
+.prio-item { border: 1px solid color-mix(in srgb, var(--prio-ink) 18%, transparent); }
+.prio-sub { color: var(--ink-soft); opacity: 1; }
+.prio-value { font-weight: 800; }
+.panel-shell .nav-badge { background: #FFFFFF; color: #087A3F; }

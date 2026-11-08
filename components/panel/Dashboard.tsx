@@ -94,13 +94,7 @@ function Pulse({ data }: { data: DashboardResult }) {
   );
 }
 
-/** Each category's own colour, by its icon (the same icons as on the public site). */
-const CATEGORY_COLOR: Record<string, string> = {
-  paw: '#FF7A1A', trash: '#2F7CF6', road: '#8B5CF6', bulb: '#F5B700', drop: '#0AB3D6',
-  tree: '#22B455', building: '#E2551F', health: '#F0465A', store: '#E83E8C', other: '#6B7C93',
-};
-
-/** By category: a tile per category, with its icon, how many came in and a ring of how many are fixed. */
+/** By category: a tile per category, with its icon (as on the public site), how many came in and a ring of how many are fixed. */
 function CategoryTiles({ rows }: { rows: DashboardResult['byCategory'] }) {
   const { t, lang } = useI18n();
   const { catalog } = useCatalog();
@@ -113,7 +107,7 @@ function CategoryTiles({ rows }: { rows: DashboardResult['byCategory'] }) {
         const icon = iconOf.get(c.code) ?? 'other';
         const share = c.received ? c.resolved / c.received : 0;
         return (
-          <li key={c.code} style={{ ['--cat' as string]: CATEGORY_COLOR[icon] ?? CATEGORY_COLOR.other }}>
+          <li key={c.code}>
             <span className="cat-icon" aria-hidden="true"><Icon name={icon as Parameters<typeof Icon>[0]['name']} size={22} strokeWidth={2.2} /></span>
             <span className="cat-name">{lang === 'en' ? c.nameEn : c.nameSq}</span>
             <span className="cat-num">{c.received}</span>
