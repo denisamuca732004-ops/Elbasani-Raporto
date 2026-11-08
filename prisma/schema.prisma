@@ -98,6 +98,9 @@ enum EventType {
   TRANSFER_REQUESTED
   TRANSFER_APPROVED
   TRANSFER_DECLINED
+  DUPLICATE_SUSPECTED
+  DUPLICATE_MERGED
+  DUPLICATE_DISMISSED
 }
 
 /// QUEUED: written, waiting for the background job. SENDING: the job is sending it.
@@ -328,6 +331,16 @@ model Report {
   closedAt            DateTime?     @map("closed_at") @db.Timestamptz(3)
   /// Demo data. Never counted in public statistics.
   isTest              Boolean       @default(false) @map("is_test")
+  /// Probably the same problem as an open report nearby: held in "Të reja" (not e-mailed to the
+  /// sector) until the admin merges it or says it is different.
+  possibleDuplicateOfId String?     @map("possible_duplicate_of_id") @db.Uuid
+  possibleDuplicateOf   Report?     @relation("ReportPossibleDuplicate", fields: [possibleDuplicateOfId], references: [id], onDelete: SetNull)
+  possibleDuplicates    Report[]    @relation("ReportPossibleDuplicate")
+  /// Merged into another report (the same problem, reported earlier): this one is closed, its
+  /// reporter follows the other one.
+  mergedIntoId        String?       @map("merged_into_id") @db.Uuid
+  mergedInto          Report?       @relation("ReportMerged", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedReports       Report[]      @relation("ReportMerged")
   /// Sent by the app so a retried submission never creates a second report.
   clientRef           String?       @unique @map("client_ref") @db.VarChar(64)
   createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -349,6 +362,8 @@ model Report {
   @@index([latitude, longitude])
   @@index([isTest])
   @@index([citizenId, createdAt])
+  @@index([possibleDuplicateOfId])
+  @@index([mergedIntoId])
   @@map("reports")
 }
 

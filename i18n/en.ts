@@ -214,6 +214,8 @@ const en = {
     },
   },
   track: {
+    mergedBadge: 'Joined to an earlier report',
+    merged: 'Someone had already reported this problem. Your report was joined to theirs and counts as one more voice; follow it there.', mergedLink: 'Follow {n}',
     title: 'Track a report', intro: 'Type the number you got when you sent the report, or look for it below.',
     caseNumber: 'Report number', find: 'Search',
     invalid: 'The number must look like EL-2026-00042.',
@@ -286,6 +288,7 @@ const en = {
     note: 'Internal note', message_to_citizen: 'Message to the resident', follower_added: 'New supporter', citizen_confirmed: 'Resident confirmed',
     citizen_reopened: 'Resident reopened', photo_visibility: 'Photo visibility', transfer_requested: 'Review request',
     transfer_approved: 'Review approved', transfer_declined: 'Review declined',
+    duplicate_suspected: 'Possible duplicate', duplicate_merged: 'Merged', duplicate_dismissed: 'Not a duplicate',
   },
   auth: {
     panel: 'Municipality panel',
@@ -330,6 +333,11 @@ const en = {
     },
   },
   board: {
+    dup: {
+      title: 'Maybe the same problem as', meters: '{n} m away', sameAddress: 'same address', supporters: { one: '1 supporter', other: '{n} supporters' },
+      held: 'Not sent to the sector, so it does not get the same problem twice.',
+      merge: 'Same problem: merge into {n}', different: 'Different: send to the sector',
+    },
     intro: 'Reports are sent to the departments automatically by email. Here you see where each one is, and act only where needed.',
     tabs: { new: 'New', sent: 'Sent to the department', returned: 'Sent back', working: 'In progress', resolved: 'Resolved', rejected: 'Rejected' },
     hints: {

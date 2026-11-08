@@ -7,10 +7,11 @@
 import 'server-only';
 import type { Status } from '@/lib/shared/domain';
 import { BOARD_BUCKETS, type BoardBucket } from '@/lib/shared/reportViews';
-import type { Board, BoardItem, Principal } from '@/lib/shared/types';
+import type { Board, BoardItem, DuplicateHint, Principal } from '@/lib/shared/types';
 import type { BoardQuery, ReportFilters } from '@/lib/validation/report';
 import { db, type Prisma } from '../db';
 import { assertAdmin } from './access';
+import { distanceMeters } from './geo';
 import { listInclude, toListItem, toTransferSummary, transferInclude, type ListRow } from './mapper';
 import { buildWhere } from './report';
 import { SECTOR_TEMPLATES, mailStatusOf } from './sectorMail';
@@ -44,6 +45,12 @@ const boardInclude = {
   transfers: { where: { status: 'PENDING' }, include: transferInclude },
   emails: { where: { template: { in: [...SECTOR_TEMPLATES] } }, orderBy: { id: 'desc' }, take: 1, select: { status: true, createdAt: true, sentAt: true, error: true } },
   events: { where: { toStatus: 'IN_PROGRESS' }, orderBy: { createdAt: 'desc' }, take: 1, select: { createdAt: true } },
+  possibleDuplicateOf: {
+    select: {
+      id: true, caseNumber: true, address: true, latitude: true, longitude: true, locationApproximate: true, createdAt: true, status: true, supportersCount: true,
+      requestType: { select: { nameSq: true, nameEn: true } },
+    },
+  },
 } satisfies Prisma.ReportInclude;
 type BoardRow = Prisma.ReportGetPayload<{ include: typeof boardInclude }>;
 
@@ -63,6 +70,18 @@ function toBoardItem(r: BoardRow): BoardItem {
     closingNote: r.closingNote,
     rejectionReason: r.rejectionReason,
     resolvedAt: r.resolvedAt?.toISOString() ?? null,
+    duplicate: duplicateHint(r),
+  };
+}
+
+function duplicateHint(r: BoardRow): DuplicateHint | null {
+  const d = r.possibleDuplicateOf;
+  if (!d) return null;
+  const pins = !r.locationApproximate && !d.locationApproximate && r.latitude !== null && r.longitude !== null && d.latitude !== null && d.longitude !== null;
+  return {
+    id: d.id, caseNumber: d.caseNumber, typeNameSq: d.requestType.nameSq, typeNameEn: d.requestType.nameEn, address: d.address,
+    meters: pins ? Math.round(distanceMeters(r.latitude!, r.longitude!, d.latitude!, d.longitude!)) : null,
+    createdAt: d.createdAt.toISOString(), status: d.status, supporters: d.supportersCount,
   };
 }
 

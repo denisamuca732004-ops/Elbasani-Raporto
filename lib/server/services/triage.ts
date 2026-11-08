@@ -16,6 +16,7 @@ import { config } from '../env';
 import { imageDataUrl } from '../storage';
 import { sha256 } from '../tokens';
 import { maskContacts } from './mapper';
+import { holdIfDuplicate } from './duplicates';
 import { notifyDepartmentOfReport } from './notification';
 
 const DANGER_WORDS = [
@@ -195,7 +196,10 @@ ${catalogue}`;
     return true;
   });
 
-  if (statusChanged) await notifyDepartmentOfReport(reportId, 'new');
+  if (!statusChanged) return;
+  // The same problem already reported nearby: keep it for the admin instead of e-mailing the sector twice.
+  if (!createdByStaff && await holdIfDuplicate(reportId)) return;
+  await notifyDepartmentOfReport(reportId, 'new');
 }
 
 /** Reports still PENDING after `minutes` (a job was lost): run their check again. Used by the daily job. */

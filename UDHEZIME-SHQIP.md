@@ -206,6 +206,15 @@ Menuja ka vetëm **Raportimet**, **Paneli**, dhe te Administrimi **Sektorët**, 
 
 Filtrat (sektori, prioriteti, me vonesë, kërkimi) ruhen në adresë. Numri te menuja tregon sa raportime presin administratorin (Të reja + Kthyer).
 
+## I njëjti problem nga disa njerëz
+
+- **Gjatë raportimit:** banori sheh raportimet e hapura të të njëjtit lloj afër pikës (brenda `DUPLICATE_RADIUS_METERS`, 50 m) dhe mund ta mbështesë njërin në vend që të raportojë sërish.
+- **Nëse raporton përsëri:** raportimi i ri që përsërit një të hapur (i njëjti lloj, brenda rrezes, ose e njëjta adresë e shkruar në të njëjtën zonë, 60 ditët e fundit) **nuk i dërgohet sektorit**. Pret te "Të reja" me "Mund të jetë i njëjti problem si EL-…", me distancën dhe numrin e mbështetësve.
+- **Administratori zgjedh:**
+  - "I njëjti: bashkoje me EL-…": raportimi mbyllet dhe tregon raportimin e parë; ai i parë merr edhe një mbështetës, dhe banori (nëse ka email) merr njoftimet e tij. Te "Ndiq" banori sheh "U bashkua me një raportim të mëparshëm" dhe lidhjen.
+  - "I ndryshëm: dërgoje te sektori": dërgohet menjëherë.
+- `HOLD_DUPLICATES=false` e çaktivizon mbajtjen (testet e përdorin).
+
 ## Vendosja në Vercel
 
 1. Lidhni repository-n në Vercel. Projekti njihet si Next.js, dhe `vercel.json` vendos build-in

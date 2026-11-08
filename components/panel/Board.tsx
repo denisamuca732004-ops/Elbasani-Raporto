@@ -11,7 +11,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { resendToSectorAction, updateReportAction } from '@/actions/reports';
+import { dismissDuplicateAction, mergeDuplicateAction, resendToSectorAction, updateReportAction } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { useCatalog } from '@/components/providers';
 import { EmptyState, ErrorAlert, OverdueBadge, Pagination, PriorityBadge, SuccessAlert, TestBadge } from '@/components/ui';
@@ -162,6 +162,7 @@ function BoardRow({ r, bucket, href, onChanged }: { r: BoardItem; bucket: BoardB
           {[place, t('board.received', { when: timeAgo(r.createdAt, t) }), bucket !== 'new' && sector ? sector : null].filter(Boolean).join(' · ')}
         </div>
         {bucket !== 'new' && bucket !== 'rejected' && <SectorStatus r={r} bucket={bucket} />}
+        {bucket === 'new' && r.duplicate && <DuplicateNote d={r.duplicate} />}
         {bucket === 'returned' && r.returned && (
           <div className="board-info warn">
             <strong>{t('board.returnedBy')}</strong> “{r.returned.reason}”
@@ -172,7 +173,8 @@ function BoardRow({ r, bucket, href, onChanged }: { r: BoardItem; bucket: BoardB
         {bucket === 'rejected' && r.rejectionReason && <div className="board-info"><strong>{t('board.reason')}</strong> “{r.rejectionReason}”</div>}
       </div>
       <div className="board-actions">
-        {(bucket === 'new' || bucket === 'sent') && <SendControls r={r} onChanged={onChanged} />}
+        {bucket === 'new' && r.duplicate && <DuplicateControls r={r} onChanged={onChanged} />}
+        {((bucket === 'new' && !r.duplicate) || bucket === 'sent') && <SendControls r={r} onChanged={onChanged} />}
         {bucket === 'returned' && r.returned && (
           <TransferDecision transfer={r.returned} currentDepartmentId={r.department?.id} onDone={onChanged} />
         )}
@@ -181,6 +183,48 @@ function BoardRow({ r, bucket, href, onChanged }: { r: BoardItem; bucket: BoardB
         )}
       </div>
     </li>
+  );
+}
+
+/** "Maybe the same problem as EL-…": what the other report is, how far, and how many people support it. */
+function DuplicateNote({ d }: { d: NonNullable<BoardItem['duplicate']> }) {
+  const { t, lang } = useI18n();
+  return (
+    <div className="dup-note" suppressHydrationWarning>
+      <Icon name="layers" size={18} />
+      <div>
+        <strong>{t('board.dup.title')}</strong>{' '}
+        <Link href={`/admin/reports/${d.id}`} className="case-number">{d.caseNumber}</Link>
+        <div className="small">
+          {[lang === 'en' ? d.typeNameEn : d.typeNameSq, d.meters !== null ? t('board.dup.meters', { n: d.meters }) : t('board.dup.sameAddress'), d.address,
+            t('board.received', { when: timeAgo(d.createdAt, t) }), d.supporters ? t('board.dup.supporters', { n: d.supporters }) : null].filter(Boolean).join(' · ')}
+        </div>
+        <div className="small muted">{t('board.dup.held')}</div>
+      </div>
+    </div>
+  );
+}
+
+/** Merge into the earlier report, or say it is different and send it to the sector. */
+function DuplicateControls({ r, onChanged }: { r: BoardItem; onChanged: () => void }) {
+  const { t } = useI18n();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<ActionFailure | null>(null);
+  async function run(fn: () => Promise<unknown>) {
+    setBusy(true);
+    setError(null);
+    try { await fn(); onChanged(); } catch (err) { setError(err as ActionFailure); } finally { setBusy(false); }
+  }
+  return (
+    <div className="send-controls">
+      <button type="button" className="btn btn-sm" disabled={busy} onClick={() => run(() => call(mergeDuplicateAction(r.id)))}>
+        <Icon name="layers" size={16} />{t('board.dup.merge', { n: r.duplicate!.caseNumber })}
+      </button>
+      <button type="button" className="btn btn-sm btn-outline" disabled={busy} onClick={() => run(() => call(dismissDuplicateAction(r.id)))}>
+        <Icon name="send" size={16} />{t('board.dup.different')}
+      </button>
+      {error && <p className="small error-text" role="alert">{error.message}</p>}
+    </div>
   );
 }
 

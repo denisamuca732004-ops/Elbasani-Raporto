@@ -32,6 +32,8 @@ export interface PublicTimelineItem { type: EventType; status: PublicStatus | nu
 /** What anyone can see with the case number. Never contains contact details. */
 export interface PublicCase {
   caseNumber: string;
+  /** The same problem was reported earlier: this report was joined to that one (follow it there). */
+  mergedInto: string | null;
   publicStatus: PublicStatus;
   kind: RequestKind;
   category: CategoryRef | null;
@@ -166,6 +168,21 @@ export interface BoardItem extends ReportListItem {
   closingNote: string | null;
   rejectionReason: string | null;
   resolvedAt: string | null;
+  /** Probably the same problem as an earlier open report: waits here instead of going to the sector. */
+  duplicate: DuplicateHint | null;
+}
+
+export interface DuplicateHint {
+  id: string;
+  caseNumber: string;
+  typeNameSq: string;
+  typeNameEn: string;
+  address: string | null;
+  /** Between the two pins; null when the match is the same typed address. */
+  meters: number | null;
+  createdAt: string;
+  status: Status;
+  supporters: number;
 }
 
 export interface Board {

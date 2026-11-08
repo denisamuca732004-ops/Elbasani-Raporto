@@ -163,10 +163,18 @@ export function CaseView({ lookup }: { lookup: CaseLookup }) {
   return (
     <article className="detail-grid">
       <div className="stack">
-        <div className="row"><StatusBadge status={data.publicStatus} /><TestBadge show={data.isTest} /></div>
+        <div className="row">
+          {data.mergedInto ? <span className="badge badge-info">{t('track.mergedBadge')}</span> : <StatusBadge status={data.publicStatus} />}
+          <TestBadge show={data.isTest} />
+        </div>
         <h1 style={{ marginBottom: 4 }}>{typeName(data.type, lang)}</h1>
         <p className="case-number" style={{ fontSize: '1.2rem' }}>{data.caseNumber}</p>
-        <p className="muted">{t(`statusHelp.${key(data.publicStatus)}`)}</p>
+        {!data.mergedInto && <p className="muted">{t(`statusHelp.${key(data.publicStatus)}`)}</p>}
+        {data.mergedInto && (
+          <div className="alert alert-info">
+            {t('track.merged', { n: data.mergedInto })} <Link href={`/ndiq/${data.mergedInto}`}>{t('track.mergedLink', { n: data.mergedInto })}</Link>
+          </div>
+        )}
         {data.rejectionReason && <div className="alert alert-error"><strong>{t('track.rejectionReason')}:</strong> {data.rejectionReason}</div>}
         {data.closingNote && <div className="alert alert-ok"><strong>{t('track.closingNote')}:</strong> {data.closingNote}</div>}
         {(data.beforePhotoUrl || data.afterPhotoUrl) && (

@@ -1244,3 +1244,8 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 /* Deeper, calmer green (same family as the logo), easier on the eyes */
 .panel-shell { --frame: #0B6623; --frame-dark: #08521C; --frame-soft: #D5EBD9; --brand-button: #0B6623; --brand-button-hover: #08521C; --brand-header: #0B6623; }
 .cat-icon { color: #0B6623; }
+/* "Maybe the same problem as EL-…" on a new report */
+.dup-note { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding: 10px 14px; border-radius: 12px; background: #EEF3FF; color: #1C2B4A; border: 1px solid #D3DEF8; }
+.dup-note > svg { flex: none; margin-top: 2px; color: #2F5BD3; }
+.dup-note .small { margin-top: 2px; }
+.badge-info { background: var(--info-bg); color: var(--info); }

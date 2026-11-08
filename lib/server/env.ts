@@ -84,6 +84,8 @@ const EnvSchema = z.object({
   AI_REVIEW_THRESHOLD: int(50, 0, 100),
   CASE_PREFIX: str('EL'),
   DUPLICATE_RADIUS_METERS: int(50, 5, 1000),
+  /** Keep a new report that repeats an open one nearby for the admin, instead of e-mailing the sector. */
+  HOLD_DUPLICATES: bool(true),
   AUTO_CLOSE_RESOLVED_DAYS: int(7, 1, 90),
   CONTACT_RETENTION_DAYS: int(90, 7, 3650),
   SERVICE_AREA_BBOX: bbox,
@@ -184,6 +186,7 @@ function load() {
     rules: {
       casePrefix: e.CASE_PREFIX,
       duplicateRadiusMeters: e.DUPLICATE_RADIUS_METERS,
+      holdDuplicates: e.HOLD_DUPLICATES,
       autoCloseResolvedDays: e.AUTO_CLOSE_RESOLVED_DAYS,
       /** Days after closing (or rejecting) a report until its contact is deleted. */
       contactRetentionDays: e.CONTACT_RETENTION_DAYS,

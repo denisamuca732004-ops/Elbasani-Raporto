@@ -22,6 +22,7 @@ export const publicInclude = {
   department: true,
   neighbourhood: true,
   attachments: attachmentsInOrder,
+  mergedInto: { select: { caseNumber: true } },
 } satisfies Prisma.ReportInclude;
 
 export const listInclude = {
@@ -135,7 +136,8 @@ export function toPublicCase(r: PublicRow, events: Parameters<typeof publicTimel
     beforePhotoUrl: verified && before ? publicPhotoUrl(before) : null,
     afterPhotoUrl: after ? publicPhotoUrl(after) : null,
     closingNote: r.status === 'RESOLVED' || r.status === 'CLOSED' ? r.closingNote || null : null,
-    rejectionReason: r.status === 'REJECTED' ? r.rejectionReason || null : null,
+    rejectionReason: r.status === 'REJECTED' && !r.mergedInto ? r.rejectionReason || null : null,
+    mergedInto: r.mergedInto?.caseNumber ?? null,
     supporters: r.supportersCount,
     isTest: r.isTest,
     createdAt: r.createdAt.toISOString(),

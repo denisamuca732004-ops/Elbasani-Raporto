@@ -21,6 +21,7 @@ import { placeAt, searchPlaces } from '@/lib/server/geocoder';
 import { enforceRateLimit } from '@/lib/server/ratelimit';
 import { requireAdmin, requireStaff } from '@/lib/server/session';
 import * as publicReports from '@/lib/server/services/publicReport';
+import * as duplicates from '@/lib/server/services/duplicates';
 import * as reports from '@/lib/server/services/report';
 import * as transfers from '@/lib/server/services/transfer';
 import { checkDescription } from '@/lib/server/services/descriptionCheck';
@@ -274,5 +275,25 @@ export async function extractReportAction(input: unknown) {
   return run(async () => {
     await requireAdmin();
     return extractFromText(parseInput(extractSchema, input).text);
+  });
+}
+
+/** Admin: the same problem as an earlier report — close this one and join it to the other (by default the suggested one). */
+export async function mergeDuplicateAction(id: string, intoCaseNumber?: string) {
+  return run(async () => {
+    const user = await requireAdmin();
+    const result = await duplicates.mergeDuplicate(user, parseInput(reportId, id), intoCaseNumber ? parseInput(z.string().trim().max(32), intoCaseNumber) : undefined);
+    refreshPanel(id);
+    return result;
+  });
+}
+
+/** Admin: not the same problem after all — send it to its sector now. */
+export async function dismissDuplicateAction(id: string) {
+  return run(async () => {
+    const user = await requireAdmin();
+    await duplicates.dismissDuplicate(user, parseInput(reportId, id));
+    refreshPanel(id);
+    return { ok: true };
   });
 }

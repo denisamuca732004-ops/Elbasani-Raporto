@@ -214,6 +214,8 @@ const sq = {
     },
   },
   track: {
+    mergedBadge: 'U bashkua me një raportim të mëparshëm',
+    merged: 'Këtë problem e kishte raportuar tashmë dikush tjetër. Raportimi juaj u bashkua me atë dhe numërohet si një zë më shumë; ndiqeni atje.', mergedLink: 'Ndiq {n}',
     title: 'Ndiq raportimin', intro: 'Shkruani numrin që morët kur dërguat raportimin, ose kërkojeni më poshtë.',
     caseNumber: 'Numri i raportimit', find: 'Kërko',
     invalid: 'Numri duhet të jetë si EL-2026-00042.',
@@ -286,6 +288,7 @@ const sq = {
     note: 'Shënim i brendshëm', message_to_citizen: 'Mesazh qytetarit', follower_added: 'Mbështetës i ri', citizen_confirmed: 'Qytetari konfirmoi',
     citizen_reopened: 'Qytetari e rihapi', photo_visibility: 'Dukshmëria e fotos', transfer_requested: 'Kërkesë për rishikim',
     transfer_approved: 'Rishikimi u pranua', transfer_declined: 'Rishikimi u refuzua',
+    duplicate_suspected: 'Mund të jetë i përsëritur', duplicate_merged: 'U bashkua', duplicate_dismissed: 'Nuk është i përsëritur',
   },
   auth: {
     panel: 'Paneli i Bashkisë',
@@ -330,6 +333,11 @@ const sq = {
     },
   },
   board: {
+    dup: {
+      title: 'Mund të jetë i njëjti problem si', meters: '{n} m larg', sameAddress: 'e njëjta adresë', supporters: { one: '1 mbështetës', other: '{n} mbështetës' },
+      held: 'Nuk iu dërgua sektorit, që të mos e marrë dy herë të njëjtin problem.',
+      merge: 'I njëjti: bashkoje me {n}', different: 'I ndryshëm: dërgoje te sektori',
+    },
     intro: 'Raportimet u dërgohen sektorëve automatikisht me email. Këtu shihni ku është secili, dhe veproni vetëm aty ku duhet.',
     tabs: { new: 'Të reja', sent: 'Dërguar te sektori', returned: 'Kthyer nga sektori', working: 'Në punë', resolved: 'Zgjidhur', rejected: 'Refuzuar' },
     hints: {

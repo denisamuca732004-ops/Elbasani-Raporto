@@ -123,6 +123,9 @@ export const EVENT_TYPES = [
   'TRANSFER_REQUESTED',
   'TRANSFER_APPROVED',
   'TRANSFER_DECLINED',
+  'DUPLICATE_SUSPECTED',
+  'DUPLICATE_MERGED',
+  'DUPLICATE_DISMISSED',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
