@@ -368,6 +368,11 @@ const sq = {
     received: 'Të marra', resolved: 'Të zgjidhura', stillOpen: 'Ende pa zgjidhur', numbersNote: 'Numrat: të marra / të zgjidhura', openNow: 'Të hapura tani', overdueNow: 'Me vonesë tani',
     avgDays: 'Ditë mesatare deri në zgjidhje', onTime: 'Zgjidhur brenda afatit', highOpen: 'E lartë (të hapura)',
     waitingReview: '{n} në pritje të verifikimit',
+    pulse: {
+      open: { one: 'raportim i hapur', other: 'raportime të hapura' }, overdue: '{n} me afat të kaluar',
+      flowTitle: 'Raportimet e marra në këtë periudhë, dhe ku ndodhen tani',
+      waiting: 'Në pritje', working: 'Po rregullohen', fixed: 'U rregulluan', rejected: 'Refuzuar', none: 'Ende asnjë raportim në këtë periudhë.',
+    },
     noPrevious: 'pa të dhëna për periudhën e kaluar', vsPrevious: 'krahasuar me {n} më parë',
     openByPriority: 'Raportimet e hapura sipas prioritetit', receivedInPeriod: { one: '1 i marrë në këtë periudhë', other: '{n} të marra në këtë periudhë' },
     trendTitle: 'Të marra dhe të zgjidhura – {period}', showTable: 'Shfaq tabelën', showChart: 'Shfaq grafikun',

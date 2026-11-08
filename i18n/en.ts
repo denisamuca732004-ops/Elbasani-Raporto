@@ -368,6 +368,11 @@ const en = {
     received: 'Received', resolved: 'Resolved', stillOpen: 'Not resolved yet', numbersNote: 'Numbers: received / resolved', openNow: 'Open now', overdueNow: 'Overdue now',
     avgDays: 'Average days to resolve', onTime: 'Resolved on time', highOpen: 'High (open)',
     waitingReview: '{n} waiting to be verified',
+    pulse: {
+      open: { one: 'open report', other: 'open reports' }, overdue: '{n} past the deadline',
+      flowTitle: 'Reports received in this period, and where they are now',
+      waiting: 'Waiting', working: 'Being fixed', fixed: 'Fixed', rejected: 'Rejected', none: 'No reports in this period yet.',
+    },
     noPrevious: 'no data for the previous period', vsPrevious: 'compared with {n} before',
     openByPriority: 'Open reports by priority', receivedInPeriod: '{n} received in this period',
     trendTitle: 'Received and resolved – {period}', showTable: 'Show table', showChart: 'Show chart',
