@@ -1227,7 +1227,17 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .dash .trend-chart .grid-line { stroke: #E6EAF1; }
 .dash { --series-a: #1D4FD8; --series-b: #16A34A; }
 .pulse-late { background: #FFC93C; }
-/* Buttons, links and tabs follow the blue inside the panel */
+/* Buttons, links and tabs follow the frame colour inside the panel */
 .panel-shell { --brand-button: #1D4FD8; --brand-button-hover: #163FB0; --brand-header: #1D4FD8; --bg-tint: #EEF3FF; }
-.panel-main .btn-outline, .panel-main .btn-ghost { color: #1D4FD8; border-color: currentColor; }
+.panel-main .btn-outline, .panel-main .btn-ghost { color: var(--brand-button); border-color: currentColor; }
 .panel-main .btn-ghost { border-color: transparent; }
+
+/* ---- The municipality's own green (the logo's #06B006, a shade deeper so white text reads well) ---- */
+.panel-shell { --frame: #058A08; --frame-dark: #046F07; --frame-soft: #DDF5DE; --p-bg: #F2F6F2; --p-line: #E1E8E1; --p-muted: #5A665B;
+  --brand-button: #058A08; --brand-button-hover: #046F07; --brand-header: #058A08; --bg-tint: #EAF7EA; }
+.cat-icon { background: #E3F5E3; color: var(--frame); }
+.area-pills .heat-1 { background: #F1F6F1; color: #213A22; }
+.area-pills .heat-2 { background: #D9F0D9; color: #164A18; }
+.area-pills .heat-3 { background: #A6DDA7; color: #0E3D10; }
+.area-pills .heat-4 { background: var(--frame); color: #fff; }
+.dash .trend-chart .grid-line { stroke: #E5ECE5; }
