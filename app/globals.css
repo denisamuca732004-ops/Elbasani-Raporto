@@ -1241,3 +1241,6 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .area-pills .heat-3 { background: #A6DDA7; color: #0E3D10; }
 .area-pills .heat-4 { background: var(--frame); color: #fff; }
 .dash .trend-chart .grid-line { stroke: #E5ECE5; }
+/* Deeper, calmer green (same family as the logo), easier on the eyes */
+.panel-shell { --frame: #0B6623; --frame-dark: #08521C; --frame-soft: #D5EBD9; --brand-button: #0B6623; --brand-button-hover: #08521C; --brand-header: #0B6623; }
+.cat-icon { color: #0B6623; }
