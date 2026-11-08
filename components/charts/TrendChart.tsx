@@ -25,6 +25,26 @@ function niceStep(max: number): number {
   return nice * power;
 }
 
+/** A smooth line through the points that never overshoots (monotone cubic), so a count never dips below 0. */
+function smoothPath(pts: Array<[number, number]>): string {
+  if (pts.length < 2) return pts.length ? `M${pts[0]![0]},${pts[0]![1]}` : '';
+  const n = pts.length;
+  const dx = pts.slice(1).map((p, i) => p[0] - pts[i]![0]);
+  const m = pts.slice(1).map((p, i) => (p[1] - pts[i]![1]) / (dx[i] || 1));
+  const tan = pts.map((_, i) => (i === 0 ? m[0]! : i === n - 1 ? m[n - 2]! : m[i - 1]! * m[i]! <= 0 ? 0 : (m[i - 1]! + m[i]!) / 2));
+  for (let i = 0; i < n - 1; i++) {
+    if (m[i] === 0) { tan[i] = 0; tan[i + 1] = 0; continue; }
+    const a = tan[i]! / m[i]!, b = tan[i + 1]! / m[i]!, h = a * a + b * b;
+    if (h > 9) { const s = 3 / Math.sqrt(h); tan[i] = s * a * m[i]!; tan[i + 1] = s * b * m[i]!; }
+  }
+  let d = `M${pts[0]![0]},${pts[0]![1]}`;
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = pts[i]!, [x1, y1] = pts[i + 1]!, h = (x1 - x0) / 3;
+    d += ` C${x0 + h},${y0 + tan[i]! * h} ${x1 - h},${y1 - tan[i + 1]! * h} ${x1},${y1}`;
+  }
+  return d;
+}
+
 function useWidth(ref: RefObject<HTMLDivElement | null>): number {
   const [width, setWidth] = useState(640);
   useEffect(() => {
@@ -48,6 +68,7 @@ export default function TrendChart({ rows, unit, series, title }: { rows: TrendR
   const [active, setActive] = useState<number | null>(null);
   const [showTable, setShowTable] = useState(false);
   const tableId = useId();
+  const gid = `tc${tableId.replace(/[^a-zA-Z0-9_-]/g, '')}`; // safe inside url(#…)
 
   const height = PLOT_HEIGHT + MARGIN.top + MARGIN.bottom;
   const plotW = width - MARGIN.left - MARGIN.right;
@@ -130,17 +151,24 @@ export default function TrendChart({ rows, unit, series, title }: { rows: TrendR
               </text>
             ) : null))}
             {active !== null && <line x1={x(active)} x2={x(active)} y1={MARGIN.top} y2={MARGIN.top + PLOT_HEIGHT} className="crosshair" />}
-            {series.map((s) => (
-              <polyline
-                key={s.key}
-                fill="none"
-                stroke={s.color}
-                strokeWidth={2}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                points={rows.map((r, i) => `${x(i)},${y(value(r, s.key))}`).join(' ')}
-              />
-            ))}
+            <defs>
+              {series.map((s, i) => (
+                <linearGradient key={s.key} id={`${gid}-g${i}`} x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor={s.color} stopOpacity={i === 0 ? 0.16 : 0.08} />
+                  <stop offset="100%" stopColor={s.color} stopOpacity={0} />
+                </linearGradient>
+              ))}
+            </defs>
+            {series.map((s, i) => {
+              const line = smoothPath(rows.map((r, j) => [x(j), y(value(r, s.key))]));
+              const base = MARGIN.top + PLOT_HEIGHT;
+              return (
+                <g key={s.key}>
+                  {n > 1 && <path d={`${line} L${x(n - 1)},${base} L${x(0)},${base} Z`} fill={`url(#${gid}-g${i})`} stroke="none" />}
+                  <path d={line} fill="none" stroke={s.color} strokeWidth={2.25} strokeLinejoin="round" strokeLinecap="round" />
+                </g>
+              );
+            })}
             {active !== null && series.map((s) => (
               <circle key={s.key} cx={x(active)} cy={y(value(rows[active]!, s.key))} r={5} fill={s.color} stroke="#fff" strokeWidth={2} />
             ))}

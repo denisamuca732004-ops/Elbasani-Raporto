@@ -25,6 +25,33 @@ const ONBOARDING_KEY = 'er_onboarding_hidden';
 export interface OnboardingInfo { activeDepartments: number; withoutHead: Array<{ nameSq: string; nameEn: string }> }
 
 /** First steps for a new admin: departments → report types → accounts of the department heads. */
+/** Open reports by priority: one proportion bar, then a row per priority (click → the list). */
+function PriorityCard({ open, received, listPath }: { open: Record<string, number>; received: Record<string, number>; listPath: string }) {
+  const { t } = useI18n();
+  const order = [...PRIORITIES].reverse();
+  const total = order.reduce((n, p) => n + (open[p] ?? 0), 0);
+  return (
+    <section className="card">
+      <div className="dash-card-head">
+        <h2 className="card-title">{t('dashboard.openByPriority')}</h2>
+        <span className="dash-card-meta">{total}</span>
+      </div>
+      <div className="prio-bar" aria-hidden="true">
+        {total > 0 && order.map((p) => (open[p] ? <span key={p} className={`prio-${key(p)}`} style={{ flexGrow: open[p] }} /> : null))}
+      </div>
+      <div className="prio-list">
+        {order.map((p) => (
+          <Link key={p} href={`${listPath}priority=${p}&status=open`} className={`prio-item prio-${key(p)}`}>
+            <span className="prio-name"><i aria-hidden="true" />{t(`priority.${key(p)}`)}</span>
+            <span className="prio-value">{open[p] ?? 0}</span>
+            <span className="prio-sub">{t('dashboard.receivedInPeriod', { n: received[p] ?? 0 })}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Onboarding({ info }: { info: OnboardingInfo }) {
   const { t, lang } = useI18n();
   const [hidden, setHidden] = useState(true);
@@ -79,7 +106,7 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
   ];
 
   return (
-    <div className="stack">
+    <div className="stack dash">
       <div className="page-head">
         <div>
           <h1>{t('panel.nav.dashboard')}</h1>
@@ -136,21 +163,7 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
             </div>
           </section>
 
-          <section className="card">
-            <h2 className="card-title">{t('dashboard.openByPriority')}</h2>
-            <div className="priority-tiles">
-              {[...PRIORITIES].reverse().map((p) => (
-                <Link key={p} href={`${listPath}priority=${p}&status=open`} className={`priority-tile priority-tile-${key(p)}`}>
-                  <span className={`priority priority-${key(p)}`}>
-                    <Icon name={p === 'HIGH' ? 'arrowUp' : p === 'MEDIUM' ? 'minus' : 'arrowDown'} size={14} strokeWidth={2.4} />
-                    {t(`priority.${key(p)}`)}
-                  </span>
-                  <span className="value">{data.openByPriority[p]}</span>
-                  <span className="small muted">{t('dashboard.receivedInPeriod', { n: data.receivedByPriority[p] })}</span>
-                </Link>
-              ))}
-            </div>
-          </section>
+          <PriorityCard open={data.openByPriority} received={data.receivedByPriority} listPath={listPath} />
 
           <section className="card">
             <h2 className="card-title">{t('dashboard.trendTitle', { period: periodLabel.toLowerCase() })}</h2>
