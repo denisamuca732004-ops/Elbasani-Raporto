@@ -12,7 +12,7 @@ import { useEffect, useState, useTransition } from 'react';
 import TrendChart from '@/components/charts/TrendChart';
 import Icon from '@/components/Icon';
 import { useCatalog } from '@/components/providers';
-import { BarList, Segmented } from '@/components/ui';
+import { Segmented } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { departmentName, formatDate, key } from '@/lib/client/format';
 import { storage } from '@/lib/client/storage';
@@ -91,6 +91,59 @@ function Pulse({ data }: { data: DashboardResult }) {
         )}
       </div>
     </>
+  );
+}
+
+/** Each category's own colour, by its icon (the same icons as on the public site). */
+const CATEGORY_COLOR: Record<string, string> = {
+  paw: '#FF7A1A', trash: '#2F7CF6', road: '#8B5CF6', bulb: '#F5B700', drop: '#0AB3D6',
+  tree: '#22B455', building: '#E2551F', health: '#F0465A', store: '#E83E8C', other: '#6B7C93',
+};
+
+/** By category: a tile per category, with its icon, how many came in and a ring of how many are fixed. */
+function CategoryTiles({ rows }: { rows: DashboardResult['byCategory'] }) {
+  const { t, lang } = useI18n();
+  const { catalog } = useCatalog();
+  if (!rows.length) return <p className="muted">{t('dashboard.empty')}</p>;
+  const iconOf = new Map(catalog.categories.map((c) => [c.code, c.icon]));
+  const R = 17, C = 2 * Math.PI * R;
+  return (
+    <ul className="cat-tiles">
+      {rows.map((c) => {
+        const icon = iconOf.get(c.code) ?? 'other';
+        const share = c.received ? c.resolved / c.received : 0;
+        return (
+          <li key={c.code} style={{ ['--cat' as string]: CATEGORY_COLOR[icon] ?? CATEGORY_COLOR.other }}>
+            <span className="cat-icon" aria-hidden="true"><Icon name={icon as Parameters<typeof Icon>[0]['name']} size={22} strokeWidth={2.2} /></span>
+            <span className="cat-name">{lang === 'en' ? c.nameEn : c.nameSq}</span>
+            <span className="cat-num">{c.received}</span>
+            <span className="cat-fixed">
+              <svg viewBox="0 0 40 40" width="26" height="26" aria-hidden="true">
+                <circle cx="20" cy="20" r={R} className="ring-track" />
+                <circle cx="20" cy="20" r={R} className="ring-fill" strokeDasharray={`${share * C} ${C}`} transform="rotate(-90 20 20)" />
+              </svg>
+              {t('dashboard.catFixed', { n: c.resolved, total: c.received })}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** By area: one pill per area, warmer the more reports it has. */
+function AreaPills({ rows }: { rows: DashboardResult['byNeighbourhood'] }) {
+  const { t } = useI18n();
+  if (!rows.length) return <p className="muted">{t('dashboard.empty')}</p>;
+  const max = Math.max(1, ...rows.map((r) => r.received));
+  return (
+    <ul className="area-pills">
+      {rows.map((a) => {
+        const k = a.received / max;
+        const level = k > 0.75 ? 4 : k > 0.5 ? 3 : k > 0.25 ? 2 : 1;
+        return <li key={a.name} className={`heat-${level}`}><span>{a.name}</span><strong>{a.received}</strong></li>;
+      })}
+    </ul>
   );
 }
 
@@ -233,16 +286,11 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
           <div className="grid-stats">
             <section className="card">
               <h2 className="card-title">{t('dashboard.byCategory')}</h2>
-              <div className="legend"><span><i style={{ background: 'var(--series-b)' }} />{t('dashboard.resolved')}</span><span><i style={{ background: 'var(--series-a)' }} />{t('dashboard.stillOpen')}</span><span className="legend-note">{t('dashboard.numbersNote')}</span></div>
-              <BarList
-                rows={data.byCategory.map((c) => ({ key: c.code, label: lang === 'en' ? c.nameEn : c.nameSq, total: c.received, resolved: c.resolved }))}
-                withResolved
-                emptyText={t('dashboard.empty')}
-              />
+              <CategoryTiles rows={data.byCategory} />
             </section>
             <section className="card">
               <h2 className="card-title">{t('dashboard.byArea')}</h2>
-              <BarList rows={data.byNeighbourhood.map((n) => ({ key: n.name, label: n.name, total: n.received }))} emptyText={t('dashboard.empty')} />
+              <AreaPills rows={data.byNeighbourhood} />
             </section>
           </div>
         </div>

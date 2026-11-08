@@ -367,7 +367,7 @@ const sq = {
     kpis: 'Treguesit për periudhën: {period}',
     received: 'Të marra', resolved: 'Të zgjidhura', stillOpen: 'Ende pa zgjidhur', numbersNote: 'Numrat: të marra / të zgjidhura', openNow: 'Të hapura tani', overdueNow: 'Me vonesë tani',
     avgDays: 'Ditë mesatare deri në zgjidhje', onTime: 'Zgjidhur brenda afatit', highOpen: 'E lartë (të hapura)',
-    waitingReview: '{n} në pritje të verifikimit',
+    waitingReview: '{n} në pritje të verifikimit', catFixed: '{n} nga {total} u rregulluan',
     pulse: {
       open: { one: 'raportim i hapur', other: 'raportime të hapura' }, overdue: '{n} me afat të kaluar',
       flowTitle: 'Raportimet e marra në këtë periudhë, dhe ku ndodhen tani',

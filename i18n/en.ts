@@ -367,7 +367,7 @@ const en = {
     kpis: 'Indicators for the period: {period}',
     received: 'Received', resolved: 'Resolved', stillOpen: 'Not resolved yet', numbersNote: 'Numbers: received / resolved', openNow: 'Open now', overdueNow: 'Overdue now',
     avgDays: 'Average days to resolve', onTime: 'Resolved on time', highOpen: 'High (open)',
-    waitingReview: '{n} waiting to be verified',
+    waitingReview: '{n} waiting to be verified', catFixed: '{n} of {total} fixed',
     pulse: {
       open: { one: 'open report', other: 'open reports' }, overdue: '{n} past the deadline',
       flowTitle: 'Reports received in this period, and where they are now',
