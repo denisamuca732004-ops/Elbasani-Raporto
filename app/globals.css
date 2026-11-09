@@ -1278,3 +1278,13 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .area-pills .heat-4 { background: #333533; color: #fff; }
 .area-pills .heat-4 strong { color: #333533; }
 .pulse .segmented button.active, .panel-sidebar a.active { color: #333533; }
+/* Deep green-charcoal #252B28 (chosen by the municipality) */
+.panel-shell { --frame: #252B28; --frame-dark: #1B201D; --frame-soft: #DFE4E1; --p-bg: #F2F4F3; --p-line: #DFE3E1;
+  --brand-button: #252B28; --brand-button-hover: #1B201D; --brand-header: #252B28; --bg-tint: #EDF0EE; }
+.cat-icon { background: #E9EDEB; color: #252B28; }
+.area-pills .heat-1 { background: #F1F3F2; color: #252B28; }
+.area-pills .heat-2 { background: #DCE1DE; color: #252B28; }
+.area-pills .heat-3 { background: #B3BCB7; color: #1B201D; }
+.area-pills .heat-4 { background: #252B28; color: #fff; }
+.area-pills .heat-4 strong { color: #252B28; }
+.pulse .segmented button.active, .panel-sidebar a.active { color: #252B28; }
