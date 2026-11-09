@@ -1268,3 +1268,13 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .area-pills .heat-4 { background: #41644A; color: #fff; }
 .area-pills .heat-4 strong { color: #41644A; }
 .pulse .segmented button.active, .panel-sidebar a.active { color: #41644A; }
+/* Charcoal #333533 (chosen by the municipality) */
+.panel-shell { --frame: #333533; --frame-dark: #262826; --frame-soft: #E4E6E4; --p-bg: #F3F4F3; --p-line: #E0E2E0;
+  --brand-button: #333533; --brand-button-hover: #262826; --brand-header: #333533; --bg-tint: #EEEFEE; }
+.cat-icon { background: #ECEDEC; color: #333533; }
+.area-pills .heat-1 { background: #F2F3F2; color: #2A2C2A; }
+.area-pills .heat-2 { background: #DFE1DF; color: #2A2C2A; }
+.area-pills .heat-3 { background: #B9BCB9; color: #1E201E; }
+.area-pills .heat-4 { background: #333533; color: #fff; }
+.area-pills .heat-4 strong { color: #333533; }
+.pulse .segmented button.active, .panel-sidebar a.active { color: #333533; }
