@@ -1249,3 +1249,13 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .dup-note > svg { flex: none; margin-top: 2px; color: #2F5BD3; }
 .dup-note .small { margin-top: 2px; }
 .badge-info { background: var(--info-bg); color: var(--info); }
+/* Sage green #73976A (chosen by the municipality); a deeper shade of it for buttons and links, so their text stays readable */
+.panel-shell { --frame: #73976A; --frame-dark: #62855A; --frame-soft: #F0F5EE; --p-bg: #F3F6F2; --p-line: #E0E7DE;
+  --brand-button: #557A4D; --brand-button-hover: #46663F; --brand-header: #73976A; --bg-tint: #EDF3EB; }
+.cat-icon { background: #E8F0E6; color: #4F7148; }
+.area-pills .heat-1 { background: #F1F5F0; color: #2A3D26; }
+.area-pills .heat-2 { background: #DDE8DA; color: #2A4524; }
+.area-pills .heat-3 { background: #B9CFB3; color: #1F3A1A; }
+.area-pills .heat-4 { background: #73976A; color: #fff; }
+.area-pills .heat-4 strong { color: #4F7148; }
+.pulse .segmented button.active, .panel-sidebar a.active { color: #4F7148; }
