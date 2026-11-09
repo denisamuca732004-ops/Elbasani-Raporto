@@ -1299,3 +1299,65 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .pulse .segmented button.active { background: var(--frame); color: #fff; }
 .pulse select { border: 1px solid #C9CFCB; }
 .pulse-flow { background: #F3F5F4; }
+
+/* ==========================================================================
+   Public site: light and institutional. Same structure and castle wall, but a
+   pale municipal-green first screen instead of the dark one, the municipality's
+   green (#1A7F37) as the only accent, and a light footer. No near-black areas.
+   ========================================================================== */
+.site { --pub-tint: #EAF3EC; --pub-ink: #16301F; --pub-text: #24352A; --pub-soft: #4B5D51; --pub-green: #1A7F37; --pub-green-hover: #146A2D; --pub-line: #C9D7CD; --v2-band: #FFFFFF; }
+.gov-strip { background: var(--pub-green); }
+.home-hero { background: var(--pub-tint); color: var(--pub-text); }
+.site .home-title { color: var(--pub-ink); }
+.home-title .accent { color: var(--pub-green); }
+.home-lead { color: var(--pub-text); }
+.site .home-search label { color: var(--pub-ink); }
+.home-search-field { background: #fff; border: 1.5px solid #8FA597; color: var(--pub-soft); }
+.home-search-field:focus-within { border-color: var(--pub-green); box-shadow: 0 0 0 3px rgba(26, 127, 55, 0.18); }
+.home-search-field input { color: var(--pub-ink); }
+.home-search-field input::placeholder { color: #6E7F74; }
+.home-search-list { box-shadow: 0 12px 28px rgba(22, 48, 31, 0.16); border: 1px solid var(--pub-line); }
+.home-report-btn { background: var(--pub-green); color: #fff; }
+.home-report-btn:hover { background: var(--pub-green-hover); }
+.home-chip { background: #fff; border: 1px solid var(--pub-line); color: var(--pub-ink); }
+.home-chip svg { color: var(--pub-green); }
+.home-chip:hover { border-color: var(--pub-green); background: #fff; color: var(--pub-ink); }
+
+/* The little city map: light, like a printed city plan */
+.home-map { background: #fff; border: 1px solid var(--pub-line); }
+.home-map:hover { border-color: var(--pub-green); }
+.m-ground { fill: #F5F7F4; }
+.m-streets path { stroke: #DCE3DE; }
+.m-river { fill: #CFE6EE; }
+.m-park { fill: #D3EBD8; }
+.m-castle { fill: #D9CDB8; }
+.m-label { fill: #3C4B41; }
+.m-river-label { fill: #4F6B76; }
+.m-dot-received { stroke: #D9930B; }
+.m-dot-work { fill: #2F6FD6; }
+.m-dot-done circle { fill: var(--pub-green); }
+.m-dot-done path { stroke: #fff; }
+.home-map-pill { background: #fff; color: var(--pub-ink); border: 1px solid var(--pub-line); }
+.home-map-pill .dot { border-color: #D9930B; }
+.home-numbers { color: var(--pub-soft); }
+.home-numbers strong { color: var(--pub-ink); }
+.home-track { border-color: var(--pub-green); color: var(--pub-green); background: #fff; }
+.home-track:hover { background: #fff; color: var(--pub-green-hover); border-color: var(--pub-green-hover); }
+
+/* The castle wall: the pale first screen ends in battlements over the white page */
+.home-wall { background: linear-gradient(90deg, var(--pub-tint) 50%, transparent 50%) 0 0 / 140px 100% repeat-x; background-color: #fff; }
+.home-band { background: #fff; }
+.home-list li { border-bottom-color: #E3E9E5; }
+.home-list-icon { background: var(--pub-tint); color: var(--pub-green); }
+.home-section-head a { color: var(--pub-green); }
+.home-steps li { border-top-color: var(--pub-green); }
+.home-step-number { color: var(--pub-green); }
+
+/* Footer: light, like the rest */
+.site .site-footer { background: var(--pub-tint); color: var(--pub-text); border-top: 1px solid var(--pub-line); }
+.site .site-footer a { color: var(--pub-green); }
+.site .footer-title { color: var(--pub-ink); text-transform: none; letter-spacing: 0; font-size: 1.15rem; }
+.site .footer-title svg { color: var(--pub-green); }
+.footer-numbers dt { color: var(--pub-soft); }
+.footer-numbers dd, .footer-numbers dd a { color: var(--pub-ink); }
+.site .footer-bottom { border-top-color: var(--pub-line); color: var(--pub-soft); }
