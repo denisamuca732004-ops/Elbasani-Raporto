@@ -1288,3 +1288,14 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .area-pills .heat-4 { background: #252B28; color: #fff; }
 .area-pills .heat-4 strong { color: #252B28; }
 .pulse .segmented button.active, .panel-sidebar a.active { color: #252B28; }
+/* The dashboard's top panel on white, with dark text */
+.pulse { background: #fff; color: var(--ink); border: 1px solid var(--p-line); }
+.pulse h1, .pulse-big, .pulse-open-text strong, .pulse-figures dd { color: var(--ink); }
+.pulse .pulse-scope, .pulse-open-text, .pulse-figures dt, .pulse-figures dd.pulse-note, .pulse .field.inline label { color: var(--p-muted); }
+.pulse-figures > div { border-left-color: var(--p-line); }
+.pulse .segmented { background: #F1F3F2; border-color: var(--p-line); }
+.pulse .segmented button { color: var(--ink); }
+.pulse .segmented button:hover { background: #E6EAE8; }
+.pulse .segmented button.active { background: var(--frame); color: #fff; }
+.pulse select { border: 1px solid #C9CFCB; }
+.pulse-flow { background: #F3F5F4; }
