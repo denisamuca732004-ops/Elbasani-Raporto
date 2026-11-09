@@ -1259,3 +1259,12 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .area-pills .heat-4 { background: #73976A; color: #fff; }
 .area-pills .heat-4 strong { color: #4F7148; }
 .pulse .segmented button.active, .panel-sidebar a.active { color: #4F7148; }
+/* Forest green #41644A (chosen by the municipality): dark enough for white text, so buttons and links use it too */
+.panel-shell { --frame: #41644A; --frame-dark: #36553D; --frame-soft: #E4EEE6; --p-bg: #F2F5F2; --p-line: #DFE6E0;
+  --brand-button: #41644A; --brand-button-hover: #36553D; --brand-header: #41644A; --bg-tint: #EBF2EC; }
+.cat-icon { background: #E5EEE7; color: #41644A; }
+.area-pills .heat-2 { background: #D9E6DB; color: #24402B; }
+.area-pills .heat-3 { background: #AFC8B4; color: #1B3321; }
+.area-pills .heat-4 { background: #41644A; color: #fff; }
+.area-pills .heat-4 strong { color: #41644A; }
+.pulse .segmented button.active, .panel-sidebar a.active { color: #41644A; }
