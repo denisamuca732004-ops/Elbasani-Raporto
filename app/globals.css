@@ -1460,3 +1460,8 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 .home-photo-cta ~ .home-search .home-report-btn:hover { background: var(--pub-tint, #EAF3EC); }
 .home-chips-label { margin: 28px 0 10px; font-weight: 600; color: var(--pub-ink, #16301F); }
 .home-photo-cta + .home-chips-label + .home-chips { margin-top: 0; }
+/* The photo of Elbasan in place of the schematic map. */
+.home-photo { position: relative; display: block; border-radius: 14px; overflow: hidden; border: 1px solid var(--pub-line, #C9D7CD); background: #DDE6DF; }
+.home-photo img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.home-photo:hover { border-color: var(--pub-green, #1A7F37); }
+.home-photo .home-map-pill { left: 16px; bottom: 16px; background: #fff; color: var(--pub-ink, #16301F); box-shadow: 0 1px 4px rgba(0,0,0,0.18); }

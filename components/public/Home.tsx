@@ -16,7 +16,6 @@ import Icon from '@/components/Icon';
 import { useCatalog, useSettings, type TypeWithCategory } from '@/components/providers';
 import { CategoryIcon, TestBadge } from '@/components/ui';
 import { useI18n } from '@/i18n';
-import { mapStatusOf } from '@/lib/shared/domain';
 import { matchTypes } from '@/lib/shared/guide';
 import type { FixedReport, MapPoint } from '@/lib/shared/types';
 
@@ -31,11 +30,12 @@ export interface HomeNumbers {
 interface Props {
   numbers: HomeNumbers | null;
   fixed: FixedReport[];
-  points: MapPoint[];
+  /** No longer drawn on the home page (the photo replaced the schematic map); kept so the page can still pass it. */
+  points?: MapPoint[];
   frequent?: Array<{ id: number; count: number }>;
 }
 
-export default function Home({ numbers, fixed, points, frequent = [] }: Props) {
+export default function Home({ numbers, fixed, frequent = [] }: Props) {
   const { t, lang } = useI18n();
   const { catalog, typeById } = useCatalog();
   const { rules } = useSettings();
@@ -72,7 +72,7 @@ export default function Home({ numbers, fixed, points, frequent = [] }: Props) {
             </nav>
           </div>
           <div className="home-hero-side">
-            <CityMap points={points} openNow={numbers?.openNow ?? null} />
+            <CityPhoto openNow={numbers?.openNow ?? null} />
             {numbers && <HomeNumbersLine numbers={numbers} />}
             <Link href="/ndiq" className="home-track"><Icon name="route" size={20} />{t('home.trackButton')}</Link>
           </div>
@@ -209,51 +209,18 @@ function ProblemSearch() {
   );
 }
 
-/* ── The schematic city map ── */
-
-// The centre of Elbasan, mapped onto the 660 × 400 drawing (≈ 5 × 3 km). Reports outside it are left out.
-const BOX = { west: 20.052, east: 20.112, south: 41.097, north: 41.124 };
-const MAP_W = 660;
-const MAP_H = 400;
-const x = (lng: number) => ((lng - BOX.west) / (BOX.east - BOX.west)) * MAP_W;
-const y = (lat: number) => ((BOX.north - lat) / (BOX.north - BOX.south)) * MAP_H;
-const MAX_DOTS = 40;
-
-function CityMap({ points, openNow }: { points: MapPoint[]; openNow: number | null }) {
+/* ── The photo of Elbasan (Kalaja and the clock tower), with the open reports linking to the map ── */
+function CityPhoto({ openNow }: { openNow: number | null }) {
   const { t } = useI18n();
-  const dots = points
-    .filter((p) => p.longitude > BOX.west && p.longitude < BOX.east && p.latitude > BOX.south && p.latitude < BOX.north)
-    .slice(0, MAX_DOTS);
   return (
-    <Link href="/harta" className="home-map" aria-label={t('home.map.label')}>
-      <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} role="img" aria-hidden="true" focusable="false">
-        <rect width={MAP_W} height={MAP_H} rx="14" className="m-ground" />
-        <g className="m-streets">
-          <path d="M60 0 L150 400" /><path d="M200 0 L222 400" /><path d="M360 0 L372 400" />
-          <path d="M520 0 L498 400" /><path d="M0 182 Q330 168 660 176" /><path d="M0 300 Q330 290 660 280" />
-        </g>
-        <path className="m-river" d="M0 372 C 160 352 300 384 440 362 S 600 342 660 352 L 660 400 L 0 400 Z" />
-        <rect className="m-park" x="430" y="96" width="92" height="52" rx="10" />
-        <path className="m-castle" d="M312 164 h8 v-8 h10 v8 h12 v-8 h10 v8 h12 v-8 h8 v54 h-60 z" />
-        <text className="m-label" x="476" y="84" textAnchor="middle">Parku Rinia</text>
-        <text className="m-label" x="342" y="238" textAnchor="middle">Kalaja</text>
-        <text className="m-label m-river-label" x="610" y="390" textAnchor="end">Shkumbini</text>
-        {dots.map((p) => <Dot key={p.caseNumber} p={p} />)}
-      </svg>
+    <Link href="/harta" className="home-photo" aria-label={t('home.map.label')}>
+      <picture>
+        <source srcSet="/elbasan-hero.webp" type="image/webp" />
+        <img src="/elbasan-hero.jpg" alt={t('home.photoAlt')} width={1200} height={900} fetchPriority="high" />
+      </picture>
       {openNow !== null && <span className="home-map-pill"><span className="dot" />{t('home.map.open', { n: openNow })}</span>}
     </Link>
   );
-}
-
-/** The same marks as the map page: received = yellow ring, being fixed = blue dot, fixed = green dot with a tick. */
-function Dot({ p }: { p: MapPoint }) {
-  const cx = x(p.longitude), cy = y(p.latitude);
-  const group = mapStatusOf(p.publicStatus);
-  if (group === 'IN_PROGRESS') return <circle className="m-dot-work" cx={cx} cy={cy} r="7" />;
-  if (group === 'RESOLVED') {
-    return <g className="m-dot-done"><circle cx={cx} cy={cy} r="8" /><path d={`M${cx - 3.5} ${cy} l2.5 2.5 l4.5 -5`} /></g>;
-  }
-  return <circle className="m-dot-received" cx={cx} cy={cy} r="6" />;
 }
 
 // Browsers do not all carry Albanian month names, so they are written here.

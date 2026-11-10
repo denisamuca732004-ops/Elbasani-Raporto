@@ -49,6 +49,7 @@ const sq = {
       suggestions: 'Problemet që përputhen', categories: 'Ose zgjidhni kategorinë',
       photoButton: 'Raporto me foto', photoHint: 'Bëni një foto, sistemi plotëson llojin dhe përshkrimin.', chooseSelf: 'Ose zgjidhni vetë llojin e problemit:',
     },
+    photoAlt: 'Kalaja e Elbasanit dhe Kulla e Sahatit, parë nga lart',
     map: { label: 'Harta e raportimeve në qytet: hapni hartën', open: { one: '1 raportim i hapur në qytet', other: '{n} raportime të hapura në qytet' } },
     numbers: { fixedIn: 'të rregulluara në {month}', avgDays: 'ditë mesatarisht për rregullim', openNow: 'të hapura tani' },
     fixed: { title: 'Rregulluar së fundmi', seeMap: 'Shihini në hartë', badge: 'U rregullua', none: 'Ende asnjë raportim i rregulluar.' },

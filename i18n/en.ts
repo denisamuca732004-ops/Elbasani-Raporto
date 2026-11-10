@@ -49,6 +49,7 @@ const en = {
       suggestions: 'Matching problems', categories: 'Or choose a category',
       photoButton: 'Report with a photo', photoHint: 'Take a photo, the system fills in the type and the description.', chooseSelf: 'Or choose the type yourself:',
     },
+    photoAlt: 'The Elbasan castle and the clock tower, seen from above',
     map: { label: 'Map of reports in the city: open the map', open: { one: '1 report open across the city', other: '{n} reports open across the city' } },
     numbers: { fixedIn: 'fixed in {month}', avgDays: 'days on average to fix', openNow: 'open now' },
     fixed: { title: 'Recently fixed', seeMap: 'See them on the map', badge: 'Fixed', none: 'Nothing has been fixed yet.' },
