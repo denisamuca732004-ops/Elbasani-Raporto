@@ -25,10 +25,11 @@ import * as duplicates from '@/lib/server/services/duplicates';
 import * as reports from '@/lib/server/services/report';
 import * as transfers from '@/lib/server/services/transfer';
 import { checkDescription } from '@/lib/server/services/descriptionCheck';
+import { analyzePhoto } from '@/lib/server/services/photoAnalyze';
 import { checkPhoto } from '@/lib/server/services/photoCheck';
 import { extractFromText } from '@/lib/server/services/triage';
 import {
-  assignSchema, descriptionCheckSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoCheckSchema,
+  assignSchema, descriptionCheckSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoAnalyzeSchema, photoCheckSchema,
   photoVisibilitySchema, placeQuerySchema, placeSearchSchema, pointSchema, trackSearchSchema,
   prioritySchema, rejectSchema, reportUpdateSchema, resolveSchema, staffReportSchema, statusChangeSchema, testFlagSchema,
   transferDecisionSchema, transferRequestSchema,
@@ -62,6 +63,17 @@ export async function checkPhotoAction(input: unknown) {
     await enforceRateLimit('photoCheck', await clientIp());
     const data = parseInput(photoCheckSchema, input);
     return checkPhoto(data.photoKey, data.requestTypeId);
+  });
+}
+
+/**
+ * "Raporto me foto": the AI proposes the type and a description from the photo (only with the AI on).
+ * Also answers "inappropriate" / "not_photo" (the form asks for another photo) or "unchecked" (no proposal).
+ */
+export async function analyzePhotoAction(input: unknown) {
+  return run(async () => {
+    await enforceRateLimit('photoAnalyze', await clientIp());
+    return analyzePhoto(parseInput(photoAnalyzeSchema, input).photoKey);
   });
 }
 

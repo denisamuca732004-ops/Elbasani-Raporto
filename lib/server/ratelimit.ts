@@ -17,6 +17,7 @@ const RULES = {
   upload: () => ({ limit: config().rateLimit.reportsPerHour * 3, windowSeconds: 3600 }),
   // Each check can be an AI call: as many as photos may be uploaded.
   photoCheck: () => ({ limit: config().rateLimit.reportsPerHour * 3, windowSeconds: 3600 }),
+  photoAnalyze: () => ({ limit: config().rateLimit.reportsPerHour * 3, windowSeconds: 3600 }),
   textCheck: () => ({ limit: config().rateLimit.reportsPerHour * 5, windowSeconds: 3600 }),
   follow: () => ({ limit: 30, windowSeconds: 3600 }),
   search: () => ({ limit: 120, windowSeconds: 600 }),

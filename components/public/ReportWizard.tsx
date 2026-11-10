@@ -19,12 +19,16 @@
  * way when "Vazhdo" is pressed: random letters (also without the AI) and
  * abusive text are refused, a text about another problem needs a confirmation
  * (lib/server/services/descriptionCheck.ts).
+ * "Raporto me foto" (mode "photo", with the AI on): the photo comes first, the
+ * AI proposes the type and a description (lib/server/services/photoAnalyze.ts),
+ * and the resident checks both on one screen: photo → problem → location →
+ * contact → review. Without the AI the normal steps are used.
  * Used on /raporto and inside the /embed widget.
  */
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  checkDescriptionAction, checkPhotoAction, createReportAction, findNearbyAction, followReportAction, placeAtAction, searchPlacesAction,
+  analyzePhotoAction, checkDescriptionAction, checkPhotoAction, createReportAction, findNearbyAction, followReportAction, placeAtAction, searchPlacesAction,
 } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { LocationPicker, MiniMap } from '@/components/maps';
@@ -43,12 +47,20 @@ import { plainWords, searchLocalities, type PlaceSuggestion } from '@/lib/shared
 import type { PublicCard } from '@/lib/shared/types';
 import { zoneCodeAt } from '@/lib/shared/zones';
 
-const STEPS = ['type', 'location', 'photo', 'details', 'contact', 'review'] as const;
+const FORM_STEPS = ['type', 'location', 'photo', 'details', 'contact', 'review'] as const;
+/** "Raporto me foto": the type and the description are checked together, on "check". */
+const PHOTO_STEPS = ['photo', 'check', 'location', 'contact', 'review'] as const;
+export type ReportMode = 'form' | 'photo';
+/** What the AI proposed from the photo ("unchecked": no answer, the resident fills in everything). */
+type Analysis = {
+  photo: Blob; status: 'analysing' | 'done';
+  verdict?: 'ok' | 'unrelated' | 'not_photo' | 'inappropriate' | 'unchecked'; requestTypeId?: number | null; description?: string;
+};
 /** The check of the description for the chosen type, made when "Vazhdo" is pressed. */
 type DescriptionCheck = { text: string; typeId: number; status: 'ok' | 'unrelated' | 'unchecked'; confirmed: boolean };
 /** The check of the chosen photo for the chosen type ("unchecked": AI off, offline or no answer). */
 type PhotoCheck = { photo: Blob; typeId: number; status: 'checking' | 'ok' | 'unrelated' | 'unchecked'; confirmed: boolean };
-type StepName = (typeof STEPS)[number];
+type StepName = (typeof FORM_STEPS)[number] | (typeof PHOTO_STEPS)[number];
 /** Field (as named by the server) → wizard step. */
 const STEP_OF_FIELD: Record<string, StepName> = {
   requestTypeId: 'type', locationMode: 'location', latitude: 'location', longitude: 'location', address: 'location', neighbourhoodId: 'location', localityId: 'location',
@@ -56,13 +68,28 @@ const STEP_OF_FIELD: Record<string, StepName> = {
 };
 type Errors = Partial<Record<string, string>>;
 
-export default function ReportWizard({ embedded = false, initialCategory, initialType }: { embedded?: boolean; initialCategory?: string; initialType?: number }) {
+export default function ReportWizard({ embedded = false, initialCategory, initialType, initialMode = 'form' }: {
+  embedded?: boolean; initialCategory?: string; initialType?: number; initialMode?: ReportMode;
+}) {
   const { t, lang } = useI18n();
   const { catalog, typeById, categoryByCode } = useCatalog();
   const { rules } = useSettings();
   const trackBase = embedded ? '/embed/ndiq' : '/ndiq';
   const initialTypeValid = initialType && typeById(initialType) ? initialType : null;
+  const [mode, setMode] = useState<ReportMode>(initialTypeValid || initialCategory ? 'form' : initialMode);
+  // Only with the AI on: without it there is nothing to propose.
+  const photoMode = mode === 'photo' && rules.aiChecks;
+  const STEPS: readonly StepName[] = photoMode ? PHOTO_STEPS : FORM_STEPS;
+  /** The index of a step; in photo mode "type" and "description" are both on "check". */
+  const stepIndex = (name: StepName): number => {
+    const i = STEPS.indexOf(name);
+    return i >= 0 || !photoMode ? i : name === 'type' || name === 'details' ? STEPS.indexOf('check') : -1;
+  };
   const [step, setStep] = useState(initialTypeValid ? 1 : 0);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  // What the AI last filled in: replaced by a new proposal only while the resident has not changed it.
+  const aiFilled = useRef<{ typeId: number | null; description: string }>({ typeId: null, description: '' });
+  const [showTypePicker, setShowTypePicker] = useState(false);
   const [categoryCode, setCategoryCode] = useState<string | null>(initialCategory ?? null);
   const [typeId, setTypeId] = useState<number | null>(initialTypeValid);
   // "Vendndodhja" (as on BOS:311): one field to search a street, lagje or village, and the pin on the map.
@@ -111,7 +138,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
 
   // The photo is checked as soon as it is chosen (and again if the type changes), only with the AI on and online.
   useEffect(() => {
-    if (!photo || !typeId || !rules.aiChecks || !navigator.onLine) {
+    // In photo mode the analysis has already looked at the photo (and the server checks it again when it is sent).
+    if (!photo || !typeId || !rules.aiChecks || photoMode || !navigator.onLine) {
       setPhotoCheck(null);
       return undefined;
     }
@@ -137,8 +165,52 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     return () => { cancelled = true; };
     // photoKeyFor only reads a ref; re-running it on every render would upload again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photo, typeId, rules.aiChecks]);
+  }, [photo, typeId, rules.aiChecks, photoMode]);
   const currentCheck = photo && photoCheck?.photo === photo && photoCheck.typeId === typeId ? photoCheck : null;
+
+  // "Raporto me foto": the photo is read as soon as it is chosen; the proposal fills the type and the description.
+  useEffect(() => {
+    if (!photoMode || !photo || analysis?.photo === photo) return undefined;
+    if (!navigator.onLine) {
+      setAnalysis({ photo, status: 'done', verdict: 'unchecked' });
+      return undefined;
+    }
+    let cancelled = false;
+    setAnalysis({ photo, status: 'analysing' });
+    void (async () => {
+      let found: Omit<Analysis, 'photo' | 'status'> = { verdict: 'unchecked' };
+      try {
+        const photoKey = await photoKeyFor(photo);
+        found = await call(analyzePhotoAction({ photoKey }));
+      } catch {
+        uploaded.current = null; // no answer: the resident fills in the type and the description
+      }
+      if (cancelled) return;
+      if (found.verdict === 'inappropriate' || found.verdict === 'not_photo') {
+        uploaded.current = null;
+        setAnalysis(null);
+        setPhotoRefused(found.verdict);
+        setPhoto(null);
+        return;
+      }
+      const proposedType = found.requestTypeId && typeById(found.requestTypeId) ? found.requestTypeId : null;
+      setAnalysis({ photo, status: 'done', ...found, requestTypeId: proposedType });
+      if (typeId === null || typeId === aiFilled.current.typeId) {
+        setTypeId(proposedType);
+        setCategoryCode(proposedType ? typeById(proposedType)?.category.code ?? null : null);
+        setShowTypePicker(!proposedType);
+      }
+      if (!description.trim() || description === aiFilled.current.description) setDescription(found.description ?? '');
+      aiFilled.current = { typeId: proposedType, description: found.description ?? '' };
+      // The photo is read: straight on to the proposal.
+      setStep((s) => (s === 0 ? 1 : s));
+    })();
+    return () => { cancelled = true; };
+    // Runs once per photo; the type and the text are read as they are when the answer comes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo, photoMode]);
+  const analysing = photoMode && Boolean(photo) && analysis?.photo === photo && analysis.status === 'analysing';
+  const currentAnalysis = photo && analysis?.photo === photo && analysis.status === 'done' ? analysis : null;
   useEffect(() => {
     if (!photo) {
       setPhotoUrl(null);
@@ -176,15 +248,16 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   /** What is still missing in a step (field → message). Empty object = the step is complete. */
   const errorsFor = useCallback((name: StepName): Errors => {
     const e: Errors = {};
-    if (name === 'type' && !type) e.requestTypeId = t('report.errors.type');
+    if ((name === 'type' || name === 'check') && !type) e.requestTypeId = t('report.errors.type');
     if (name === 'location') {
       if (!location) e.latitude = t('report.errors.pin');
       else if (!pinZoneCode) e.latitude = t('report.outsideArea');
     }
     if (name === 'photo' && !photo) e.photo = t('report.errors.photo');
+    if (name === 'photo' && analysing) e.photo = t('report.analyze.wait');
     if (name === 'photo' && currentCheck?.status === 'checking') e.photo = t('report.photoCheck.wait');
     if (name === 'photo' && currentCheck?.status === 'unrelated' && !currentCheck.confirmed) e.photo = t('report.photoCheck.confirmFirst');
-    if (name === 'details') {
+    if (name === 'details' || name === 'check') {
       if (!description.trim()) e.description = t('report.errors.description');
       else if (description.trim().length < LIMITS.minDescription) e.description = t('report.errors.descriptionShort', { n: LIMITS.minDescription });
       else if (looksLikeGibberish(description)) e.description = t('report.errors.descriptionGibberish');
@@ -198,10 +271,10 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       }
     }
     return e;
-  }, [type, location, pinZoneCode, photo, currentCheck, description, contactMode, contact, t]);
+  }, [type, location, pinZoneCode, photo, currentCheck, analysing, description, contactMode, contact, t]);
 
   const currentErrors = useMemo(() => errorsFor(stepName), [errorsFor, stepName]);
-  const firstIncompleteStep = useMemo(() => STEPS.findIndex((s) => s !== 'review' && Object.keys(errorsFor(s)).length > 0), [errorsFor]);
+  const firstIncompleteStep = useMemo(() => STEPS.findIndex((s) => s !== 'review' && Object.keys(errorsFor(s)).length > 0), [errorsFor, STEPS]);
   const visibleError = (field: string) => (showErrors ? currentErrors[field] : null) || serverErrors[field] || null;
 
   function goTo(index: number) {
@@ -223,8 +296,11 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       showStepErrors();
       return;
     }
+    const describing = stepName === 'details' || stepName === 'check';
+    // The text and the type proposed together from the photo, unchanged: already consistent.
+    const asProposed = stepName === 'check' && Boolean(currentAnalysis?.description) && description === currentAnalysis?.description && typeId === currentAnalysis?.requestTypeId;
     // The description is checked once per text and type (only with the AI on and online).
-    if (stepName === 'details' && rules.aiChecks && typeId && navigator.onLine && !currentDescriptionCheck) {
+    if (describing && !asProposed && rules.aiChecks && typeId && navigator.onLine && !currentDescriptionCheck) {
       const text = description.trim();
       setCheckingDescription(true);
       let verdict: 'ok' | 'unrelated' | 'gibberish' | 'abusive' | 'unchecked' = 'unchecked';
@@ -242,7 +318,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       }
       setDescriptionCheck({ text, typeId, status: verdict, confirmed: false });
       if (verdict === 'unrelated') return; // the question under the text decides
-    } else if (stepName === 'details' && currentDescriptionCheck?.status === 'unrelated' && !currentDescriptionCheck.confirmed) {
+    } else if (describing && !asProposed && currentDescriptionCheck?.status === 'unrelated' && !currentDescriptionCheck.confirmed) {
       return;
     }
     goTo(step + 1);
@@ -375,7 +451,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             byField.photo = t(d.code === 'not_photo' ? 'report.photoCheck.notPhoto' : 'report.photoCheck.inappropriate');
             setPhoto(null);
           }
-          const index = STEPS.indexOf((d.step ?? STEP_OF_FIELD[d.field] ?? 'review') as StepName);
+          const index = stepIndex((d.step ?? STEP_OF_FIELD[d.field] ?? 'review') as StepName);
           if (index >= 0) target = Math.min(target, index);
         }
         if (byField.photo) uploaded.current = null;
@@ -441,6 +517,90 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
 
   const chosenType = category ? [lang === 'en' ? category.nameEn : category.nameSq, type ? typeName(type, lang) : ''].filter(Boolean).join(' · ') : '';
   const placeSummary = [placeText.trim() || (location ? t('report.pinOnMap') : ''), pinZone?.name].filter(Boolean).join(' · ');
+  const pickType = (id: number) => {
+    setTypeId(id);
+    if (photoMode) setShowTypePicker(false);
+    else goTo(stepIndex('location'));
+  };
+  const switchMode = (next: ReportMode) => {
+    setMode(next);
+    setStep(0);
+    setShowErrors(false);
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  const typePicker = (
+    <>
+      {/* Before a choice: every category. After it: only the chosen one, large, with its problems under it. */}
+      {!category && (
+        <div className="category-grid" style={{ marginBottom: 20 }}>
+          {catalog.categories.map((c) => (
+            <button key={c.code} type="button" className="category-tile" onClick={() => { setCategoryCode(c.code); setTypeId(null); }}>
+              <CategoryIcon icon={c.icon} size={30} />{lang === 'en' ? c.nameEn : c.nameSq}
+            </button>
+          ))}
+        </div>
+      )}
+      {category && (
+        <>
+          <div className="category-chosen">
+            <span className="category-chosen-icon"><CategoryIcon icon={category.icon} size={44} /></span>
+            <div className="category-chosen-name">
+              <span className="label">{t('report.categoryLabel')}</span>
+              <h3>{lang === 'en' ? category.nameEn : category.nameSq}</h3>
+            </div>
+            <button type="button" className="btn btn-sm btn-outline" onClick={() => { setCategoryCode(null); setTypeId(null); }}>
+              <Icon name="arrowLeft" size={16} />{t('report.changeCategory')}
+            </button>
+          </div>
+          <p className="muted" style={{ margin: '0 0 8px' }}>{t('report.chooseProblem')}</p>
+          <ul className="type-list">
+            {category.types.map((ty) => (
+              <li key={ty.id}>
+                {/* The last choice, "Tjetër": a problem of this category that is not in the list. */}
+                {isOtherChoice(ty.code) ? (
+                  <button type="button" className={`type-other${ty.id === typeId ? ' selected' : ''}`} aria-pressed={ty.id === typeId} onClick={() => pickType(ty.id)}>
+                    <span>{t('report.otherOption')}<span className="type-hint">{t('report.otherOptionHint')}</span></span>
+                    <Icon name="arrowRight" size={18} />
+                  </button>
+                ) : (
+                  <button type="button" className={ty.id === typeId ? 'selected' : ''} aria-pressed={ty.id === typeId} onClick={() => pickType(ty.id)}>
+                    <span>{lang === 'en' ? ty.nameEn : ty.nameSq}</span>
+                    <span className="badge status-received">{t(`kind.${key(ty.kind)}`)}</span>
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </>
+  );
+  const descriptionField = (
+    <>
+      <Field label={t('report.description')} hint={type && isOtherChoice(type.code) ? t('report.descriptionHintOther') : t('report.descriptionHint')} htmlFor="desc" error={visibleError('description')} required>
+        <textarea id="desc" value={description} maxLength={LIMITS.maxDescription} aria-required="true" aria-describedby="desc-count" onChange={(e) => setDescription(e.target.value)} />
+      </Field>
+      <p id="desc-count" className={`hint${description.trim().length < LIMITS.minDescription ? '' : ' ok'}`}>
+        {t('report.descriptionCount', { n: description.trim().length, min: LIMITS.minDescription })}
+      </p>
+      {currentDescriptionCheck?.status === 'unrelated' && !currentDescriptionCheck.confirmed && (
+        <div className="alert alert-warn" role="alert">
+          <p style={{ margin: 0 }}>
+            <strong>{t('report.descriptionCheck.unrelatedTitle')}</strong>{' '}
+            {t('report.descriptionCheck.unrelatedText', { type: type ? (lang === 'en' ? type.nameEn : type.nameSq) : '' })}
+          </p>
+          <div className="row" style={{ marginTop: 10 }}>
+            <button type="button" className="btn btn-sm" onClick={() => (photoMode ? setShowTypePicker(true) : goTo(stepIndex('type')))}>{t('report.descriptionCheck.changeType')}</button>
+            <button type="button" className="btn btn-sm btn-outline" onClick={() => { setDescriptionCheck({ ...currentDescriptionCheck, confirmed: true }); goTo(step + 1); }}>
+              {t('report.descriptionCheck.keep')}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+  const proposedType = currentAnalysis?.requestTypeId && typeId === currentAnalysis.requestTypeId;
+
   return (
     <div className="wizard" ref={topRef}>
       <ol className="stepper" aria-label={t('report.progress')}>
@@ -453,7 +613,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
                 <span className="name">
                   <span className="name-step">{t(`report.steps.${s}`)}</span>
                   {/* "Lloji": the chosen category under it, as soon as it is chosen. */}
-                  {s === 'type' && category && <span className="name-sub" title={chosenType}>{lang === 'en' ? category.nameEn : category.nameSq}</span>}
+                  {(s === 'type' || s === 'check') && category && <span className="name-sub" title={chosenType}>{lang === 'en' ? category.nameEn : category.nameSq}</span>}
                 </span>
               </button>
             </li>
@@ -462,56 +622,21 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       </ol>
       <div className="step-label">{t('report.stepOf', { n: step + 1, total: STEPS.length })} · {t(`report.steps.${stepName}`)}</div>
       {/* On phones the step names are hidden: the chosen category and problem are shown here instead. */}
-      {category && stepName !== 'type' && (
+      {category && stepName !== 'type' && stepName !== 'check' && (
         <div className="chosen-type"><CategoryIcon icon={category.icon} size={18} /><span>{chosenType}</span></div>
       )}
 
       {stepName === 'type' && (
         <section>
           <h2>{t('report.chooseType')}</h2>
-          {/* Before a choice: every category. After it: only the chosen one, large, with its problems under it. */}
-          {!category && (
-            <div className="category-grid" style={{ marginBottom: 20 }}>
-              {catalog.categories.map((c) => (
-                <button key={c.code} type="button" className="category-tile" onClick={() => { setCategoryCode(c.code); setTypeId(null); }}>
-                  <CategoryIcon icon={c.icon} size={30} />{lang === 'en' ? c.nameEn : c.nameSq}
-                </button>
-              ))}
-            </div>
+          {rules.aiChecks && !category && (
+            <button type="button" className="mode-switch" onClick={() => switchMode('photo')}>
+              <Icon name="camera" size={20} />
+              <span><strong>{t('report.analyze.switchToPhoto')}</strong><span className="mode-switch-hint">{t('report.analyze.switchToPhotoHint')}</span></span>
+              <Icon name="arrowRight" size={18} />
+            </button>
           )}
-          {category && (
-            <>
-              <div className="category-chosen">
-                <span className="category-chosen-icon"><CategoryIcon icon={category.icon} size={44} /></span>
-                <div className="category-chosen-name">
-                  <span className="label">{t('report.categoryLabel')}</span>
-                  <h3>{lang === 'en' ? category.nameEn : category.nameSq}</h3>
-                </div>
-                <button type="button" className="btn btn-sm btn-outline" onClick={() => { setCategoryCode(null); setTypeId(null); }}>
-                  <Icon name="arrowLeft" size={16} />{t('report.changeCategory')}
-                </button>
-              </div>
-              <p className="muted" style={{ margin: '0 0 8px' }}>{t('report.chooseProblem')}</p>
-              <ul className="type-list">
-                {category.types.map((ty) => (
-                  <li key={ty.id}>
-                    {/* The last choice, "Tjetër": a problem of this category that is not in the list. */}
-                    {isOtherChoice(ty.code) ? (
-                      <button type="button" className={`type-other${ty.id === typeId ? ' selected' : ''}`} aria-pressed={ty.id === typeId} onClick={() => { setTypeId(ty.id); goTo(1); }}>
-                        <span>{t('report.otherOption')}<span className="type-hint">{t('report.otherOptionHint')}</span></span>
-                        <Icon name="arrowRight" size={18} />
-                      </button>
-                    ) : (
-                      <button type="button" className={ty.id === typeId ? 'selected' : ''} aria-pressed={ty.id === typeId} onClick={() => { setTypeId(ty.id); goTo(1); }}>
-                        <span>{lang === 'en' ? ty.nameEn : ty.nameSq}</span>
-                        <span className="badge status-received">{t(`kind.${key(ty.kind)}`)}</span>
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+          {typePicker}
           {(showErrors ? currentErrors.requestTypeId : serverErrors.requestTypeId) && (
             <div className="field-error" role="alert"><Icon name="alert" size={14} />{showErrors ? currentErrors.requestTypeId : serverErrors.requestTypeId}</div>
           )}
@@ -586,13 +711,15 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
 
       {stepName === 'photo' && (
         <section>
-          <h2>{t('report.photoTitle')}</h2>
+          <h2>{photoMode ? t('report.analyze.photoTitle') : t('report.photoTitle')}</h2>
+          {photoMode && <p className="muted" style={{ marginTop: -4 }}>{t('report.analyze.photoIntro')}</p>}
           <PhotoInput
             value={photo}
             onChange={(p) => { setPhoto(p); setServerErrors((e) => ({ ...e, photo: undefined })); if (p) setPhotoRefused(null); }}
             required maxBytes={rules.maxUploadBytes}
             error={photoRefused === 'not_photo' ? t('report.photoCheck.notPhoto') : photoRefused ? t('report.photoCheck.inappropriate') : visibleError('photo')}
           />
+          {analysing && <p className="hint analysing" role="status"><span className="spinner" aria-hidden="true" />{t('report.analyze.analysing')}</p>}
           {currentCheck?.status === 'checking' && <p className="hint" role="status">{t('report.photoCheck.checking')}</p>}
           {currentCheck?.status === 'ok' && <p className="hint ok" role="status"><Icon name="check" size={14} /> {t('report.photoCheck.ok')}</p>}
           {currentCheck?.status === 'unchecked' && <p className="hint" role="status">{t('report.photoCheck.unchecked')}</p>}
@@ -607,32 +734,48 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               </div>
             </div>
           ))}
+          {photoMode && !analysing && (
+            <p className="small" style={{ marginTop: 16 }}>
+              <button type="button" className="link-button" onClick={() => switchMode('form')}>{t('report.analyze.switchToForm')}</button>
+            </p>
+          )}
+        </section>
+      )}
+
+      {stepName === 'check' && (
+        <section>
+          <h2>{t('report.analyze.checkTitle')}</h2>
+          <div className="check-intro">
+            {photoUrl && <img className="check-photo" src={photoUrl} alt={t('report.photoAdded')} />}
+            {currentAnalysis?.verdict === 'ok' && (currentAnalysis.requestTypeId || currentAnalysis.description) ? (
+              <p>{t('report.analyze.found')}</p>
+            ) : (
+              <p>{t('report.analyze.notFound')}</p>
+            )}
+          </div>
+          <h3 className="check-label">{t('report.analyze.typeLabel')}</h3>
+          {type && category && !showTypePicker ? (
+            <div className="check-type">
+              <span className="check-type-icon"><CategoryIcon icon={category.icon} size={28} /></span>
+              <span className="check-type-name">
+                <strong>{typeName(type, lang)}</strong>
+                <span className="muted small">{lang === 'en' ? category.nameEn : category.nameSq}{proposedType ? ` · ${t('report.analyze.proposed')}` : ''}</span>
+              </span>
+              <button type="button" className="btn btn-sm btn-outline" onClick={() => setShowTypePicker(true)}>{t('common.change')}</button>
+            </div>
+          ) : typePicker}
+          {visibleError('requestTypeId') && (
+            <div className="field-error" role="alert"><Icon name="alert" size={14} />{visibleError('requestTypeId')}</div>
+          )}
+          <div style={{ marginTop: 20 }}>{descriptionField}</div>
+          {proposedType && description === currentAnalysis?.description && <p className="hint">{t('report.analyze.editHint')}</p>}
         </section>
       )}
 
       {stepName === 'details' && (
         <section>
           <h2>{t('report.detailsTitle')}</h2>
-          <Field label={t('report.description')} hint={type && isOtherChoice(type.code) ? t('report.descriptionHintOther') : t('report.descriptionHint')} htmlFor="desc" error={visibleError('description')} required>
-            <textarea id="desc" value={description} maxLength={LIMITS.maxDescription} aria-required="true" aria-describedby="desc-count" onChange={(e) => setDescription(e.target.value)} />
-          </Field>
-          <p id="desc-count" className={`hint${description.trim().length < LIMITS.minDescription ? '' : ' ok'}`}>
-            {t('report.descriptionCount', { n: description.trim().length, min: LIMITS.minDescription })}
-          </p>
-          {currentDescriptionCheck?.status === 'unrelated' && !currentDescriptionCheck.confirmed && (
-            <div className="alert alert-warn" role="alert">
-              <p style={{ margin: 0 }}>
-                <strong>{t('report.descriptionCheck.unrelatedTitle')}</strong>{' '}
-                {t('report.descriptionCheck.unrelatedText', { type: type ? (lang === 'en' ? type.nameEn : type.nameSq) : '' })}
-              </p>
-              <div className="row" style={{ marginTop: 10 }}>
-                <button type="button" className="btn btn-sm" onClick={() => goTo(0)}>{t('report.descriptionCheck.changeType')}</button>
-                <button type="button" className="btn btn-sm btn-outline" onClick={() => { setDescriptionCheck({ ...currentDescriptionCheck, confirmed: true }); goTo(step + 1); }}>
-                  {t('report.descriptionCheck.keep')}
-                </button>
-              </div>
-            </div>
-          )}
+          {descriptionField}
         </section>
       )}
 
@@ -701,7 +844,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
                 <h3 id={`review-${item.step}`}>{t(`report.steps.${item.step}`)}</h3>
                 <div className="review-value">{item.value}</div>
                 <button
-                  type="button" className="btn btn-sm btn-outline" onClick={() => goTo(STEPS.indexOf(item.step))}
+                  type="button" className="btn btn-sm btn-outline" onClick={() => goTo(stepIndex(item.step))}
                   aria-label={`${t('common.change')}: ${t(`report.steps.${item.step}`)}`}
                 >
                   {t('common.change')}
@@ -722,8 +865,9 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
           <button type="button" className="btn btn-lg" onClick={submit} disabled={submitting}>{submitting ? t('report.sending') : t('report.send')}</button>
         ) : (
           (stepName !== 'type' || type) && (
-            <button type="button" className="btn" onClick={() => void next()} disabled={(stepName === 'photo' && currentCheck?.status === 'checking') || checkingDescription}>
-              {stepName === 'photo' && currentCheck?.status === 'checking' ? t('report.photoCheck.checking')
+            <button type="button" className="btn" onClick={() => void next()} disabled={(stepName === 'photo' && (currentCheck?.status === 'checking' || analysing)) || checkingDescription}>
+              {stepName === 'photo' && analysing ? t('report.analyze.analysingShort')
+                : stepName === 'photo' && currentCheck?.status === 'checking' ? t('report.photoCheck.checking')
                 : checkingDescription ? t('report.descriptionCheck.checking')
                   : <>{t('common.next')}<Icon name="arrowRight" size={18} /></>}
             </button>

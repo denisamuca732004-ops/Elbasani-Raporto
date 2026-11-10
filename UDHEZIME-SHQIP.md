@@ -215,6 +215,14 @@ Filtrat (sektori, prioriteti, me vonesë, kërkimi) ruhen në adresë. Numri te 
   - "I ndryshëm: dërgoje te sektori": dërgohet menjëherë.
 - `HOLD_DUPLICATES=false` e çaktivizon mbajtjen (testet e përdorin).
 
+## Raporto me foto (AI)
+
+- Kur AI është i ndezur (`AI_ENABLED=true` dhe `AI_API_KEY` në Vercel), faqja kryesore tregon butonin **Raporto me foto** dhe `/raporto` hapet me foton si hap të parë.
+- Banori bën foton; AI propozon **llojin e problemit** (pra edhe sektorin) dhe **një përshkrim të shkurtër** të asaj që duket. Banori i kontrollon në një ekran, mund t'i ndryshojë, pastaj vendos vendndodhjen dhe dërgon.
+- Lloji propozohet vetëm kur AI është mjaft i sigurt (≥ 60%); përndryshe banori e zgjedh vetë. AI nuk dërgon asgjë vetë.
+- Mbrojtjet mbeten: foto të papërshtatshme, dokumente ose screenshot refuzohen; dublikatat mbahen; sektori mund ta kthejë.
+- Pa AI (ose kur AI nuk përgjigjet) përdoret formulari i zakonshëm. Formulari hap pas hapi mbetet gjithmonë i disponueshëm (`/raporto?menyra=formular`).
+
 ## Vendosja në Vercel
 
 1. Lidhni repository-n në Vercel. Projekti njihet si Next.js, dhe `vercel.json` vendos build-in

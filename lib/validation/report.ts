@@ -247,6 +247,7 @@ export const descriptionCheckSchema = z.strictObject({
 });
 
 /** The photo step of the form: the uploaded photo and the problem type chosen in step 1. */
+export const photoAnalyzeSchema = z.strictObject({ photoKey: uploadKey });
 export const photoCheckSchema = z.strictObject({ photoKey: uploadKey, requestTypeId: z.coerce.number().int().positive().max(2_147_483_647) });
 export const feedbackSchema = z.strictObject({
   token: z.string().min(16).max(128),

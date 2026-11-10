@@ -50,6 +50,20 @@ export function verdictOf(answer: AiJson): PhotoVerdict {
   return 'ok';
 }
 
+/** The cache key of the check of `photoKey` for the type `typeCode` (also written by the photo analysis). */
+export const photoCheckCacheKey = (photoKey: string, typeCode: string): string => sha256(`photo-check:v1:${config().ai.model}:${photoKey}:${typeCode}`);
+
+/** The temporary upload, small (768 px, JPEG) for the AI. Null when it is not a readable image. */
+export async function smallPhoto(photoKey: string): Promise<Buffer | null> {
+  const original = await takeTemporaryUpload(photoKey);
+  try {
+    return await sharp(original, { limitInputPixels: 80_000_000 }).rotate()
+      .resize({ width: 768, height: 768, fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 70 }).toBuffer();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Checks the temporary upload `photoKey` (actions/upload.ts) against the chosen
  * report type. Throws only when the photo itself is missing or unreadable
@@ -60,18 +74,12 @@ export async function checkPhoto(photoKey: string, requestTypeId: number): Promi
   const type = await db.requestType.findUnique({ where: { id: requestTypeId }, include: { category: true } });
   if (!type || !type.active) return { verdict: 'unchecked' };
 
-  const cacheKey = sha256(`photo-check:v1:${config().ai.model}:${photoKey}:${type.code}`);
+  const cacheKey = photoCheckCacheKey(photoKey, type.code);
   const cached = await db.aiResult.findUnique({ where: { cacheKey } });
   if (cached) return { verdict: verdictOf(cached.output as AiJson) };
 
-  const original = await takeTemporaryUpload(photoKey);
-  let small: Buffer;
-  try {
-    small = await sharp(original, { limitInputPixels: 80_000_000 }).rotate()
-      .resize({ width: 768, height: 768, fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 70 }).toBuffer();
-  } catch {
-    return { verdict: 'unchecked' }; // not a readable image: storing it refuses it with its own message
-  }
+  const small = await smallPhoto(photoKey);
+  if (!small) return { verdict: 'unchecked' }; // not a readable image: storing it refuses it with its own message
   try {
     const answer = await chatJson({
       kind: 'photo-check',

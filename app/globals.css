@@ -1430,3 +1430,31 @@ a.row-link:hover .row-value { color: var(--d-accent); }
   .dash-filters, .dash-filters .field.inline { width: 100%; }
   .dash-filters select { min-width: 0; flex: 1; width: 100%; }
 }
+
+/* ── "Raporto me foto": the AI proposes the type and the description from the photo ── */
+.home-photo-cta { display: flex; align-items: center; gap: 14px; max-width: 560px; padding: 16px 18px; border-radius: 10px; background: var(--pub-green, #1A7F37); color: #fff; text-decoration: none; }
+.home-photo-cta:hover { background: var(--pub-green-hover, #146A2D); color: #fff; }
+.home-photo-cta > span { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.home-photo-cta strong { font-size: 1.2rem; line-height: 1.3; }
+.home-photo-cta > span > span { font-size: 0.95rem; opacity: 0.92; }
+.home-or { display: flex; align-items: center; gap: 12px; max-width: 560px; margin: 16px 0 10px; color: var(--pub-soft, #4B5D51); font-size: 0.95rem; }
+.home-or::before, .home-or::after { content: ''; flex: 1; height: 1px; background: var(--pub-line, #C9D7CD); }
+.mode-switch { display: flex; align-items: center; gap: 12px; width: 100%; margin: 0 0 20px; padding: 14px 16px; border: 1px solid var(--pub-line, #C9D7CD); border-radius: 10px; background: var(--pub-tint, #EAF3EC); color: var(--pub-ink, #16301F); font: inherit; text-align: left; cursor: pointer; }
+.mode-switch:hover { border-color: var(--pub-green, #1A7F37); }
+.mode-switch > svg:first-child { color: var(--pub-green, #1A7F37); flex: none; }
+.mode-switch > span { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.mode-switch-hint { font-size: 0.92rem; color: var(--pub-soft, #4B5D51); }
+.link-button { padding: 0; border: 0; background: none; color: var(--pub-green, #1A7F37); font: inherit; font-weight: 600; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.link-button:hover { color: var(--pub-green-hover, #146A2D); }
+.hint.analysing { display: flex; align-items: center; gap: 10px; }
+.hint.analysing .spinner { width: 16px; height: 16px; border-width: 2px; margin: 0; flex: none; }
+.check-intro { display: flex; align-items: flex-start; gap: 14px; margin: 0 0 22px; padding: 12px; border-radius: 10px; background: var(--pub-tint, #EAF3EC); }
+.check-intro p { margin: 0; line-height: 1.5; }
+.check-photo { width: 88px; height: 88px; object-fit: cover; border-radius: 8px; flex: none; }
+.check-label { margin: 0 0 8px; font-size: 1.05rem; }
+.check-type { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--pub-line, #C9D7CD); border-radius: 10px; background: #fff; }
+.check-type-icon { color: var(--pub-green, #1A7F37); display: flex; flex: none; }
+.check-type-name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+/* With "Raporto me foto" above it, the search button is the second choice. */
+.home-photo-cta ~ .home-search .home-report-btn { background: #fff; color: var(--pub-green, #1A7F37); box-shadow: inset 0 0 0 2px var(--pub-green, #1A7F37); }
+.home-photo-cta ~ .home-search .home-report-btn:hover { background: var(--pub-tint, #EAF3EC); }

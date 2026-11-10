@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useId, useMemo, useState, type FormEvent, type KeyboardEvent } from 'react';
 import Icon from '@/components/Icon';
-import { useCatalog, type TypeWithCategory } from '@/components/providers';
+import { useCatalog, useSettings, type TypeWithCategory } from '@/components/providers';
 import { CategoryIcon, TestBadge } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { mapStatusOf } from '@/lib/shared/domain';
@@ -38,6 +38,7 @@ interface Props {
 export default function Home({ numbers, fixed, points, frequent = [] }: Props) {
   const { t, lang } = useI18n();
   const { catalog, typeById } = useCatalog();
+  const { rules } = useSettings();
   // Only types still in the catalogue (active), in the order the server counted them.
   const frequentTypes = frequent.flatMap(({ id, count }) => { const ty = typeById(id); return ty ? [{ ty, count }] : []; });
 
@@ -52,6 +53,17 @@ export default function Home({ numbers, fixed, points, frequent = [] }: Props) {
               <span className="accent">{t('home.hero.l3')}</span>
             </h1>
             <p className="home-lead">{t('home.hero.text')}</p>
+            {/* With the AI on: start from a photo (the type and the description are proposed from it). */}
+            {rules.aiChecks && (
+              <>
+                <Link href="/raporto" className="home-photo-cta">
+                  <Icon name="camera" size={24} />
+                  <span><strong>{t('home.hero.photoButton')}</strong><span>{t('home.hero.photoHint')}</span></span>
+                  <Icon name="arrowRight" size={20} />
+                </Link>
+                <div className="home-or" aria-hidden="true"><span>{t('home.hero.orType')}</span></div>
+              </>
+            )}
             <ProblemSearch />
             <nav className="home-chips" aria-label={t('home.hero.categories')}>
               {catalog.categories.map((c) => (
@@ -156,7 +168,7 @@ function ProblemSearch() {
   const matches = useMemo(() => matchTypes(types, q, 6), [types, q]);
   const showList = !closed && matches.length > 0;
 
-  const open = (ty: TypeWithCategory | undefined) => router.push(ty ? `/raporto?lloji=${ty.id}` : '/raporto');
+  const open = (ty: TypeWithCategory | undefined) => router.push(ty ? `/raporto?lloji=${ty.id}` : '/raporto?menyra=formular');
   function submit(e: FormEvent) {
     e.preventDefault();
     open(matches[active] ?? matches[0]);

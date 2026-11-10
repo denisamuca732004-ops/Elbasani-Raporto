@@ -8,7 +8,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('nav.report') };
 }
 
-/** ?kategoria=streets opens a category, ?lloji=12 opens a report type (links from the home page search). */
+/**
+ * ?kategoria=streets opens a category, ?lloji=12 opens a report type (links from the home page search).
+ * Otherwise "Raporto me foto" (with the AI on; without it the normal form), or the form with ?menyra=formular.
+ */
 export default async function ReportPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { t } = await getT();
   const params = flatParams(await searchParams);
@@ -18,7 +21,10 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
     <div className="page">
       <div className="container">
         <h1 className="sr-only">{t('nav.report')}</h1>
-        <ReportWizard initialCategory={category} initialType={Number.isInteger(typeId) && typeId > 0 ? typeId : undefined} />
+        <ReportWizard
+          initialCategory={category} initialType={Number.isInteger(typeId) && typeId > 0 ? typeId : undefined}
+          initialMode={params.menyra === 'formular' ? 'form' : 'photo'}
+        />
       </div>
     </div>
   );

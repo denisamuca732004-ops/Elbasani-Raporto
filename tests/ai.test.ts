@@ -12,6 +12,7 @@ import { getReport, resolveReport } from '@/lib/server/services/report';
 import { createCitizenReport, getPublicCase } from '@/lib/server/services/publicReport';
 import { testAiConnection } from '@/lib/server/ai';
 import { checkDescription } from '@/lib/server/services/descriptionCheck';
+import { analyzePhoto } from '@/lib/server/services/photoAnalyze';
 import { checkPhoto } from '@/lib/server/services/photoCheck';
 import { changePriority, changeStatus } from '@/lib/server/services/report';
 import { extractFromText } from '@/lib/server/services/triage';
@@ -25,6 +26,8 @@ let photoAnswer: Record<string, unknown> = { safe: true, matches: true, kind: 's
 let photoRefuses = false;
 /** What the fake AI answers to the description check. */
 let descriptionAnswer: Record<string, unknown> = { meaningful: true, abusive: false, matches: true };
+/** What the fake AI answers to "Raporto me foto". */
+let analyzeAnswer: Record<string, unknown> = {};
 let hold: Promise<void> | null = null; // lets a test keep the AI "thinking"
 const fake = http.createServer((req, res) => {
   let raw = '';
@@ -33,7 +36,7 @@ const fake = http.createServer((req, res) => {
     const body = JSON.parse(raw);
     calls.push({ auth: req.headers.authorization, body });
     // The hold keeps the check of the whole report "thinking", not the checks of the form.
-    if (hold && !/check a photo|check the description/.test(String(body.messages[0].content))) await hold;
+    if (hold && !/check a photo|check the description|starting from a photo/.test(String(body.messages[0].content))) await hold;
     if (mode === 'error') {
       res.writeHead(500).end('boom');
       return;
@@ -56,6 +59,8 @@ const fake = http.createServer((req, res) => {
     }
     if (system.includes('check a photo')) {
       answer = photoAnswer;
+    } else if (system.includes('starting from a photo')) {
+      answer = analyzeAnswer;
     } else if (system.includes('check the description')) {
       answer = descriptionAnswer;
     } else if (system.includes('intake assistant')) {
@@ -355,6 +360,56 @@ describe('"Provo lidhjen me AI" in the panel', () => {
       assert.equal((await testAiConnection()).problem, 'quota');
       mode = 'error';
       assert.equal((await testAiConnection()).problem, 'other');
+    } finally {
+      mode = 'ok';
+    }
+  });
+});
+
+describe('"Raporto me foto": the type and the description proposed from the photo', () => {
+  const isAnalysis = (c: (typeof calls)[number]) => /starting from a photo/.test(String(c.body.messages[0]!.content));
+  const isPhotoCheck = (c: (typeof calls)[number]) => /check a photo/.test(String(c.body.messages[0]!.content));
+
+  test('a clear photo gets a type and a description, and sending it asks the AI no second photo check', async () => {
+    analyzeAnswer = { safe: true, kind: 'scene', problemVisible: true, typeCode: 'streets.pothole', confidence: 88, descriptionSq: 'Gropë e madhe në mes të rrugës, me ujë brenda.' };
+    const photoKey = await uploadPhoto(await jpeg('#3A4A3A'));
+    const before = calls.length;
+    const found = await analyzePhoto(photoKey);
+    assert.equal(found.verdict, 'ok');
+    assert.equal(found.requestTypeId, await typeId('streets.pothole'));
+    assert.equal(found.confidence, 88);
+    assert.equal(found.description, 'Gropë e madhe në mes të rrugës, me ujë brenda.');
+    const asked = calls.slice(before);
+    assert.equal(asked.filter(isAnalysis).length, 1);
+    assert.match(JSON.stringify(asked[0]!.body.messages[1]!.content), /streets\.pothole/, 'the model gets the catalogue of types');
+    assert.deepEqual(await analyzePhoto(photoKey), found, 'the same photo is not analysed twice');
+    const result = await createCitizenReport(await citizenData({ photoKey, description: found.description }));
+    assert.ok(result.caseNumber);
+    assert.equal(calls.slice(before).filter(isPhotoCheck).length, 0, 'the analysis counts as the photo check of the proposed type');
+  });
+
+  test('an unsure model proposes no type (the resident chooses), an unknown code neither', async () => {
+    analyzeAnswer = { safe: true, kind: 'scene', problemVisible: true, typeCode: 'streets.pothole', confidence: 40, descriptionSq: 'Diçka në trotuar, nuk duket qartë.' };
+    const unsure = await analyzePhoto(await uploadPhoto(await jpeg('#3A4A3B')));
+    assert.equal(unsure.requestTypeId, null);
+    assert.equal(unsure.description, 'Diçka në trotuar, nuk duket qartë.');
+    analyzeAnswer = { safe: true, kind: 'scene', problemVisible: true, typeCode: 'roads.made_up', confidence: 95, descriptionSq: 'Gropë në rrugë.' };
+    assert.equal((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A3C')))).requestTypeId, null);
+  });
+
+  test('an inappropriate photo or a screenshot is refused, a photo without a problem gets no proposal', async () => {
+    analyzeAnswer = { safe: false, kind: 'people', problemVisible: false, typeCode: null, confidence: 0, descriptionSq: '' };
+    assert.equal((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A3D')))).verdict, 'inappropriate');
+    analyzeAnswer = { safe: true, kind: 'screenshot', problemVisible: false, typeCode: null, confidence: 0, descriptionSq: '' };
+    assert.equal((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A3E')))).verdict, 'not_photo');
+    analyzeAnswer = { safe: true, kind: 'people', problemVisible: false, typeCode: 'streets.pothole', confidence: 90, descriptionSq: 'Një person buzëqesh.' };
+    assert.deepEqual(await analyzePhoto(await uploadPhoto(await jpeg('#3A4A3F'))), { verdict: 'unrelated', requestTypeId: null, confidence: 0, description: '' });
+  });
+
+  test('without an answer from the AI the form simply goes on', async () => {
+    mode = 'error';
+    try {
+      assert.deepEqual(await analyzePhoto(await uploadPhoto(await jpeg('#3A4A40'))), { verdict: 'unchecked', requestTypeId: null, confidence: 0, description: '' });
     } finally {
       mode = 'ok';
     }
