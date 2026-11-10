@@ -1465,3 +1465,14 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 .home-photo img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
 .home-photo:hover { border-color: var(--pub-green, #1A7F37); }
 .home-photo .home-map-pill { left: 16px; bottom: 16px; background: #fff; color: var(--pub-ink, #16301F); box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
+.ai-budget { display: grid; gap: 8px; }
+.ai-budget-bar { height: 6px; border-radius: 3px; background: #E6EAE8; overflow: hidden; max-width: 420px; }
+.ai-budget-bar span { display: block; height: 100%; background: #41644A; }
+.ai-budget-bar.high span { background: #B45309; }
+.hp-field { position: absolute; left: -10000px; width: 1px; height: 1px; opacity: 0; }
+.dup-photos { display: flex; align-items: flex-start; gap: 6px; margin: 6px 0 4px; font-size: 0.9rem; }
+.dup-photos svg { flex: none; margin-top: 3px; }
+.dup-photos.same { color: #1F6B3E; }
+.dup-photos.different { color: #8A5300; }
+.draft-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: -4px 0 10px; }
+.draft-btn { padding-left: 0; }

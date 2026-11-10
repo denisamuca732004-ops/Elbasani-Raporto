@@ -18,6 +18,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { placeAt, searchPlaces } from '@/lib/server/geocoder';
+import { checkFormGuard, issueFormToken } from '@/lib/server/botGuard';
 import { enforceRateLimit } from '@/lib/server/ratelimit';
 import { requireAdmin, requireStaff } from '@/lib/server/session';
 import * as publicReports from '@/lib/server/services/publicReport';
@@ -25,6 +26,7 @@ import * as duplicates from '@/lib/server/services/duplicates';
 import * as reports from '@/lib/server/services/report';
 import * as transfers from '@/lib/server/services/transfer';
 import { checkDescription } from '@/lib/server/services/descriptionCheck';
+import { draftNote } from '@/lib/server/services/noteDraft';
 import { analyzePhoto } from '@/lib/server/services/photoAnalyze';
 import { checkPhoto } from '@/lib/server/services/photoCheck';
 import { extractFromText } from '@/lib/server/services/triage';
@@ -45,11 +47,24 @@ function refreshPanel(id?: string) {
 
 /* ─────────────── Residents (no account) ─────────────── */
 
-/** Creates a report only when every step is complete (the service checks each field and returns the wizard step). */
+/** The signed token of the report form, asked for when the form opens (lib/server/botGuard.ts). */
+export async function reportFormTokenAction() {
+  return run(async () => ({ token: issueFormToken() }));
+}
+
+/**
+ * Creates a report only when every step is complete (the service checks each field and returns the wizard step).
+ * Against scripts: the hidden field, the form token and its age, and limits per address and per token.
+ */
 export async function createReportAction(input: unknown) {
   return run(async () => {
-    await enforceRateLimit('report', await clientIp());
-    return publicReports.createCitizenReport(input);
+    const ip = await clientIp();
+    await enforceRateLimit('report', ip);
+    await enforceRateLimit('reportDay', ip);
+    const { website, formToken, ...data } = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>;
+    checkFormGuard({ website, formToken });
+    await enforceRateLimit('reportToken', String(formToken));
+    return publicReports.createCitizenReport(data);
   });
 }
 
@@ -307,5 +322,17 @@ export async function dismissDuplicateAction(id: string) {
     await duplicates.dismissDuplicate(user, parseInput(reportId, id));
     refreshPanel(id);
     return { ok: true };
+  });
+}
+
+const draftSchema = z.strictObject({ kind: z.enum(['resolve', 'reject', 'message']), notes: z.string().max(1000).default('') });
+
+/** Panel: the AI proposes the note for the resident (fixed, refused, message). The person edits and sends it. */
+export async function draftNoteAction(id: string, input: unknown) {
+  return run(async () => {
+    const user = await requireStaff();
+    await enforceRateLimit('draft', user.id);
+    const data = parseInput(draftSchema, input);
+    return draftNote(user, parseInput(reportId, id), data.kind, data.notes);
   });
 }

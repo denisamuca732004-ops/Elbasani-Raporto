@@ -82,6 +82,7 @@ function duplicateHint(r: BoardRow): DuplicateHint | null {
     id: d.id, caseNumber: d.caseNumber, typeNameSq: d.requestType.nameSq, typeNameEn: d.requestType.nameEn, address: d.address,
     meters: pins ? Math.round(distanceMeters(r.latitude!, r.longitude!, d.latitude!, d.longitude!)) : null,
     createdAt: d.createdAt.toISOString(), status: d.status, supporters: d.supportersCount,
+    photos: r.dupPhotoSame === null ? null : { same: r.dupPhotoSame, confidence: r.dupPhotoConfidence ?? 50, reason: r.dupPhotoReason },
   };
 }
 

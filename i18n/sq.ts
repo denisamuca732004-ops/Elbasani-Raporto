@@ -349,6 +349,7 @@ const sq = {
   board: {
     dup: {
       title: 'Mund të jetë i njëjti problem si', meters: '{n} m larg', sameAddress: 'e njëjta adresë', supporters: { one: '1 mbështetës', other: '{n} mbështetës' },
+      photosSame: 'Krahasimi i fotove (AI): duket i njëjti problem ({n}%).', photosDifferent: 'Krahasimi i fotove (AI): duket problem tjetër ({n}%).',
       held: 'Nuk iu dërgua sektorit, që të mos e marrë dy herë të njëjtin problem.',
       merge: 'I njëjti: bashkoje me {n}', different: 'I ndryshëm: dërgoje te sektori',
     },
@@ -384,6 +385,14 @@ const sq = {
   },
   sectors: { emptyTitle: 'Ende nuk ka sektorë.', emptyText: 'Shtoni sektorët e Bashkisë te faqja e sektorëve (/admin/departments).' },
   dashboard: {
+      repeats: {
+        title: 'Vende ku problemi përsëritet',
+        intro: 'I njëjti problem 3 ose më shumë herë brenda 60 m, në 90 ditët e fundit. Këtu ia vlen një zgjidhje e qëndrueshme, jo vetëm riparim.',
+        none: 'Asnjë vend me të njëjtin problem të përsëritur.',
+        count: { one: '1 raportim', other: '{n} raportime' },
+        sendSummary: 'Dërgo përmbledhjen javore te emaili im',
+        sent: 'U dërgua. Çdo të hënë në mëngjes ajo u shkon automatikisht të gjithë administratorëve.',
+      },
     period: 'Periudha', periods: { week: 'Java', month: 'Muaji', year: 'Viti' },
     sector: 'Sektori', allSectors: 'Të gjithë sektorët', wholeMunicipality: 'E gjithë Bashkia',
     kpis: 'Treguesit për periudhën: {period}',
@@ -432,6 +441,7 @@ const sq = {
     cols: { report: 'Raportimi', priority: 'Prioriteti', status: 'Statusi', sector: 'Sektori', place: 'Vendi', due: 'Afati', received: 'Marrë më' },
   },
   detail: {
+    draft: { propose: 'Propozo tekstin me AI', improve: 'Përmirëso tekstin me AI', busy: 'AI po shkruan…', hint: 'Lexojeni dhe ndryshojeni para se ta dërgoni.' },
     backToList: 'Kthehu te lista', otherSector: 'Ky raportim i përket një sektori tjetër.', notFound: 'Raportimi nuk u gjet ose është fshirë.',
     sector: 'Sektori', publicPage: 'Faqja publike', report: 'Raportimi', noDescription: 'Pa përshkrim.',
     address: 'Adresa', area: 'Zona', category: 'Kategoria', channel: 'Kanali', received: 'Marrë më', due: 'Afati',
@@ -630,7 +640,15 @@ const sq = {
       aiOn: 'Aktive', aiModel: 'Modeli {model} · {host}',
       aiOff: 'AI nuk është aktive: mungon {missing} te Vercel → Settings → Environment Variables. Pa AI fotot nuk kontrollohen, por nuk publikohen para verifikimit.',
       aiTest: 'Provo lidhjen me AI', aiWorks: 'Lidhja me AI punon.',
+      budget: {
+        month: 'Ky muaj:',
+        used: '{calls} thirrje, rreth {cost} nga kufiri {budget}.',
+        noLimit: '{calls} thirrje, rreth {cost}. Pa kufi mujor.',
+        hint: 'Kufiri vendoset te Vercel me AI_MONTHLY_BUDGET_USD. Kur arrihet, AI ndalet deri në fillim të muajit tjetër dhe faqja vazhdon me formularin e zakonshëm.',
+        reached: 'Kufiri mujor u arrit: AI është ndalur deri në fillim të muajit. Raportimet vazhdojnë pa AI.',
+      },
       aiProblems: {
+        budget: 'Kufiri mujor i shpenzimeve për AI u arrit. AI rinis në fillim të muajit, ose rriteni kufirin AI_MONTHLY_BUDGET_USD te Vercel.',
         disabled: 'AI nuk është aktive.',
         key: 'Çelësi nuk pranohet. Krijoni një çelës të ri te OpenAI dhe vendoseni te Vercel si AI_API_KEY, pastaj Redeploy.',
         quota: 'Llogaria e OpenAI nuk ka kredit ose ka arritur kufirin. Shtoni kredit te OpenAI → Settings → Billing.',

@@ -223,6 +223,14 @@ Filtrat (sektori, prioriteti, me vonesë, kërkimi) ruhen në adresë. Numri te 
 - Mbrojtjet mbeten: foto të papërshtatshme, dokumente ose screenshot refuzohen; dublikatat mbahen; sektori mund ta kthejë.
 - Pa AI (ose kur AI nuk përgjigjet) përdoret formulari i zakonshëm. Formulari hap pas hapi mbetet gjithmonë i disponueshëm (`/raporto?menyra=formular`).
 
+## AI në panel dhe mbrojtjet (nëntor 2026)
+
+- **Kufiri mujor i AI:** `AI_MONTHLY_BUDGET_USD` (parazgjedhur 10 $). Sistemi numëron çdo thirrje dhe kur arrihet kufiri AI ndalet deri në fillim të muajit; faqja vazhdon me formularin e zakonshëm. Shpenzimi i muajit shihet te Administrimi → Integrimi.
+- **Mbrojtja nga botët:** formulari ka një fushë të fshehur, një token të nënshkruar nga serveri (raportimi nuk pranohet më shpejt se 4 sekonda nga hapja e formularit), dhe kufij për adresë (`RATE_LIMIT_REPORTS_PER_HOUR`, `RATE_LIMIT_REPORTS_PER_DAY`) dhe për formular.
+- **Dublikatat sipas fotos:** kur një raportim mbahet si i njëjti problem, AI krahason dy fotot dhe te "Të reja" shfaqet "Krahasimi i fotove (AI): duket i njëjti problem (90%)". Vendimi mbetet i administratorit.
+- **Përmbledhja javore:** çdo të hënë në mëngjes administratorët marrin një email me shifrat e javës, sektorët, zonat dhe vendet ku problemi përsëritet (3+ herë brenda 60 m në 90 ditë). Shifrat i numëron sistemi; AI shkruan vetëm paragrafin e parë. Te Paneli ka butonin "Dërgo përmbledhjen javore te emaili im" dhe listën e vendeve ku problemi përsëritet.
+- **Tekste për banorët me AI:** te raportimi, nën "Çfarë u bë?", arsyen e refuzimit dhe mesazhin për banorin, butoni "Propozo/Përmirëso tekstin me AI". AI vetëm propozon; stafi e lexon, e ndryshon dhe e dërgon vetë.
+
 ## Vendosja në Vercel
 
 1. Lidhni repository-n në Vercel. Projekti njihet si Next.js, dhe `vercel.json` vendos build-in

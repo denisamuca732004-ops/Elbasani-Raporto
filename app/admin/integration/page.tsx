@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Integration from '@/components/admin/Integration';
 import { getT } from '@/i18n/server';
-import { aiSettingsSummary } from '@/lib/server/ai';
+import { aiSettingsSummary, aiUsageThisMonth } from '@/lib/server/ai';
 import { config } from '@/lib/server/env';
 import { pageAdmin } from '@/lib/server/pageData';
 
@@ -12,5 +12,6 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function IntegrationPage() {
   await pageAdmin('/admin/integration');
-  return <Integration origin={config().appUrl} ai={aiSettingsSummary()} />;
+  const { calls, costUsd, budgetUsd, reached } = await aiUsageThisMonth();
+  return <Integration origin={config().appUrl} ai={aiSettingsSummary()} usage={{ calls, costUsd, budgetUsd, reached }} />;
 }

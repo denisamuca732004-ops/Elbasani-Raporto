@@ -13,6 +13,7 @@ import * as admin from '@/lib/server/services/admin';
 import * as guide from '@/lib/server/services/guide';
 import { runDaily } from '@/lib/server/services/maintenance';
 import * as users from '@/lib/server/services/users';
+import { sendWeeklySummary } from '@/lib/server/services/weeklySummary';
 import {
   categoryPatchSchema, categorySchema, departmentPatchSchema, departmentSchema, guideEntryPatchSchema, guideEntrySchema, localityPatchSchema, localitySchema,
   neighbourhoodPatchSchema, neighbourhoodSchema,
@@ -196,6 +197,14 @@ export async function testAiAction() {
   return run(async () => {
     await requireAdmin();
     return testAiConnection();
+  });
+}
+
+/** Paneli → "Dërgoje te emaili im": this week's summary, now, only to the admin who asked. */
+export async function sendWeeklySummaryNowAction() {
+  return run(async () => {
+    const user = await requireAdmin();
+    return { sent: await sendWeeklySummary(new Date(), user.email) };
   });
 }
 

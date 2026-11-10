@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { aiAvailable } from '@/lib/server/ai';
 import Link from 'next/link';
 import Icon from '@/components/Icon';
 import ReportDetail, { type AssignablePerson } from '@/components/panel/ReportDetail';
@@ -55,5 +56,5 @@ export default async function ReportPage({ params, searchParams }: Props) {
   const assignable: AssignablePerson[] = report.permissions.canAssign
     ? (await assignableUsers(principal, id).catch(() => [])).map((a) => ({ id: a.id, name: a.name, role: a.role }))
     : [];
-  return <ReportDetail key={report.id} principal={principal} report={report} assignable={assignable} backTo={backTo} />;
+  return <ReportDetail key={report.id} principal={principal} report={report} assignable={assignable} backTo={backTo} aiDrafts={await aiAvailable()} />;
 }

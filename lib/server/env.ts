@@ -28,6 +28,8 @@ function str(fallback?: string) {
 }
 const int = (fallback: number, min = 0, max = Number.MAX_SAFE_INTEGER) =>
   z.preprocess(blank, z.coerce.number().int().min(min).max(max).default(fallback));
+const num = (fallback: number, min = 0, max = Number.MAX_SAFE_INTEGER) =>
+  z.preprocess(blank, z.coerce.number().min(min).max(max).default(fallback));
 const bool = (fallback: boolean) =>
   z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? ['1', 'true', 'yes', 'on'].includes(v.trim().toLowerCase()) : v), z.boolean().default(fallback));
 const list = (fallback: string) =>
@@ -82,6 +84,11 @@ const EnvSchema = z.object({
   AI_TIMEOUT_MS: int(20000, 1000, 120000),
   AI_VERIFY_THRESHOLD: int(85, 0, 100),
   AI_REVIEW_THRESHOLD: int(50, 0, 100),
+  /** The most the AI may cost in a month (US dollars, estimated from the tokens). 0 = no limit. */
+  AI_MONTHLY_BUDGET_USD: num(10, 0, 100000),
+  /** Prices per million tokens of AI_MODEL (gpt-4o-mini by default; images are counted as input tokens). */
+  AI_PRICE_INPUT_PER_MTOK: num(0.15, 0, 1000),
+  AI_PRICE_OUTPUT_PER_MTOK: num(0.6, 0, 1000),
   CASE_PREFIX: str('EL'),
   DUPLICATE_RADIUS_METERS: int(50, 5, 1000),
   /** Keep a new report that repeats an open one nearby for the admin, instead of e-mailing the sector. */
@@ -91,6 +98,8 @@ const EnvSchema = z.object({
   SERVICE_AREA_BBOX: bbox,
   RATE_LIMIT_REPORTS_PER_HOUR: int(10, 1),
   RATE_LIMIT_LOGINS_PER_15MIN: int(10, 1),
+  /** New reports from one address in a day (on top of the hourly limit). */
+  RATE_LIMIT_REPORTS_PER_DAY: int(25, 1),
   EMBED_ALLOWED_ORIGINS: list('https://elbasani.gov.al,https://www.elbasani.gov.al'),
 });
 
@@ -178,6 +187,9 @@ function load() {
       timeoutMs: e.AI_TIMEOUT_MS,
       verifyThreshold: e.AI_VERIFY_THRESHOLD,
       reviewThreshold: e.AI_REVIEW_THRESHOLD,
+      monthlyBudgetUsd: e.AI_MONTHLY_BUDGET_USD,
+      priceInputPerMTok: e.AI_PRICE_INPUT_PER_MTOK,
+      priceOutputPerMTok: e.AI_PRICE_OUTPUT_PER_MTOK,
     },
     geocoder: {
       url: e.GEOCODER_URL.toLowerCase() === 'off' ? null : e.GEOCODER_URL.replace(/\/$/, ''),
@@ -193,7 +205,7 @@ function load() {
       timezone: 'Europe/Tirane',
       serviceArea: e.SERVICE_AREA_BBOX,
     },
-    rateLimit: { reportsPerHour: e.RATE_LIMIT_REPORTS_PER_HOUR, loginsPer15Min: e.RATE_LIMIT_LOGINS_PER_15MIN },
+    rateLimit: { reportsPerHour: e.RATE_LIMIT_REPORTS_PER_HOUR, reportsPerDay: e.RATE_LIMIT_REPORTS_PER_DAY, loginsPer15Min: e.RATE_LIMIT_LOGINS_PER_15MIN },
     embedOrigins: e.EMBED_ALLOWED_ORIGINS,
   });
 }

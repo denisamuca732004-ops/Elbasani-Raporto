@@ -183,6 +183,8 @@ export interface DuplicateHint {
   createdAt: string;
   status: Status;
   supporters: number;
+  /** The AI's comparison of the two photos; null without the AI or without an answer. */
+  photos: { same: boolean; confidence: number; reason: string | null } | null;
 }
 
 export interface Board {
@@ -302,4 +304,11 @@ export interface PublicSettings extends AppSettings {
     /** The photo and the description are checked by the AI while the report is created (the AI is on). */
     aiChecks: boolean;
   };
+}
+
+/** A place where the same kind of problem keeps being reported (lib/server/services/weeklySummary.ts). */
+export interface RepeatPlace {
+  typeNameSq: string; typeNameEn: string; place: string; count: number;
+  /** The most recent report there (opens it in the panel), and up to 5 case numbers. */
+  latestId: string; caseNumbers: string[]; latitude: number; longitude: number;
 }

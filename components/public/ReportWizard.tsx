@@ -40,6 +40,7 @@ import { ActionFailure, call } from '@/lib/client/action';
 import { distanceLabel, insideArea, key, phoneDigits, typeName, type LatLng } from '@/lib/client/format';
 import { isMine, rememberMine, rememberSupported } from '@/lib/client/myReports';
 import { newClientRef, queueReport } from '@/lib/client/offlineQueue';
+import { formToken, prefetchFormToken } from '@/lib/client/formToken';
 import { uploadPhoto } from '@/lib/client/upload';
 import { LIMITS, isOtherChoice } from '@/lib/shared/domain';
 import { looksLikeGibberish } from '@/lib/shared/text';
@@ -128,6 +129,9 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [clientRef] = useState(newClientRef);
   const uploaded = useRef<{ photo: Blob; key: string } | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
+  // The hidden field against bots (people never see it, so it stays empty).
+  const honeypot = useRef<HTMLInputElement>(null);
+  useEffect(() => { prefetchFormToken(); }, []);
 
   // A change made by the resident clears the server's message for that step.
   useEffect(() => {
@@ -420,6 +424,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       }),
       channel: embedded ? 'EMBED' : standalone ? 'APP' : 'WEB',
       clientRef,
+      website: honeypot.current?.value ?? '',
+      formToken: navigator.onLine ? await formToken().catch(() => undefined) : undefined,
     };
     try {
       if (!navigator.onLine) throw new ActionFailure({ code: 'NETWORK', status: 0, message: 'network' });
@@ -603,6 +609,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
 
   return (
     <div className="wizard" ref={topRef}>
+      <input ref={honeypot} type="text" name="website" className="hp-field" tabIndex={-1} autoComplete="off" aria-hidden="true" defaultValue="" />
       <ol className="stepper" aria-label={t('report.progress')}>
         {STEPS.map((s, i) => {
           const done = i < step;

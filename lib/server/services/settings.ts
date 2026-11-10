@@ -3,7 +3,7 @@ import 'server-only';
 import type { AppSettings, Branding, PublicSettings } from '@/lib/shared/types';
 import { LIMITS } from '@/lib/shared/domain';
 import type { SettingsInput } from '@/lib/validation/admin';
-import { aiEnabled } from '../ai';
+import { aiAvailable } from '../ai';
 import { CACHE_KEYS, cached, invalidate } from '../cache';
 import { db } from '../db';
 import { config } from '../env';
@@ -32,7 +32,7 @@ export async function getPublicSettings(): Promise<PublicSettings> {
       minDescription: LIMITS.minDescription,
       minAddress: LIMITS.minAddress,
       maxUploadBytes: c.storage.maxBytes,
-      aiChecks: aiEnabled(),
+      aiChecks: await aiAvailable(),
     },
   };
 }

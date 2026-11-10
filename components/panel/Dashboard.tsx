@@ -7,6 +7,7 @@
  * The period and department live in the address (?period=week&departmentId=3).
  */
 import Link from 'next/link';
+import { sendWeeklySummaryNowAction } from '@/actions/admin';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import TrendChart from '@/components/charts/TrendChart';
@@ -15,10 +16,11 @@ import { useCatalog } from '@/components/providers';
 import { Segmented } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { departmentName, formatDate, key } from '@/lib/client/format';
+import { call } from '@/lib/client/action';
 import { storage } from '@/lib/client/storage';
 import type { DashboardResult } from '@/lib/server/services/dashboard';
 import { PRIORITIES, STATUSES, type DashboardPeriod } from '@/lib/shared/domain';
-import type { Principal } from '@/lib/shared/types';
+import type { Principal, RepeatPlace } from '@/lib/shared/types';
 
 const ONBOARDING_KEY = 'er_onboarding_hidden';
 
@@ -118,6 +120,47 @@ function CountList({ rows, empty }: { rows: Array<{ key: string; label: string; 
   );
 }
 
+/** Where the same problem keeps coming back (3+ reports of one kind within 60 m in 90 days), and the weekly e-mail. */
+function RepeatPlaces({ places }: { places: RepeatPlace[] }) {
+  const { t, lang } = useI18n();
+  const [state, setState] = useState<'idle' | 'busy' | 'sent' | 'error'>('idle');
+  async function sendNow() {
+    setState('busy');
+    try {
+      await call(sendWeeklySummaryNowAction());
+      setState('sent');
+    } catch {
+      setState('error');
+    }
+  }
+  return (
+    <section className="card">
+      <div className="row-between" style={{ alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <h2 className="card-title" style={{ marginBottom: 4 }}>{t('dashboard.repeats.title')}</h2>
+          <p className="small muted" style={{ margin: 0 }}>{t('dashboard.repeats.intro')}</p>
+        </div>
+        <button type="button" className="btn btn-sm btn-outline" onClick={sendNow} disabled={state === 'busy'}>
+          <Icon name="mail" size={16} />{state === 'busy' ? t('common.wait') : t('dashboard.repeats.sendSummary')}
+        </button>
+      </div>
+      {state === 'sent' && <p className="small" role="status" style={{ color: '#1F6B3E' }}>{t('dashboard.repeats.sent')}</p>}
+      {state === 'error' && <p className="small" role="alert" style={{ color: '#A61D12' }}>{t('errors.generic')}</p>}
+      {places.length === 0 ? <p className="muted" style={{ marginBottom: 0 }}>{t('dashboard.repeats.none')}</p> : (
+        <ul className="row-list">
+          {places.map((p) => (
+            <li key={p.latestId} className="row-plain">
+              <span className="row-name"><Link href={`/admin/reports/${p.latestId}`}>{lang === 'en' ? p.typeNameEn : p.typeNameSq}</Link></span>
+              <span className="row-note">{p.place}</span>
+              <span className="row-value">{t('dashboard.repeats.count', { n: p.count })}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function Onboarding({ info }: { info: OnboardingInfo }) {
   const { t, lang } = useI18n();
   const [hidden, setHidden] = useState(true);
@@ -143,7 +186,9 @@ function Onboarding({ info }: { info: OnboardingInfo }) {
   );
 }
 
-export default function Dashboard({ principal, data, onboarding }: { principal: Principal; data: DashboardResult | null; onboarding: OnboardingInfo | null }) {
+export default function Dashboard({ principal, data, onboarding, repeats = null }: {
+  principal: Principal; data: DashboardResult | null; onboarding: OnboardingInfo | null; repeats?: RepeatPlace[] | null;
+}) {
   const { t, lang } = useI18n();
   const { departments } = useCatalog();
   const router = useRouter();
@@ -238,6 +283,8 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
               <CountList rows={data.byNeighbourhood.map((n) => ({ key: n.name, label: n.name, value: n.received }))} empty={t('dashboard.empty')} />
             </section>
           </div>
+
+          {admin && repeats && <RepeatPlaces places={repeats} />}
         </div>
       )}
     </div>

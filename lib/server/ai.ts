@@ -58,6 +58,66 @@ export function parseJsonLoose(text: unknown): AiJson {
   throw new AiUnavailableError('AI answer was not valid JSON');
 }
 
+/* ── The monthly spending limit ── */
+
+/** "2026-11": the month in Elbasan's time zone. */
+export function usageMonth(now = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Tirane', year: 'numeric', month: '2-digit' }).format(now).slice(0, 7);
+}
+
+/** Estimated cost in US dollars of the given tokens, at the configured prices. */
+export function estimateCostUsd(inputTokens: number, outputTokens: number): number {
+  const ai = config().ai;
+  return (inputTokens * ai.priceInputPerMTok + outputTokens * ai.priceOutputPerMTok) / 1_000_000;
+}
+
+export interface AiUsageSummary { month: string; calls: number; costUsd: number; budgetUsd: number; reached: boolean }
+
+/** This month's AI use and whether the limit is reached (budget 0 = no limit). */
+export async function aiUsageThisMonth(): Promise<AiUsageSummary> {
+  const month = usageMonth();
+  const row = await db.aiUsage.findUnique({ where: { month } });
+  const costUsd = row ? estimateCostUsd(Number(row.inputTokens), Number(row.outputTokens)) : 0;
+  const budgetUsd = config().ai.monthlyBudgetUsd;
+  return { month, calls: row?.calls ?? 0, costUsd, budgetUsd, reached: budgetUsd > 0 && costUsd >= budgetUsd };
+}
+
+// Read at most every 30 s per server instance: a few calls past the limit cost cents, a query per call costs more.
+let budgetSeen: { at: number; reached: boolean } | null = null;
+export async function aiBudgetReached(): Promise<boolean> {
+  if (config().ai.monthlyBudgetUsd <= 0) return false;
+  if (budgetSeen && Date.now() - budgetSeen.at < 30_000) return budgetSeen.reached;
+  let reached = false;
+  try {
+    reached = (await aiUsageThisMonth()).reached;
+  } catch {
+    reached = false; // the counter is unreadable: the AI goes on (the provider's own limit still protects)
+  }
+  budgetSeen = { at: Date.now(), reached };
+  return reached;
+}
+export function resetAiBudgetCacheForTests(): void {
+  budgetSeen = null;
+}
+
+/** The AI is on AND this month's limit is not reached (what the public forms use). */
+export async function aiAvailable(): Promise<boolean> {
+  return aiEnabled() && !(await aiBudgetReached());
+}
+
+async function recordUsage(inputTokens: number, outputTokens: number): Promise<void> {
+  const month = usageMonth();
+  try {
+    await db.aiUsage.upsert({
+      where: { month },
+      create: { month, calls: 1, inputTokens: BigInt(inputTokens), outputTokens: BigInt(outputTokens) },
+      update: { calls: { increment: 1 }, inputTokens: { increment: BigInt(inputTokens) }, outputTokens: { increment: BigInt(outputTokens) } },
+    });
+  } catch (err) {
+    console.error('[ai] usage not recorded:', err instanceof Error ? err.message : err);
+  }
+}
+
 export interface ChatJsonInput { kind: string; system: string; userText: string; imageDataUrls?: string[]; cacheKey?: string }
 
 /** Asks the model for a JSON object. */
@@ -69,6 +129,7 @@ export async function chatJson({ kind, system, userText, imageDataUrls = [], cac
     if (hit) return hit.output as AiJson;
   }
   const ai = config().ai;
+  if (await aiBudgetReached()) throw new AiUnavailableError('AI monthly budget reached');
 
   const userContent = imageDataUrls.length
     ? [{ type: 'text', text: userText }, ...imageDataUrls.map((url) => ({ type: 'image_url', image_url: { url, detail: 'low' } }))]
@@ -101,12 +162,14 @@ export async function chatJson({ kind, system, userText, imageDataUrls = [], cac
     const body = await response.text().catch(() => '');
     throw new AiUnavailableError(`AI HTTP ${response.status}: ${body.slice(0, 200)}`);
   }
-  let json: { choices?: Array<{ message?: { content?: unknown; refusal?: unknown } }> };
+  let json: { choices?: Array<{ message?: { content?: unknown; refusal?: unknown } }>; usage?: { prompt_tokens?: unknown; completion_tokens?: unknown } };
   try {
     json = (await response.json()) as typeof json;
   } catch {
     throw new AiUnavailableError('AI answer was not valid JSON');
   }
+  const tokens = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.round(v) : 0);
+  await recordUsage(tokens(json?.usage?.prompt_tokens), tokens(json?.usage?.completion_tokens));
   const message = json?.choices?.[0]?.message;
   if (typeof message?.refusal === 'string' && message.refusal.trim()) throw new AiRefusedError(`AI refused: ${message.refusal.slice(0, 200)}`);
   const output = parseJsonLoose(message?.content);
@@ -124,7 +187,7 @@ export async function chatJson({ kind, system, userText, imageDataUrls = [], cac
 /** Hides anything that looks like an API key in an error text (OpenAI repeats part of a wrong key). */
 export const hideKeys = (text: string): string => text.replace(/\b(sk|pk|key)-[A-Za-z0-9_*-]{4,}/g, '$1-…');
 
-export type AiProblem = 'disabled' | 'key' | 'quota' | 'model' | 'timeout' | 'other';
+export type AiProblem = 'disabled' | 'budget' | 'key' | 'quota' | 'model' | 'timeout' | 'other';
 
 /** What the admin sees about the AI settings (never the key itself). */
 export function aiSettingsSummary(): { enabled: boolean; enabledFlag: boolean; hasKey: boolean; model: string; host: string } {
@@ -140,6 +203,7 @@ export function aiSettingsSummary(): { enabled: boolean; enabledFlag: boolean; h
  */
 export async function testAiConnection(): Promise<{ ok: boolean; problem?: AiProblem; detail?: string }> {
   if (!aiEnabled()) return { ok: false, problem: 'disabled' };
+  if (await aiBudgetReached()) return { ok: false, problem: 'budget' };
   try {
     await chatJson({ kind: 'test', system: 'Answer ONLY with the JSON object {"ok": true}.', userText: 'ping' });
     return { ok: true };

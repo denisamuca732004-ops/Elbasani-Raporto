@@ -349,6 +349,7 @@ const en = {
   board: {
     dup: {
       title: 'Maybe the same problem as', meters: '{n} m away', sameAddress: 'same address', supporters: { one: '1 supporter', other: '{n} supporters' },
+      photosSame: 'Photo comparison (AI): looks like the same problem ({n}%).', photosDifferent: 'Photo comparison (AI): looks like a different problem ({n}%).',
       held: 'Not sent to the sector, so it does not get the same problem twice.',
       merge: 'Same problem: merge into {n}', different: 'Different: send to the sector',
     },
@@ -384,6 +385,14 @@ const en = {
   },
   sectors: { emptyTitle: 'No sectors yet.', emptyText: 'Add the municipality’s sectors on the sectors page (/admin/departments).' },
   dashboard: {
+      repeats: {
+        title: 'Places where the problem keeps coming back',
+        intro: 'The same problem 3 or more times within 60 m in the last 90 days. A lasting fix is worth it here, not just a repair.',
+        none: 'No place with the same problem repeated.',
+        count: { one: '1 report', other: '{n} reports' },
+        sendSummary: 'Send the weekly summary to my e-mail',
+        sent: 'Sent. Every Monday morning it goes to all admins automatically.',
+      },
     period: 'Period', periods: { week: 'Week', month: 'Month', year: 'Year' },
     sector: 'Sector', allSectors: 'All sectors', wholeMunicipality: 'The whole municipality',
     kpis: 'Indicators for the period: {period}',
@@ -432,6 +441,7 @@ const en = {
     cols: { report: 'Report', priority: 'Priority', status: 'Status', sector: 'Sector', place: 'Place', due: 'Deadline', received: 'Received' },
   },
   detail: {
+    draft: { propose: 'Suggest a text with AI', improve: 'Improve the text with AI', busy: 'AI is writing…', hint: 'Read and edit it before sending.' },
     backToList: 'Back to the list', otherSector: 'This report belongs to another sector.', notFound: 'The report was not found or has been deleted.',
     sector: 'Sector', publicPage: 'Public page', report: 'Report', noDescription: 'No description.',
     address: 'Address', area: 'Area', category: 'Category', channel: 'Channel', received: 'Received', due: 'Deadline',
@@ -630,7 +640,15 @@ const en = {
       aiOn: 'On', aiModel: 'Model {model} · {host}',
       aiOff: 'The AI is off: {missing} is missing in Vercel → Settings → Environment Variables. Without the AI photos are not checked, but they are not public before verification.',
       aiTest: 'Test the AI connection', aiWorks: 'The AI connection works.',
+      budget: {
+        month: 'This month:',
+        used: '{calls} calls, about {cost} of the {budget} limit.',
+        noLimit: '{calls} calls, about {cost}. No monthly limit.',
+        hint: 'The limit is set in Vercel with AI_MONTHLY_BUDGET_USD. When it is reached the AI stops until next month and the site goes on with the normal form.',
+        reached: 'The monthly limit was reached: the AI is stopped until the start of next month. Reporting goes on without it.',
+      },
       aiProblems: {
+        budget: 'The monthly AI spending limit was reached. The AI restarts next month, or raise AI_MONTHLY_BUDGET_USD in Vercel.',
         disabled: 'The AI is off.',
         key: 'The key is not accepted. Create a new key at OpenAI and set it in Vercel as AI_API_KEY, then Redeploy.',
         quota: 'The OpenAI account has no credit or reached its limit. Add credit at OpenAI → Settings → Billing.',

@@ -10,10 +10,12 @@ import { after, before, describe, test } from 'node:test';
 import { resetConfigForTests } from '@/lib/server/env';
 import { getReport, resolveReport } from '@/lib/server/services/report';
 import { createCitizenReport, getPublicCase } from '@/lib/server/services/publicReport';
-import { testAiConnection } from '@/lib/server/ai';
+import { aiUsageThisMonth, resetAiBudgetCacheForTests, testAiConnection } from '@/lib/server/ai';
 import { checkDescription } from '@/lib/server/services/descriptionCheck';
 import { analyzePhoto } from '@/lib/server/services/photoAnalyze';
 import { checkPhoto } from '@/lib/server/services/photoCheck';
+import { comparePhotos, photoComparisonOf } from '@/lib/server/services/duplicates';
+import { draftNote } from '@/lib/server/services/noteDraft';
 import { changePriority, changeStatus } from '@/lib/server/services/report';
 import { extractFromText } from '@/lib/server/services/triage';
 import type { Principal } from '@/lib/shared/types';
@@ -59,6 +61,10 @@ const fake = http.createServer((req, res) => {
     }
     if (system.includes('check a photo')) {
       answer = photoAnswer;
+    } else if (system.includes('write to residents')) {
+      answer = { textSq: 'Gropa u mbush dhe rruga është e kalueshme. Faleminderit që na njoftuat.' };
+    } else if (system.includes('Compare their two photos')) {
+      answer = { same: true, confidence: 91, reasonSq: 'I njëjti kontejner jeshil pranë të njëjtit mur.' };
     } else if (system.includes('starting from a photo')) {
       answer = analyzeAnswer;
     } else if (system.includes('check the description')) {
@@ -84,7 +90,7 @@ const fake = http.createServer((req, res) => {
     }
     res.writeHead(200, { 'content-type': 'application/json' });
     // Some models wrap JSON in code fences; the client must cope.
-    res.end(JSON.stringify({ choices: [{ message: { content: `\`\`\`json\n${JSON.stringify(answer)}\n\`\`\`` } }] }));
+    res.end(JSON.stringify({ choices: [{ message: { content: `\`\`\`json\n${JSON.stringify(answer)}\n\`\`\`` } }], usage: { prompt_tokens: 1000, completion_tokens: 100 } }));
   });
 });
 
@@ -412,6 +418,62 @@ describe('"Raporto me foto": the type and the description proposed from the phot
       assert.deepEqual(await analyzePhoto(await uploadPhoto(await jpeg('#3A4A40'))), { verdict: 'unchecked', requestTypeId: null, confidence: 0, description: '' });
     } finally {
       mode = 'ok';
+    }
+  });
+});
+
+describe('a possible duplicate: the AI compares the two photos', () => {
+  test('the answer is stored on the held report for the admin, and cleared when the admin decides', async () => {
+    const { report: earlier } = await submitReport({ description: 'Kontejneri i parë, plot' });
+    const { report: later } = await submitReport({ description: 'I njëjti kontejner, plot prej ditësh' });
+    const before = calls.length;
+    await comparePhotos(later.id, earlier.id);
+    const asked = calls.slice(before);
+    assert.equal(asked.length, 1);
+    assert.equal((JSON.stringify(asked[0]!.body.messages[1]!.content).match(/data:image\/jpeg;base64/g) ?? []).length, 2, 'both photos are sent');
+    const stored = await db.report.findUniqueOrThrow({ where: { id: later.id } });
+    assert.equal(stored.dupPhotoSame, true);
+    assert.equal(stored.dupPhotoConfidence, 91);
+    assert.equal(stored.dupPhotoReason, 'I njëjti kontejner jeshil pranë të njëjtit mur.');
+  });
+
+  test('an odd answer gives no verdict', () => {
+    assert.equal(photoComparisonOf({ same: 'maybe' }), null);
+    assert.deepEqual(photoComparisonOf({ same: false, confidence: 140 }), { same: false, confidence: 100, reason: null });
+  });
+});
+
+describe('notes for residents proposed by the AI in the panel', () => {
+  test('the staff words become a polite note, and the resident\'s phone never goes to the AI', async () => {
+    const { report } = await submitReport({ description: 'Gropë e madhe, më telefononi në 069 123 4567' });
+    const before = calls.length;
+    const out = await draftNote(admin, report.id, 'resolve', 'u mbush gropa');
+    assert.equal(out.text, 'Gropa u mbush dhe rruga është e kalueshme. Faleminderit që na njoftuat.');
+    const sent = JSON.stringify(calls.slice(before)[0]!.body.messages);
+    assert.match(sent, /u mbush gropa/);
+    assert.doesNotMatch(sent, /123 4567/);
+  });
+});
+
+describe('the monthly AI spending limit', () => {
+  test('every call is counted, and at the limit the AI stops and the forms go on without it', async () => {
+    const before = await aiUsageThisMonth();
+    assert.ok(before.calls > 0, 'the calls of the tests above were counted');
+    assert.ok(before.costUsd > 0);
+    assert.equal(before.reached, false);
+    process.env.AI_MONTHLY_BUDGET_USD = String(before.costUsd / 2);
+    resetConfigForTests();
+    resetAiBudgetCacheForTests();
+    try {
+      assert.equal((await aiUsageThisMonth()).reached, true);
+      const asked = calls.length;
+      assert.deepEqual(await checkDescription('Gropë e thellë te rruga e shkollës', await typeId('streets.pothole')), { verdict: 'unchecked' });
+      assert.equal(calls.length, asked, 'no call past the limit');
+      assert.equal((await testAiConnection()).problem, 'budget');
+    } finally {
+      delete process.env.AI_MONTHLY_BUDGET_USD;
+      resetConfigForTests();
+      resetAiBudgetCacheForTests();
     }
   });
 });

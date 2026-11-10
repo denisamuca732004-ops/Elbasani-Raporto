@@ -199,6 +199,15 @@ function DuplicateNote({ d }: { d: NonNullable<BoardItem['duplicate']> }) {
           {[lang === 'en' ? d.typeNameEn : d.typeNameSq, d.meters !== null ? t('board.dup.meters', { n: d.meters }) : t('board.dup.sameAddress'), d.address,
             t('board.received', { when: timeAgo(d.createdAt, t) }), d.supporters ? t('board.dup.supporters', { n: d.supporters }) : null].filter(Boolean).join(' · ')}
         </div>
+        {d.photos && (
+          <div className={`dup-photos ${d.photos.same ? 'same' : 'different'}`}>
+            <Icon name={d.photos.same ? 'check' : 'alert'} size={14} strokeWidth={2.4} />
+            <span>
+              <strong>{t(d.photos.same ? 'board.dup.photosSame' : 'board.dup.photosDifferent', { n: d.photos.confidence })}</strong>
+              {d.photos.reason && <> {d.photos.reason}</>}
+            </span>
+          </div>
+        )}
         <div className="small muted">{t('board.dup.held')}</div>
       </div>
     </div>

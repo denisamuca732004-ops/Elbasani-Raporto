@@ -7,12 +7,15 @@
  *    DUPLICATE_RADIUS_METERS, or the same street in the same zone when the place was typed), it is
  *    NOT e-mailed to the sector: it waits in the admin's "Të reja" with "Mund të jetë i njëjti
  *    problem si EL-…".
+ *    With the AI on, the two photos are compared ("the same problem in the same place?") and the
+ *    answer is shown next to the question; the admin still decides.
  * 3. The admin either merges it (it closes and points to the first report; the reporter follows the
  *    first report and counts as one more supporter) or says it is different (it goes to the sector).
  */
 import 'server-only';
 import { FINAL_STATUSES, OPEN_STATUSES } from '@/lib/shared/domain';
 import type { Principal } from '@/lib/shared/types';
+import { AiUnavailableError, aiEnabled, chatJson, hideKeys, type AiJson } from '../ai';
 import { db } from '../db';
 import { config } from '../env';
 import { badRequest, conflict, notFound } from '../errors';
@@ -20,6 +23,8 @@ import { assertAdmin } from './access';
 import { boundingBox, distanceMeters } from './geo';
 import { notifyCitizenStatus, notifyDepartmentOfReport } from './notification';
 import { revokeLinks } from './reportLinks';
+import { imageDataUrl } from '../storage';
+import { sha256 } from '../tokens';
 
 /** Only reports from the last weeks count: an old open report is more likely a different problem. */
 const LOOKBACK_DAYS = 60;
@@ -88,8 +93,58 @@ export async function holdIfDuplicate(reportId: string): Promise<boolean> {
       },
     }),
   ]);
+  await comparePhotos(reportId, match.id);
   return true;
 }
+
+const COMPARE_SYSTEM = `Two residents reported the same type of problem close to each other in Elbasan (Albania). Compare their two photos.
+Answer ONLY with a JSON object with exactly these keys:
+{
+  "same": boolean,      // true when both photos most probably show the SAME problem in the SAME place (the same container, the same hole, the same lamp post),
+                        // even from another angle, distance or time of day. false when they show different objects or different places.
+  "confidence": number, // 0-100: how sure you are.
+  "reasonSq": string    // ONE short sentence IN ALBANIAN with what you compared (e.g. "I njëjti kontejner jeshil pranë të njëjtit mur"). Never names or plates.
+}`;
+
+/** Reads the model's answer defensively: no clear "same" boolean, no verdict. */
+export function photoComparisonOf(answer: AiJson): { same: boolean; confidence: number; reason: string | null } | null {
+  if (typeof answer.same !== 'boolean') return null;
+  const confidence = typeof answer.confidence === 'number' && Number.isFinite(answer.confidence) ? Math.max(0, Math.min(100, Math.round(answer.confidence))) : 50;
+  const reason = typeof answer.reasonSq === 'string' && answer.reasonSq.trim() ? answer.reasonSq.replace(/\s+/g, ' ').trim().slice(0, 200) : null;
+  return { same: answer.same, confidence, reason };
+}
+
+/**
+ * The AI compares the first photo of the held report with the first photo of the earlier one.
+ * Best effort: without the AI, without photos, or without an answer, nothing is stored and the admin
+ * decides from the place and the type, as before.
+ */
+export async function comparePhotos(reportId: string, earlierId: string): Promise<void> {
+  if (!aiEnabled()) return;
+  const photoOf = (id: string) => db.attachment.findFirst({ where: { reportId: id, kind: 'BEFORE' }, orderBy: { createdAt: 'asc' }, select: { storageKey: true } });
+  const [mine, earlier] = await Promise.all([photoOf(reportId), photoOf(earlierId)]);
+  if (!mine || !earlier) return;
+  try {
+    const answer = await chatJson({
+      kind: 'duplicate-photos',
+      system: COMPARE_SYSTEM,
+      userText: 'First image = the earlier report. Second image = the new report.',
+      imageDataUrls: [await imageDataUrl(earlier, 768), await imageDataUrl(mine, 768)],
+      cacheKey: sha256(`duplicate-photos:v1:${config().ai.model}:${earlier.storageKey}:${mine.storageKey}`),
+    });
+    const result = photoComparisonOf(answer);
+    if (!result) return;
+    await db.report.update({ where: { id: reportId }, data: { dupPhotoSame: result.same, dupPhotoConfidence: result.confidence, dupPhotoReason: result.reason } });
+  } catch (err) {
+    if (err instanceof AiUnavailableError) {
+      console.error('[duplicate-photos] AI unavailable:', hideKeys(err.message));
+      return;
+    }
+    console.error('[duplicate-photos] failed:', err instanceof Error ? err.message : err);
+  }
+}
+
+const NO_PHOTO_COMPARISON = { dupPhotoSame: null, dupPhotoConfidence: null, dupPhotoReason: null } as const;
 
 /**
  * Admin: the same problem. The report closes (rejected, with a reason that points to the first one,
@@ -114,7 +169,7 @@ export async function mergeDuplicate(user: Principal, id: string, intoCaseNumber
   await db.$transaction(async (tx) => {
     await tx.report.update({
       where: { id: report.id },
-      data: { status: 'REJECTED', rejectionReason: reason, mergedIntoId: into.id, possibleDuplicateOfId: null, closedAt: now },
+      data: { status: 'REJECTED', rejectionReason: reason, mergedIntoId: into.id, possibleDuplicateOfId: null, closedAt: now, ...NO_PHOTO_COMPARISON },
     });
     await tx.reportEvent.createMany({
       data: [
@@ -142,7 +197,7 @@ export async function dismissDuplicate(user: Principal, id: string): Promise<voi
   if (!report) throw notFound('Raportimi nuk u gjet.');
   if (!report.possibleDuplicateOf) return;
   await db.$transaction([
-    db.report.update({ where: { id }, data: { possibleDuplicateOfId: null } }),
+    db.report.update({ where: { id }, data: { possibleDuplicateOfId: null, ...NO_PHOTO_COMPARISON } }),
     db.reportEvent.create({
       data: { reportId: id, type: 'DUPLICATE_DISMISSED', actorId: user.id, message: `Nuk është i njëjti problem si ${report.possibleDuplicateOf.caseNumber}.` },
     }),

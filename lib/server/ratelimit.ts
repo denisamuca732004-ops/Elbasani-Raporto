@@ -13,11 +13,16 @@ type Rule = { limit: number; windowSeconds: number };
 
 const RULES = {
   report: () => ({ limit: config().rateLimit.reportsPerHour, windowSeconds: 3600 }),
+  reportDay: () => ({ limit: config().rateLimit.reportsPerDay, windowSeconds: 86_400 }),
+  // One opened form sends one report (a few more: "Raporto një tjetër" reloads the page, a retry after an error does not).
+  reportToken: () => ({ limit: 6, windowSeconds: 86_400 }),
   login: () => ({ limit: config().rateLimit.loginsPer15Min, windowSeconds: 900 }),
   upload: () => ({ limit: config().rateLimit.reportsPerHour * 3, windowSeconds: 3600 }),
   // Each check can be an AI call: as many as photos may be uploaded.
   photoCheck: () => ({ limit: config().rateLimit.reportsPerHour * 3, windowSeconds: 3600 }),
   photoAnalyze: () => ({ limit: config().rateLimit.reportsPerHour * 3, windowSeconds: 3600 }),
+  // AI drafts of notes in the panel, per staff account.
+  draft: () => ({ limit: 60, windowSeconds: 3600 }),
   textCheck: () => ({ limit: config().rateLimit.reportsPerHour * 5, windowSeconds: 3600 }),
   follow: () => ({ limit: 30, windowSeconds: 3600 }),
   search: () => ({ limit: 120, windowSeconds: 600 }),

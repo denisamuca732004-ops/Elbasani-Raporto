@@ -6,6 +6,7 @@
  */
 import { createStore, del, entries, set, type UseStore } from 'idb-keyval';
 import { createReportAction } from '@/actions/reports';
+import { formToken } from './formToken';
 import { ActionFailure, call } from './action';
 import { uploadPhoto } from './upload';
 import { rememberMine } from './myReports';
@@ -45,7 +46,9 @@ export async function flushQueue(): Promise<string[]> {
     for (const [key, item] of await entries<string, QueuedReport>(s)) {
       try {
         const photoKey = await uploadPhoto(item.photo);
-        const res = await call(createReportAction({ ...item.data, photoKey }));
+        // Reports queued before the form token existed, or without one (the form opened offline): one now.
+        const token = typeof item.data.formToken === 'string' ? item.data.formToken : await formToken();
+        const res = await call(createReportAction({ ...item.data, formToken: token, photoKey }));
         sent.push(res.caseNumber);
         rememberMine(res.caseNumber);
         await del(key, s);

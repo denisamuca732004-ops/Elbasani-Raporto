@@ -31,6 +31,7 @@ import { uploadPhoto } from '@/lib/client/upload';
 import { LIMITS, type Priority, type Status } from '@/lib/shared/domain';
 import type { Principal, ReportDetail as Report } from '@/lib/shared/types';
 import { DeliveryLine, StatusLine } from './SectorStatus';
+import DraftButton from './DraftButton';
 import TransferDecision from './TransferDecision';
 
 /** Statuses a department head moves to with one button (resolve and reject have their own forms). */
@@ -55,8 +56,10 @@ function Card({ title, icon, children, className = '' }: { title?: string; icon?
 
 export interface AssignablePerson { id: string; name: string; role: string }
 
-export default function ReportDetail({ principal, report: initial, assignable, backTo }: {
+export default function ReportDetail({ principal, report: initial, assignable, backTo, aiDrafts = false }: {
   principal: Principal; report: Report; assignable: AssignablePerson[]; backTo: string;
+  /** The AI is on: "Propozo me AI" under the notes for the resident. */
+  aiDrafts?: boolean;
 }) {
   const { t, lang } = useI18n();
   const { catalog, types, departments, typeById, departmentById } = useCatalog();
@@ -401,6 +404,7 @@ export default function ReportDetail({ principal, report: initial, assignable, b
               <Field label={t('detail.resolve.note')} htmlFor="d-resolve-note" hint={t('detail.resolve.hint')}>
                 <textarea id="d-resolve-note" value={resolveNote} maxLength={2000} onChange={(e) => setResolveNote(e.target.value)} style={{ minHeight: 70 }} />
               </Field>
+              {aiDrafts && <DraftButton reportId={id} kind="resolve" value={resolveNote} onDraft={setResolveNote} />}
               <div className="label">{t('detail.resolve.photo')}</div>
               <PhotoInput value={afterPhoto} onChange={setAfterPhoto} idPrefix="after-photo" />
               <button
@@ -496,6 +500,7 @@ export default function ReportDetail({ principal, report: initial, assignable, b
               <Field label={t('detail.reject.reason')} htmlFor="d-reject" hint={t('detail.reject.hint')} required>
                 <textarea id="d-reject" value={rejectReason} maxLength={1000} onChange={(e) => setRejectReason(e.target.value)} style={{ minHeight: 70 }} />
               </Field>
+              {aiDrafts && <DraftButton reportId={id} kind="reject" value={rejectReason} onDraft={setRejectReason} />}
               <button
                 type="button" className="btn btn-block btn-danger" disabled={Boolean(busy) || rejectReason.trim().length < LIMITS.minRejectReason}
                 onClick={async () => {
@@ -629,6 +634,7 @@ export default function ReportDetail({ principal, report: initial, assignable, b
               <Field label={t('detail.message.label')} htmlFor="d-message" hint={t('detail.message.hint')}>
                 <textarea id="d-message" value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} style={{ minHeight: 70 }} />
               </Field>
+              {aiDrafts && <DraftButton reportId={id} kind="message" value={message} onDraft={setMessage} />}
               <button type="button" className="btn btn-block btn-outline" disabled={Boolean(busy) || !message.trim()} onClick={async () => {
                 const ok = await act('message', () => call(messageCitizenAction(id, { message: message.trim() })), t('detail.message.done'));
                 if (ok) setMessage('');

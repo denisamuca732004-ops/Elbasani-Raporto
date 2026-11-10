@@ -6,7 +6,8 @@
  *  - retry emails that failed and checks that were lost;
  *  - delete photo uploads that were never attached to a report;
  *  - delete the resident's contact CONTACT_RETENTION_DAYS (90) after a report is closed or rejected;
- *  - remind a sector of the reports it has not answered for 48 hours (not accepted, not sent back).
+ *  - remind a sector of the reports it has not answered for 48 hours (not accepted, not sent back);
+ *  - on Mondays, the weekly summary for the admins (weeklySummary.ts).
  */
 import 'server-only';
 import { OPEN_STATUSES, PRIORITY_RANK, type Priority } from '@/lib/shared/domain';
@@ -20,6 +21,7 @@ import { maskContacts } from './mapper';
 import { issueLink, linkUrl } from './reportLinks';
 import { settlePendingTransfer } from './routing';
 import { stuckPendingReports } from './triage';
+import { weeklySummaryIfDue } from './weeklySummary';
 
 export async function autoCloseResolved(now = new Date()): Promise<number> {
   const limit = new Date(now.getTime() - config().rules.autoCloseResolvedDays * 86_400_000);
@@ -161,5 +163,11 @@ export async function runDaily(now = new Date()) {
   for (const reportId of stuck) await enqueue('triage', { reportId });
   const cleaned = await cleanupTemporaryUploads();
   const reminded = await remindUnanswered(now);
-  return { closed, erasedContacts: erased, sent: digests, retriedEmails: retried, rechecked: stuck.length, removedUploads: cleaned, remindedSectors: reminded };
+  let weekly = 0;
+  try {
+    weekly = await weeklySummaryIfDue(now);
+  } catch (err) {
+    console.error('[daily] weekly summary failed:', err instanceof Error ? err.message : err);
+  }
+  return { closed, erasedContacts: erased, sent: digests, retriedEmails: retried, rechecked: stuck.length, removedUploads: cleaned, remindedSectors: reminded, weeklySummary: weekly };
 }

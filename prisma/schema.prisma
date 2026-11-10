@@ -335,6 +335,10 @@ model Report {
   /// sector) until the admin merges it or says it is different.
   possibleDuplicateOfId String?     @map("possible_duplicate_of_id") @db.Uuid
   possibleDuplicateOf   Report?     @relation("ReportPossibleDuplicate", fields: [possibleDuplicateOfId], references: [id], onDelete: SetNull)
+  /// The AI's comparison of the two photos (the same problem in the same place?), shown to the admin.
+  dupPhotoSame          Boolean?    @map("dup_photo_same")
+  dupPhotoConfidence    Int?        @map("dup_photo_confidence")
+  dupPhotoReason        String?     @map("dup_photo_reason") @db.VarChar(200)
   possibleDuplicates    Report[]    @relation("ReportPossibleDuplicate")
   /// Merged into another report (the same problem, reported earlier): this one is closed, its
   /// reporter follows the other one.
@@ -483,6 +487,17 @@ model AiResult {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("ai_results")
+}
+
+/// AI calls and tokens per month (Europe/Tirane), for the monthly spending limit.
+model AiUsage {
+  month        String   @id @db.VarChar(7)
+  calls        Int      @default(0)
+  inputTokens  BigInt   @default(0) @map("input_tokens")
+  outputTokens BigInt   @default(0) @map("output_tokens")
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("ai_usage")
 }
 
 /// Where the button under a guide answer leads. A fixed list: the admin
