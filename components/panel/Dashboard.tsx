@@ -32,139 +32,89 @@ const FLOW: Array<{ key: 'waiting' | 'working' | 'fixed' | 'rejected'; statuses:
   { key: 'rejected', statuses: ['REJECTED'] },
 ];
 
-/**
- * The top of the dashboard: how many reports are open right now (the one big number), the period's
- * figures beside it, and a band showing where this period's reports are now (waiting → being fixed
- * → fixed), in the same colours as the public map.
- */
-function Pulse({ data }: { data: DashboardResult }) {
+/** The five figures of the period in one strip: open, overdue, received, resolved, days to resolve. */
+function KpiStrip({ data, listPath }: { data: DashboardResult; listPath: string }) {
   const { t, lang } = useI18n();
   const tot = data.totals;
-  const flow = FLOW.map((f) => ({ ...f, n: data.byStatus.filter((s) => f.statuses.includes(s.status)).reduce((a, s) => a + s.count, 0) }));
-  const flowTotal = flow.reduce((a, f) => a + f.n, 0);
   const num = (v: number | null | undefined, suffix = '') => (v === null || v === undefined ? '–' : `${v.toLocaleString(lang === 'en' ? 'en-GB' : 'sq-AL')}${suffix}`);
-  const change = (now: number, before: number) => {
-    if (!before) return null;
-    const pct = Math.round(((now - before) / before) * 100);
-    return `${pct > 0 ? '+' : ''}${pct}% ${t('dashboard.vsPrevious', { n: before })}`;
-  };
-  const figures = [
-    { label: t('dashboard.received'), value: num(tot.received), note: change(tot.received, tot.receivedPrevious) },
-    { label: t('dashboard.resolved'), value: num(tot.resolved), note: change(tot.resolved, tot.resolvedPrevious) },
-    { label: t('dashboard.avgDays'), value: num(tot.avgDaysToResolve), note: null },
-    { label: t('dashboard.onTime'), value: num(tot.onTimePct, tot.onTimePct === null ? '' : '%'), note: null },
+  const before = (n: number) => (n ? t('dashboard.vsPrevious', { n }) : t('dashboard.noPrevious'));
+  const cells = [
+    { label: t('dashboard.openNow'), value: num(tot.openNow), note: t('dashboard.waitingReview', { n: tot.waitingReviewNow }), href: `${listPath}status=open` },
+    { label: t('dashboard.overdueNow'), value: num(tot.overdueNow), note: null, href: `${listPath}overdue=1`, alert: tot.overdueNow > 0 },
+    { label: t('dashboard.received'), value: num(tot.received), note: before(tot.receivedPrevious) },
+    { label: t('dashboard.resolved'), value: num(tot.resolved), note: before(tot.resolvedPrevious) },
+    { label: t('dashboard.avgDays'), value: num(tot.avgDaysToResolve), note: tot.onTimePct === null ? null : `${tot.onTimePct}% ${t('dashboard.onTime').toLowerCase()}` },
   ];
   return (
-    <>
-      <div className="pulse-main">
-        <div className="pulse-open">
-          <span className="pulse-big">{num(tot.openNow)}</span>
-          <span className="pulse-open-text">
-            <strong>{t('dashboard.pulse.open', { n: tot.openNow })}</strong>
-            <span>{t('dashboard.waitingReview', { n: tot.waitingReviewNow })}</span>
-            {tot.overdueNow > 0 && <span className="pulse-late"><Icon name="clock" size={15} strokeWidth={2.4} />{t('dashboard.pulse.overdue', { n: tot.overdueNow })}</span>}
-          </span>
-        </div>
-        <dl className="pulse-figures">
-          {figures.map((f) => (
-            <div key={f.label}>
-              <dt>{f.label}</dt>
-              <dd>{f.value}</dd>
-              {f.note && <dd className="pulse-note">{f.note}</dd>}
-            </div>
-          ))}
-        </dl>
-      </div>
-      <div className="pulse-flow">
-        <p className="pulse-flow-title">{t('dashboard.pulse.flowTitle')}</p>
-        {flowTotal === 0 ? <p className="pulse-flow-empty">{t('dashboard.pulse.none')}</p> : (
+    <section className="kpi-strip" aria-label={t('dashboard.kpis', { period: t(`dashboard.periods.${data.period}`) })}>
+      {cells.map((c) => {
+        const body = (
           <>
-            <div className="flow-band" aria-hidden="true">
-              {flow.map((f) => (f.n ? <span key={f.key} className={`flow-${f.key}`} style={{ flexGrow: f.n }} /> : null))}
-            </div>
-            <ul className="flow-legend">
-              {flow.map((f) => (
-                <li key={f.key} className={`flow-${f.key}`}><i aria-hidden="true" /><strong>{f.n}</strong> {t(`dashboard.pulse.${f.key}`)}</li>
-              ))}
-            </ul>
+            <span className="kpi-label">{c.label}</span>
+            <span className={`kpi-value${c.alert ? ' is-alert' : ''}`}>{c.value}</span>
+            {c.note && <span className="kpi-note">{c.note}</span>}
           </>
-        )}
-      </div>
-    </>
-  );
-}
-
-/** By category: a tile per category, with its icon (as on the public site), how many came in and a ring of how many are fixed. */
-function CategoryTiles({ rows }: { rows: DashboardResult['byCategory'] }) {
-  const { t, lang } = useI18n();
-  const { catalog } = useCatalog();
-  if (!rows.length) return <p className="muted">{t('dashboard.empty')}</p>;
-  const iconOf = new Map(catalog.categories.map((c) => [c.code, c.icon]));
-  const R = 17, C = 2 * Math.PI * R;
-  return (
-    <ul className="cat-tiles">
-      {rows.map((c) => {
-        const icon = iconOf.get(c.code) ?? 'other';
-        const share = c.received ? c.resolved / c.received : 0;
-        return (
-          <li key={c.code}>
-            <span className="cat-icon" aria-hidden="true"><Icon name={icon as Parameters<typeof Icon>[0]['name']} size={22} strokeWidth={2.2} /></span>
-            <span className="cat-name">{lang === 'en' ? c.nameEn : c.nameSq}</span>
-            <span className="cat-num">{c.received}</span>
-            <span className="cat-fixed">
-              <svg viewBox="0 0 40 40" width="26" height="26" aria-hidden="true">
-                <circle cx="20" cy="20" r={R} className="ring-track" />
-                <circle cx="20" cy="20" r={R} className="ring-fill" strokeDasharray={`${share * C} ${C}`} transform="rotate(-90 20 20)" />
-              </svg>
-              {t('dashboard.catFixed', { n: c.resolved, total: c.received })}
-            </span>
-          </li>
         );
+        return c.href ? <Link key={c.label} href={c.href} className="kpi-cell">{body}</Link> : <div key={c.label} className="kpi-cell">{body}</div>;
       })}
-    </ul>
+    </section>
   );
 }
 
-/** By area: one pill per area, warmer the more reports it has. */
-function AreaPills({ rows }: { rows: DashboardResult['byNeighbourhood'] }) {
+/** Open reports by priority: three rows, each opens the list. */
+function PriorityList({ open, received, listPath }: { open: Record<string, number>; received: Record<string, number>; listPath: string }) {
   const { t } = useI18n();
-  if (!rows.length) return <p className="muted">{t('dashboard.empty')}</p>;
-  const max = Math.max(1, ...rows.map((r) => r.received));
-  return (
-    <ul className="area-pills">
-      {rows.map((a) => {
-        const k = a.received / max;
-        const level = k > 0.75 ? 4 : k > 0.5 ? 3 : k > 0.25 ? 2 : 1;
-        return <li key={a.name} className={`heat-${level}`}><span>{a.name}</span><strong>{a.received}</strong></li>;
-      })}
-    </ul>
-  );
-}
-
-/** Open reports by priority: one proportion bar, then a row per priority (click → the list). */
-function PriorityCard({ open, received, listPath }: { open: Record<string, number>; received: Record<string, number>; listPath: string }) {
-  const { t } = useI18n();
-  const order = [...PRIORITIES].reverse();
-  const total = order.reduce((n, p) => n + (open[p] ?? 0), 0);
   return (
     <section className="card">
-      <div className="dash-card-head">
-        <h2 className="card-title">{t('dashboard.openByPriority')}</h2>
-        <span className="dash-card-meta">{total}</span>
-      </div>
-      <div className="prio-bar" aria-hidden="true">
-        {total > 0 && order.map((p) => (open[p] ? <span key={p} className={`prio-${key(p)}`} style={{ flexGrow: open[p] }} /> : null))}
-      </div>
-      <div className="prio-list">
-        {order.map((p) => (
-          <Link key={p} href={`${listPath}priority=${p}&status=open`} className={`prio-item prio-${key(p)}`}>
-            <span className="prio-name"><i aria-hidden="true" />{t(`priority.${key(p)}`)}</span>
-            <span className="prio-value">{open[p] ?? 0}</span>
-            <span className="prio-sub">{t('dashboard.receivedInPeriod', { n: received[p] ?? 0 })}</span>
-          </Link>
+      <h2 className="card-title">{t('dashboard.openByPriority')}</h2>
+      <ul className="row-list">
+        {[...PRIORITIES].reverse().map((p) => (
+          <li key={p}>
+            <Link href={`${listPath}priority=${p}&status=open`} className="row-link">
+              <span className={`pill pill-${key(p)}`}>{t(`priority.${key(p)}`)}</span>
+              <span className="row-note">{t('dashboard.receivedInPeriod', { n: received[p] ?? 0 })}</span>
+              <span className="row-value">{open[p] ?? 0}</span>
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
+  );
+}
+
+/** Where this period's reports are now: one thin bar and four figures. */
+function StatusBreakdown({ data }: { data: DashboardResult }) {
+  const { t } = useI18n();
+  const flow = FLOW.map((f) => ({ ...f, n: data.byStatus.filter((s) => f.statuses.includes(s.status)).reduce((a, s) => a + s.count, 0) }));
+  const total = flow.reduce((a, f) => a + f.n, 0);
+  return (
+    <section className="card">
+      <h2 className="card-title">{t('dashboard.byStatus')}</h2>
+      {total === 0 ? <p className="muted">{t('dashboard.pulse.none')}</p> : (
+        <>
+          <div className="flow-bar" aria-hidden="true">{flow.map((f) => (f.n ? <span key={f.key} className={`flow-${f.key}`} style={{ flexGrow: f.n }} /> : null))}</div>
+          <dl className="flow-figures">
+            {flow.map((f) => <div key={f.key} className={`flow-${f.key}`}><dt><i aria-hidden="true" />{t(`dashboard.pulse.${f.key}`)}</dt><dd>{f.n}</dd></div>)}
+          </dl>
+        </>
+      )}
+    </section>
+  );
+}
+
+/** A plain list of names with their numbers (categories, areas). */
+function CountList({ rows, empty }: { rows: Array<{ key: string; label: string; value: number; note?: string }>; empty: string }) {
+  if (!rows.length) return <p className="muted">{empty}</p>;
+  return (
+    <ul className="row-list">
+      {rows.map((r) => (
+        <li key={r.key} className="row-plain">
+          <span className="row-name">{r.label}</span>
+          {r.note && <span className="row-note">{r.note}</span>}
+          <span className="row-value">{r.value}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -223,39 +173,33 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
 
   return (
     <div className="stack dash">
-      <section className={`pulse${loading ? ' refreshing' : ''}`} aria-labelledby="pulse-title">
-        <div className="pulse-top">
-          <div>
-            <h1 id="pulse-title">{t('panel.nav.dashboard')}</h1>
-            <p className="pulse-scope">
-              {scopeName}
-              {data && <span>{formatDate(data.range.from, lang)} – {formatDate(new Date(new Date(data.range.to).getTime() - 1), lang)}</span>}
-            </p>
-          </div>
-          <div className="pulse-filters">
-            <Segmented<DashboardPeriod>
-              label={t('dashboard.period')}
-              value={period}
-              onChange={(v) => setParam('period', v)}
-              options={[
-                { value: 'week', label: t('dashboard.periods.week') },
-                { value: 'month', label: t('dashboard.periods.month') },
-                { value: 'year', label: t('dashboard.periods.year') },
-              ]}
-            />
-            {admin && (
-              <div className="field inline">
-                <label htmlFor="dash-sector">{t('dashboard.sector')}</label>
-                <select id="dash-sector" value={departmentId} onChange={(e) => setParam('departmentId', e.target.value)}>
-                  <option value="">{t('dashboard.allSectors')}</option>
-                  {departments.map((s) => <option key={s.id} value={s.id}>{departmentName(s, lang)}</option>)}
-                </select>
-              </div>
-            )}
+      <div className="page-head dash-head">
+        <div>
+          <h1>{t('panel.nav.dashboard')}</h1>
+          <p className="page-sub">{scopeName}{data && <> · {formatDate(data.range.from, lang)} – {formatDate(new Date(new Date(data.range.to).getTime() - 1), lang)}</>}</p>
         </div>
+        <div className="dash-filters">
+          <Segmented<DashboardPeriod>
+            label={t('dashboard.period')}
+            value={period}
+            onChange={(v) => setParam('period', v)}
+            options={[
+              { value: 'week', label: t('dashboard.periods.week') },
+              { value: 'month', label: t('dashboard.periods.month') },
+              { value: 'year', label: t('dashboard.periods.year') },
+            ]}
+          />
+          {admin && (
+            <div className="field inline">
+              <label htmlFor="dash-sector">{t('dashboard.sector')}</label>
+              <select id="dash-sector" value={departmentId} onChange={(e) => setParam('departmentId', e.target.value)}>
+                <option value="">{t('dashboard.allSectors')}</option>
+                {departments.map((s) => <option key={s.id} value={s.id}>{departmentName(s, lang)}</option>)}
+              </select>
+            </div>
+          )}
         </div>
-        {data && <Pulse data={data} />}
-      </section>
+      </div>
 
       {admin && !departmentId && onboarding && <Onboarding info={onboarding} />}
       {!data && <div className="alert alert-error" role="alert">{t('errors.generic')}</div>}
@@ -270,21 +214,28 @@ export default function Dashboard({ principal, data, onboarding }: { principal: 
             </Link>
           )}
 
-          <PriorityCard open={data.openByPriority} received={data.receivedByPriority} listPath={listPath} />
+          <KpiStrip data={data} listPath={listPath} />
 
-          <section className="card">
-            <h2 className="card-title">{t('dashboard.trendTitle', { period: periodLabel.toLowerCase() })}</h2>
-            <TrendChart rows={data.trend} unit={data.unit} series={series} title={t('dashboard.trendTitle', { period: periodLabel.toLowerCase() })} />
-          </section>
+          <div className="dash-row">
+            <section className="card">
+              <h2 className="card-title">{t('dashboard.trendTitle', { period: periodLabel.toLowerCase() })}</h2>
+              <TrendChart rows={data.trend} unit={data.unit} series={series} title={t('dashboard.trendTitle', { period: periodLabel.toLowerCase() })} />
+            </section>
+            <PriorityList open={data.openByPriority} received={data.receivedByPriority} listPath={listPath} />
+          </div>
 
-          <div className="grid-stats">
+          <div className="dash-row3">
+            <StatusBreakdown data={data} />
             <section className="card">
               <h2 className="card-title">{t('dashboard.byCategory')}</h2>
-              <CategoryTiles rows={data.byCategory} />
+              <CountList
+                rows={data.byCategory.map((c) => ({ key: c.code, label: lang === 'en' ? c.nameEn : c.nameSq, value: c.received, note: t('dashboard.catFixed', { n: c.resolved, total: c.received }) }))}
+                empty={t('dashboard.empty')}
+              />
             </section>
             <section className="card">
               <h2 className="card-title">{t('dashboard.byArea')}</h2>
-              <AreaPills rows={data.byNeighbourhood} />
+              <CountList rows={data.byNeighbourhood.map((n) => ({ key: n.name, label: n.name, value: n.received }))} empty={t('dashboard.empty')} />
             </section>
           </div>
         </div>

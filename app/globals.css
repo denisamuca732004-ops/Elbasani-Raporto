@@ -1361,3 +1361,72 @@ pre.code.light { background: #F7F7F7; color: var(--ink); }
 .footer-numbers dt { color: var(--pub-soft); }
 .footer-numbers dd, .footer-numbers dd a { color: var(--pub-ink); }
 .site .footer-bottom { border-top-color: var(--pub-line); color: var(--pub-soft); }
+
+/* ==========================================================================
+   Dashboard, calm and institutional: a page head, one strip of figures, plain
+   lists. Colour only on the status and priority marks.
+   ========================================================================== */
+.dash { --d-line: #E1E5E3; --d-row: #EEF0EF; --d-muted: #5E6662; --d-ink: #1C211E; --d-accent: #41644A; }
+.dash .card { border: 1px solid var(--d-line); border-radius: 12px; box-shadow: none; padding: 24px; background: #fff; }
+.dash .card-title { font-size: 1.125rem; line-height: 1.5rem; font-weight: 700; margin: 0 0 14px; color: var(--d-ink); }
+.dash-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px 24px; margin-bottom: 4px; }
+.dash-head h1 { margin: 0; font-size: 1.75rem; line-height: 2.25rem; font-weight: 700; color: var(--d-ink); }
+.dash-head .page-sub { margin: 4px 0 0; font-size: 0.95rem; color: var(--d-muted); }
+.dash-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.dash-filters .segmented { border-radius: 8px; border: 1px solid #C9D0CC; background: #fff; padding: 3px; }
+.dash-filters .segmented button { border-radius: 6px; padding: 6px 14px; font-size: 0.9rem; font-weight: 600; color: var(--d-ink); background: transparent; }
+.dash-filters .segmented button.active { background: var(--d-accent); color: #fff; }
+.dash-filters .field.inline { margin: 0; display: flex; align-items: center; gap: 8px; }
+.dash-filters label { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--d-muted); }
+.dash-filters select { height: 40px; min-width: 220px; border: 1px solid #C9D0CC; border-radius: 8px; padding: 0 36px 0 12px; font-size: 0.95rem; background-color: #fff; }
+
+/* One strip of figures */
+.kpi-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); background: #fff; border: 1px solid var(--d-line); border-radius: 12px; overflow: hidden; }
+@media (max-width: 1100px) { .kpi-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi-cell { display: flex; flex-direction: column; gap: 4px; padding: 18px 22px; box-shadow: 1px 0 0 var(--d-line), 0 1px 0 var(--d-line); color: var(--d-ink); text-decoration: none; }
+a.kpi-cell:hover { background: #F7F9F8; color: var(--d-ink); }
+.kpi-label { font-size: 0.82rem; font-weight: 600; color: var(--d-muted); }
+.kpi-value { font-size: 2rem; line-height: 2.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kpi-value.is-alert { color: #A61D12; }
+.kpi-note { font-size: 0.82rem; color: var(--d-muted); }
+
+.dash-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.dash-row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .dash-row, .dash-row3 { grid-template-columns: 1fr; } }
+
+/* Plain rows: name, a quiet note, the number on the right */
+.row-list { list-style: none; margin: 0; padding: 0; }
+.row-list li { border-bottom: 1px solid var(--d-row); }
+.row-list li:last-child { border-bottom: 0; }
+.row-link, .row-plain { display: flex; align-items: center; gap: 12px; padding: 11px 0; color: var(--d-ink); text-decoration: none; }
+a.row-link:hover .row-value { color: var(--d-accent); }
+.row-name { font-size: 0.95rem; min-width: 0; }
+.row-note { font-size: 0.85rem; color: var(--d-muted); }
+.row-value { margin-left: auto; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pill { flex: none; display: inline-flex; padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+.pill-high { background: #FCEBEA; color: #A61D12; }
+.pill-medium { background: #FDF3E2; color: #8A5300; }
+.pill-low { background: #EEF0EF; color: #4A524E; }
+
+/* Where this period's reports are */
+.flow-bar { display: flex; gap: 3px; height: 10px; border-radius: 999px; overflow: hidden; background: #F1F3F2; margin-bottom: 16px; }
+.flow-bar span { flex-basis: 0; min-width: 6px; background: var(--c); }
+.dash .flow-waiting { --c: #D69A2D; }
+.dash .flow-working { --c: #1E54A8; }
+.dash .flow-fixed { --c: #2E8B57; }
+.dash .flow-rejected { --c: #A9B0AC; }
+.flow-figures { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
+.flow-figures div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.flow-figures dt { display: flex; align-items: center; gap: 8px; font-size: 0.92rem; color: var(--d-ink); }
+.flow-figures dt i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.flow-figures dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.dash .callout { border-radius: 12px; }
+.dash .onboarding { background: #fff; border: 1px solid var(--d-line); border-left: 1px solid var(--d-line); }
+.dash .trend-chart .grid-line { stroke: #EEF0EF; stroke-dasharray: none; }
+@media (max-width: 1100px) { .dash-row, .dash-row3 { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) {
+  .dash-filters, .dash-filters .field.inline { width: 100%; }
+  .dash-filters select { min-width: 0; flex: 1; width: 100%; }
+}
