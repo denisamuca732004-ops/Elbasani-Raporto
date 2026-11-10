@@ -47,7 +47,7 @@ const sq = {
       text: 'Tregojini Bashkisë Elbasan çfarë duhet rregulluar. Nuk ju duhet llogari, dhe e ndiqni deri në fund.',
       ask: 'Çfarë duhet rregulluar?', placeholder: 'Gropë, kontejner, dritë…', button: 'Raporto një problem',
       suggestions: 'Problemet që përputhen', categories: 'Ose zgjidhni kategorinë',
-      photoButton: 'Raporto me foto', photoHint: 'Bëni një foto, sistemi plotëson llojin dhe përshkrimin.', orType: 'ose',
+      photoButton: 'Raporto me foto', photoHint: 'Bëni një foto, sistemi plotëson llojin dhe përshkrimin.', chooseSelf: 'Ose zgjidhni vetë llojin e problemit:',
     },
     map: { label: 'Harta e raportimeve në qytet: hapni hartën', open: { one: '1 raportim i hapur në qytet', other: '{n} raportime të hapura në qytet' } },
     numbers: { fixedIn: 'të rregulluara në {month}', avgDays: 'ditë mesatarisht për rregullim', openNow: 'të hapura tani' },

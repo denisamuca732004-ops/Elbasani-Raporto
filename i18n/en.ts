@@ -47,7 +47,7 @@ const en = {
       text: 'Tell the Municipality of Elbasan what needs fixing. No account needed, and you can follow it until it is done.',
       ask: 'What needs fixing?', placeholder: 'Pothole, full bin, street light…', button: 'Report a problem',
       suggestions: 'Matching problems', categories: 'Or choose a category',
-      photoButton: 'Report with a photo', photoHint: 'Take a photo, the system fills in the type and the description.', orType: 'or',
+      photoButton: 'Report with a photo', photoHint: 'Take a photo, the system fills in the type and the description.', chooseSelf: 'Or choose the type yourself:',
     },
     map: { label: 'Map of reports in the city: open the map', open: { one: '1 report open across the city', other: '{n} reports open across the city' } },
     numbers: { fixedIn: 'fixed in {month}', avgDays: 'days on average to fix', openNow: 'open now' },

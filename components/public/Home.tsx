@@ -53,19 +53,17 @@ export default function Home({ numbers, fixed, points, frequent = [] }: Props) {
               <span className="accent">{t('home.hero.l3')}</span>
             </h1>
             <p className="home-lead">{t('home.hero.text')}</p>
-            {/* With the AI on: start from a photo (the type and the description are proposed from it). */}
-            {rules.aiChecks && (
-              <>
-                <Link href="/raporto" className="home-photo-cta">
-                  <Icon name="camera" size={24} />
-                  <span><strong>{t('home.hero.photoButton')}</strong><span>{t('home.hero.photoHint')}</span></span>
-                  <Icon name="arrowRight" size={20} />
-                </Link>
-                <div className="home-or" aria-hidden="true"><span>{t('home.hero.orType')}</span></div>
-              </>
-            )}
-            <ProblemSearch />
-            <nav className="home-chips" aria-label={t('home.hero.categories')}>
+            {/* With the AI on: one main action, the photo (the type and the description are proposed from it);
+                choosing the type yourself stays possible from the categories. Without the AI: the search. */}
+            {rules.aiChecks ? (
+              <Link href="/raporto" className="home-photo-cta">
+                <Icon name="camera" size={24} />
+                <span><strong>{t('home.hero.photoButton')}</strong><span>{t('home.hero.photoHint')}</span></span>
+                <Icon name="arrowRight" size={20} />
+              </Link>
+            ) : <ProblemSearch />}
+            {rules.aiChecks && <p className="home-chips-label">{t('home.hero.chooseSelf')}</p>}
+            <nav className="home-chips" aria-label={rules.aiChecks ? t('home.hero.chooseSelf') : t('home.hero.categories')}>
               {catalog.categories.map((c) => (
                 <Link key={c.code} href={`/raporto?kategoria=${c.code}`} className="home-chip">
                   <CategoryIcon icon={c.icon} size={20} />{lang === 'en' ? c.nameEn : c.nameSq}
