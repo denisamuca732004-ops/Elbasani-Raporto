@@ -41,6 +41,7 @@ import { distanceLabel, insideArea, key, phoneDigits, typeName, type LatLng } fr
 import { isMine, rememberMine, rememberSupported } from '@/lib/client/myReports';
 import { newClientRef, queueReport } from '@/lib/client/offlineQueue';
 import { formToken, prefetchFormToken } from '@/lib/client/formToken';
+import { askPushPermission, pushSupport, subscribeToReport } from '@/lib/client/push';
 import { uploadPhoto } from '@/lib/client/upload';
 import { LIMITS, isOtherChoice } from '@/lib/shared/domain';
 import { looksLikeGibberish } from '@/lib/shared/text';
@@ -124,7 +125,12 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const [followed, setFollowed] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<ActionFailure | null>(null);
-  const [result, setResult] = useState<{ caseNumber?: string; queued?: boolean } | null>(null);
+  const [result, setResult] = useState<{ caseNumber?: string; queued?: boolean; notified?: boolean } | null>(null);
+  // "Më njoftoni në këtë telefon" (free push notifications, only when asked for).
+  const [notify, setNotify] = useState(false);
+  const [notifyDenied, setNotifyDenied] = useState(false);
+  const [canPush, setCanPush] = useState<'yes' | 'ios-install' | 'no'>('no');
+  useEffect(() => { setCanPush(pushSupport()); }, []);
   const [copied, setCopied] = useState(false);
   const [clientRef] = useState(newClientRef);
   const uploaded = useRef<{ photo: Blob; key: string } | null>(null);
@@ -432,7 +438,10 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       const photoKey = await photoKeyFor(photo);
       const res = await call(createReportAction({ ...data, photoKey }));
       rememberMine(res.caseNumber);
-      setResult({ caseNumber: res.caseNumber });
+      const notified = notify && rules.pushKey
+        ? await subscribeToReport({ caseNumber: res.caseNumber, clientRef, key: rules.pushKey, lang: lang === 'en' ? 'en' : 'sq' })
+        : false;
+      setResult({ caseNumber: res.caseNumber, notified });
     } catch (raw) {
       const err = raw as ActionFailure;
       if (err.code === 'NETWORK') {
@@ -500,6 +509,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             <h2>{t('report.doneTitle')}</h2>
             <p>{t('report.doneIdLabel')}</p>
             <span className="case-number">{result.caseNumber}</span>
+            {result.notified && <p className="small" style={{ margin: '0 0 12px' }}><Icon name="check" size={14} /> {t('report.notify.done')}</p>}
             <button
               type="button" className="btn btn-sm btn-ghost" style={{ marginBottom: 14 }}
               onClick={() => navigator.clipboard?.writeText(result.caseNumber ?? '').then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {})}
@@ -509,7 +519,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             {/* Nothing is e-mailed (residents leave no e-mail): this screen is the only place they get the number. */}
             <div className="done-note keep">
               <Icon name="alert" size={20} />
-              <p><strong>{t('report.doneKeepTitle')}</strong> {contactMode === 'anonymous' ? t('report.doneKeepAnonymous') : t('report.doneKeepContact')}</p>
+              <p><strong>{t('report.doneKeepTitle')}</strong> {result.notified ? t('report.doneKeepNotified') : contactMode === 'anonymous' ? t('report.doneKeepAnonymous') : t('report.doneKeepContact')}</p>
             </div>
             <div className="row" style={{ justifyContent: 'center' }}>
               <Link className="btn" href={`${trackBase}/${result.caseNumber}`}>{t('report.trackIt')}</Link>
@@ -813,6 +823,25 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               </div>
             </>
           )}
+          {rules.pushKey && canPush === 'yes' && (
+            <div className="notify-box">
+              <label className="switch">
+                <input
+                  type="checkbox" role="switch" checked={notify} aria-checked={notify}
+                  onChange={async (e) => {
+                    if (!e.target.checked) { setNotify(false); return; }
+                    const granted = await askPushPermission();
+                    setNotify(granted);
+                    setNotifyDenied(!granted);
+                  }}
+                />
+                <span className="switch-track" aria-hidden="true" />
+                <span>{t('report.notify.label')}</span>
+              </label>
+              <p className="hint">{notifyDenied ? t('report.notify.denied') : t('report.notify.hint')}</p>
+            </div>
+          )}
+          {rules.pushKey && canPush === 'ios-install' && <p className="hint notify-box">{t('report.notify.ios')}</p>}
         </section>
       )}
 
@@ -843,7 +872,10 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               { step: 'details', icon: <Icon name="list" size={28} strokeWidth={1.6} />, value: description.trim() || '–' },
               {
                 step: 'contact', icon: <Icon name="user" size={28} strokeWidth={1.6} />,
-                value: contactMode === 'anonymous' ? t('report.anonymousShort') : [contact.name.trim(), contact.phone.trim()].filter(Boolean).join(' · ') || '–',
+                value: [
+                  contactMode === 'anonymous' ? t('report.anonymousShort') : [contact.name.trim(), contact.phone.trim()].filter(Boolean).join(' · ') || '–',
+                  notify ? t('report.notify.short') : '',
+                ].filter(Boolean).join(' · '),
               },
             ] as Array<{ step: StepName; icon: ReactNode; value: ReactNode }>).map((item) => (
               <section className="review-item" key={item.step} aria-labelledby={`review-${item.step}`}>

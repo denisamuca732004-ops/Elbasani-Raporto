@@ -20,9 +20,11 @@ export type JobPayloads = {
   'closing-check': { reportId: string };
   /** Sends emails that were written to the email log. */
   'deliver-email': { ids: string[] };
+  /** "Më njoftoni në këtë telefon": a notification to the resident's devices. */
+  push: { reportId: string; moment: 'in_progress' | 'resolved' | 'rejected'; note?: string | null; feedbackToken?: string };
 };
 export type JobName = keyof JobPayloads;
-export const JOB_NAMES: readonly JobName[] = ['triage', 'closing-check', 'deliver-email'];
+export const JOB_NAMES: readonly JobName[] = ['triage', 'closing-check', 'deliver-email', 'push'];
 
 type Mode = 'auto' | 'manual';
 let mode: Mode = 'auto';

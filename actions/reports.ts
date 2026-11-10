@@ -27,6 +27,7 @@ import * as reports from '@/lib/server/services/report';
 import * as transfers from '@/lib/server/services/transfer';
 import { checkDescription } from '@/lib/server/services/descriptionCheck';
 import { draftNote } from '@/lib/server/services/noteDraft';
+import { subscribeToReport } from '@/lib/server/services/push';
 import { analyzePhoto } from '@/lib/server/services/photoAnalyze';
 import { checkPhoto } from '@/lib/server/services/photoCheck';
 import { extractFromText } from '@/lib/server/services/triage';
@@ -334,5 +335,24 @@ export async function draftNoteAction(id: string, input: unknown) {
     await enforceRateLimit('draft', user.id);
     const data = parseInput(draftSchema, input);
     return draftNote(user, parseInput(reportId, id), data.kind, data.notes);
+  });
+}
+
+const pushSubscribeSchema = z.strictObject({
+  caseNumber: z.string().trim().min(3).max(40),
+  clientRef: z.string().min(8).max(64),
+  lang: z.enum(['sq', 'en']).default('sq'),
+  subscription: z.object({
+    endpoint: z.url().max(1000),
+    keys: z.object({ p256dh: z.string().min(20).max(200), auth: z.string().min(8).max(100) }),
+  }),
+});
+
+/** "Më njoftoni në këtë telefon": the browser's push subscription for the report just sent. */
+export async function subscribePushAction(input: unknown) {
+  return run(async () => {
+    await enforceRateLimit('follow', await clientIp());
+    await subscribeToReport(parseInput(pushSubscribeSchema, input));
+    return { ok: true };
   });
 }

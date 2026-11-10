@@ -1476,3 +1476,4 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 .dup-photos.different { color: #8A5300; }
 .draft-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: -4px 0 10px; }
 .draft-btn { padding-left: 0; }
+.notify-box { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line, #DCE3DE); }

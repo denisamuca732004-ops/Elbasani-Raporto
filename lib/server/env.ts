@@ -93,6 +93,10 @@ const EnvSchema = z.object({
   DUPLICATE_RADIUS_METERS: int(50, 5, 1000),
   /** Keep a new report that repeats an open one nearby for the admin, instead of e-mailing the sector. */
   HOLD_DUPLICATES: bool(true),
+  /** "Më njoftoni në këtë telefon" (browser push). The keys come from AUTH_SECRET unless both VAPID keys are set. */
+  PUSH_ENABLED: bool(true),
+  VAPID_PUBLIC_KEY: str(''),
+  VAPID_PRIVATE_KEY: str(''),
   AUTO_CLOSE_RESOLVED_DAYS: int(7, 1, 90),
   CONTACT_RETENTION_DAYS: int(90, 7, 3650),
   SERVICE_AREA_BBOX: bbox,
@@ -191,6 +195,7 @@ function load() {
       priceInputPerMTok: e.AI_PRICE_INPUT_PER_MTOK,
       priceOutputPerMTok: e.AI_PRICE_OUTPUT_PER_MTOK,
     },
+    push: { enabled: e.PUSH_ENABLED, publicKey: e.VAPID_PUBLIC_KEY, privateKey: e.VAPID_PRIVATE_KEY },
     geocoder: {
       url: e.GEOCODER_URL.toLowerCase() === 'off' ? null : e.GEOCODER_URL.replace(/\/$/, ''),
       timeoutMs: e.GEOCODER_TIMEOUT_MS,

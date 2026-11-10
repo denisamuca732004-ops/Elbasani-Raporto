@@ -8,6 +8,7 @@ import { publicStatusOf, type Priority, type Status } from '@/lib/shared/domain'
 import { db } from '../db';
 import { queueEmails } from '../mail';
 import * as tpl from '../mailTemplates';
+import { queuePush } from './push';
 import { issueLink, linkUrl, revokeLinks } from './reportLinks';
 
 /** Residents who asked for updates: the reporter (with email) and people who followed the case. */
@@ -43,6 +44,9 @@ export async function notifyCitizenStatus(
 ): Promise<void> {
   if (r.isTest) return;
   if (publicStatusOf(previousStatus) === publicStatusOf(status)) return;
+  // On the phone (only the residents who asked): in work, refused / merged. "Fixed" is sent by resolveAs.
+  if (publicStatusOf(status) === 'IN_PROGRESS') await queuePush(r.id, 'in_progress', note);
+  if (publicStatusOf(status) === 'REJECTED') await queuePush(r.id, 'rejected', note);
   if (status === 'RESOLVED') return;
   const mail = tpl.statusChanged({ caseNumber: r.caseNumber, publicStatus: publicStatusOf(status), note });
   await queueEmails(await citizenRecipients(r), mail, r.id);

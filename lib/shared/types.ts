@@ -303,6 +303,8 @@ export interface PublicSettings extends AppSettings {
     serviceArea: { minLat: number; minLng: number; maxLat: number; maxLng: number }; minDescription: number; minAddress: number; maxUploadBytes: number;
     /** The photo and the description are checked by the AI while the report is created (the AI is on). */
     aiChecks: boolean;
+    /** The public key for "Më njoftoni në këtë telefon" (browser push); null when notifications are off. */
+    pushKey: string | null;
   };
 }
 

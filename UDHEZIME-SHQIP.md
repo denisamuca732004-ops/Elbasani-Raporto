@@ -231,6 +231,14 @@ Filtrat (sektori, prioriteti, me vonesë, kërkimi) ruhen në adresë. Numri te 
 - **Përmbledhja javore:** çdo të hënë në mëngjes administratorët marrin një email me shifrat e javës, sektorët, zonat dhe vendet ku problemi përsëritet (3+ herë brenda 60 m në 90 ditë). Shifrat i numëron sistemi; AI shkruan vetëm paragrafin e parë. Te Paneli ka butonin "Dërgo përmbledhjen javore te emaili im" dhe listën e vendeve ku problemi përsëritet.
 - **Tekste për banorët me AI:** te raportimi, nën "Çfarë u bë?", arsyen e refuzimit dhe mesazhin për banorin, butoni "Propozo/Përmirëso tekstin me AI". AI vetëm propozon; stafi e lexon, e ndryshon dhe e dërgon vetë.
 
+## Njoftimet në telefon për banorin
+
+- Te hapi "Të dhënat e kontaktit" banori mund të ndezë **"Më njoftoni në këtë telefon"**. Telefoni kërkon leje për njoftime; nuk duhet llogari, email apo numër telefoni.
+- Njoftimet janë falas (njoftime të shfletuesit, jo SMS) dhe vijnë vetëm **3 herë**: kur sektori e merr në punë, kur shënohet i rregulluar (me lidhjen "A u rregullua?" për ta konfirmuar ose rihapur) dhe kur refuzohet ose bashkohet me një tjetër (me arsyen).
+- Në iPhone njoftimet punojnë kur faqja është shtuar në ekranin kryesor (Ndaj → Shto në ekranin kryesor); faqja e thotë këtë vetë.
+- Çelësat e njoftimeve krijohen nga `AUTH_SECRET`, ndaj nuk ka asgjë për të vendosur te Vercel. (Nëse ndryshoni `AUTH_SECRET`, njoftimet e vjetra ndalen.) Për t'i fikur: `PUSH_ENABLED=false`.
+- Pajisjet fshihen kur raportimi refuzohet, kur shërbimi i njoftimeve thotë që nuk ekzistojnë më, dhe bashkë me të dhënat e kontaktit pas 90 ditësh.
+
 ## Vendosja në Vercel
 
 1. Lidhni repository-n në Vercel. Projekti njihet si Next.js, dhe `vercel.json` vendos build-in

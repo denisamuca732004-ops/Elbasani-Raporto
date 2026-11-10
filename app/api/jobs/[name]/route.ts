@@ -15,6 +15,10 @@ const payloads: { [N in JobName]: z.ZodType } = {
   triage: z.strictObject({ reportId: z.uuid() }),
   'closing-check': z.strictObject({ reportId: z.uuid() }),
   'deliver-email': z.strictObject({ ids: z.array(z.string().regex(/^\d+$/)).min(1).max(500) }),
+  push: z.strictObject({
+    reportId: z.uuid(), moment: z.enum(['in_progress', 'resolved', 'rejected']),
+    note: z.string().max(400).nullable().optional(), feedbackToken: z.string().max(200).optional(),
+  }),
 };
 
 export async function POST(request: Request, ctx: { params: Promise<{ name: string }> }) {

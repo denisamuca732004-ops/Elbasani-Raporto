@@ -174,6 +174,14 @@ const en = {
       typeLabel: 'Type of problem', proposed: 'suggested from the photo',
       editHint: 'You can change the description or add details, e.g. how long it has been like this.',
     },
+    notify: {
+      label: 'Notify me on this phone',
+      hint: 'Free, no SMS. Only 3 times: when it is taken on, when it is fixed (so you can confirm) and if it is closed without action.',
+      denied: 'The phone did not allow notifications. You can allow them in the browser settings, or follow the report with its number.',
+      ios: 'On iPhone, notifications work once you add this page to the Home Screen (Share → Add to Home Screen).',
+      short: 'notifications on the phone',
+      done: 'We will notify you on this phone when there is news.',
+    },
     photoCheck: {
       checking: 'Checking the photo…', ok: 'The photo was checked.', wait: 'Please wait: the photo is being checked.',
       unrelatedTitle: 'Is this the photo of the problem?',
@@ -209,6 +217,7 @@ const en = {
     doneIdLabel: 'Your report number (ID):', copyNumber: 'Copy the number', copied: 'Copied',
     doneKeepTitle: 'This is the ID of your report. Keep it to track it.',
     doneKeepAnonymous: 'You reported anonymously, so we have nowhere to send it. Copy it or take a screenshot: with it you track the report under “Track a report”.',
+    doneKeepNotified: 'News will come to this phone. Copy it or take a screenshot anyway: with it you can follow the report from another device too.',
     doneKeepContact: 'Copy it or take a screenshot: with it you track the report under “Track a report”. If more details are needed, the municipality will call you.',
     trackIt: 'View the report', another: 'Report something else',
     queuedTitle: 'Saved on your phone',
@@ -285,7 +294,7 @@ const en = {
   privacy: {
     title: 'Privacy',
     intro: 'Elbasan Reports collects only the data needed to handle your report, in line with the Albanian law on personal data protection.',
-    what: { title: 'What we collect', text: 'The type of problem, the location, the photo and the description. For contact: your name and phone number — or nothing, if you choose to report anonymously. You create no account and we do not ask for an email.' },
+    what: { title: 'What we collect', text: 'The type of problem, the location, the photo and the description. For contact: your name and phone number — or nothing, if you choose to report anonymously. You create no account and we do not ask for an email. If you choose “Notify me on this phone”, we keep the notification address your browser gives (not your phone number), only for that report.' },
     why: { title: 'Why', text: 'To send the report to the right sector, so the municipality can call you if it needs more details, and for anonymised statistics about municipal services.' },
     public: { title: 'What is public', text: 'The type, status, approximate address, photo and description once verified. Your contact details are never published.' },
     photos: { title: 'Photos', text: 'Every photo is re-processed and its hidden data (such as GPS and device) is removed. Photos with visible faces or licence plates are hidden from the public.' },

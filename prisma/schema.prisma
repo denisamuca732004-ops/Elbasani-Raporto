@@ -357,6 +357,8 @@ model Report {
   transfers   DepartmentTransfer[]
   emails      EmailLog[]
 
+  pushSubscriptions PushSubscription[]
+
   @@index([status])
   @@index([departmentId, status])
   @@index([priority])
@@ -487,6 +489,23 @@ model AiResult {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("ai_results")
+}
+
+/// "Më njoftoni në këtë telefon": a browser push subscription for one report, given by the
+/// resident who sent it. Deleted when the push service says it is gone, and with the contact data.
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  reportId  String   @map("report_id") @db.Uuid
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  endpoint  String   @db.VarChar(1000)
+  p256dh    String   @db.VarChar(200)
+  auth      String   @db.VarChar(100)
+  lang      String   @default("sq") @db.VarChar(2)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([reportId, endpoint])
+  @@index([reportId])
+  @@map("push_subscriptions")
 }
 
 /// AI calls and tokens per month (Europe/Tirane), for the monthly spending limit.

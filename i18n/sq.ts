@@ -174,6 +174,14 @@ const sq = {
       typeLabel: 'Lloji i problemit', proposed: 'propozuar nga fotoja',
       editHint: 'Mund ta ndryshoni përshkrimin ose t’i shtoni detaje, p.sh. prej sa kohësh është kështu.',
     },
+    notify: {
+      label: 'Më njoftoni në këtë telefon',
+      hint: 'Falas, pa SMS. Vetëm 3 herë: kur merret në punë, kur rregullohet (që ta konfirmoni) dhe nëse mbyllet pa u trajtuar.',
+      denied: 'Telefoni nuk lejoi njoftimet. Mund t’i lejoni te cilësimet e shfletuesit, ose ta ndiqni raportimin me numrin e tij.',
+      ios: 'Në iPhone, njoftimet punojnë kur e shtoni faqen në ekranin kryesor (Ndaj → Shto në ekranin kryesor).',
+      short: 'njoftime në telefon',
+      done: 'Do t’ju njoftojmë në këtë telefon kur të ketë lajme.',
+    },
     photoCheck: {
       checking: 'Po kontrollohet fotoja…', ok: 'Fotoja u kontrollua.', wait: 'Prisni pak: fotoja po kontrollohet.',
       unrelatedTitle: 'A është kjo fotoja e problemit?',
@@ -209,6 +217,7 @@ const sq = {
     doneIdLabel: 'Numri (ID) i raportimit tuaj:', copyNumber: 'Kopjo numrin', copied: 'U kopjua',
     doneKeepTitle: 'Kjo është ID-ja e raportimit tuaj. Ruajeni për ta ndjekur.',
     doneKeepAnonymous: 'Raportuat në mënyrë anonime, ndaj nuk kemi ku t’jua dërgojmë. Kopjojeni ose bëni një screenshot: me të e ndiqni raportimin te “Ndiq raportimin”.',
+    doneKeepNotified: 'Lajmet do t’ju vijnë në këtë telefon. Kopjojeni ose bëni një screenshot gjithsesi: me të e ndiqni raportimin edhe nga një pajisje tjetër.',
     doneKeepContact: 'Kopjojeni ose bëni një screenshot: me të e ndiqni raportimin te “Ndiq raportimin”. Nëse duhen më shumë të dhëna, Bashkia ju telefonon.',
     trackIt: 'Shiko raportimin', another: 'Raporto diçka tjetër',
     queuedTitle: 'U ruajt në telefon',
@@ -285,7 +294,7 @@ const sq = {
   privacy: {
     title: 'Privatësia',
     intro: 'Elbasani Raporton mbledh vetëm të dhënat që nevojiten për të trajtuar raportimin tuaj, në përputhje me ligjin shqiptar për mbrojtjen e të dhënave personale.',
-    what: { title: 'Çfarë mbledhim', text: 'Llojin e problemit, vendndodhjen, foton dhe përshkrimin. Për kontakt: emrin dhe numrin e telefonit — ose asgjë, nëse zgjidhni të raportoni anonimisht. Nuk krijoni llogari dhe nuk ju kërkojmë email.' },
+    what: { title: 'Çfarë mbledhim', text: 'Llojin e problemit, vendndodhjen, foton dhe përshkrimin. Për kontakt: emrin dhe numrin e telefonit — ose asgjë, nëse zgjidhni të raportoni anonimisht. Nuk krijoni llogari dhe nuk ju kërkojmë email. Nëse zgjidhni “Më njoftoni në këtë telefon”, ruajmë adresën e njoftimeve që jep shfletuesi (jo numrin e telefonit), vetëm për këtë raportim.' },
     why: { title: 'Pse', text: 'Për ta dërguar raportimin te sektori i duhur, që Bashkia t’ju telefonojë nëse i duhen më shumë të dhëna, dhe për statistika të anonimizuara mbi shërbimet e Bashkisë.' },
     public: { title: 'Çfarë është publike', text: 'Lloji, statusi, adresa e përafërt, fotoja dhe përshkrimi pasi verifikohen. Të dhënat tuaja të kontaktit nuk publikohen kurrë.' },
     photos: { title: 'Fotot', text: 'Çdo foto ripërpunohet dhe i hiqen të dhënat e fshehura (si GPS dhe pajisja). Fotot me fytyra ose targa të dukshme fshihen nga publiku.' },

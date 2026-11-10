@@ -23,6 +23,7 @@ import { createToken } from '../tokens';
 import { assertAdmin, assertCanAccessReport, isAdmin, reportScope } from './access';
 import { insideMunicipality, zoneOfPoint } from './geo';
 import { allowedStatusesFor, detailInclude, listInclude, toDetail, toListItem } from './mapper';
+import { hasPushSubscribers, queuePush } from './push';
 import { citizenRecipients, notifyCitizenStatus, notifyDepartmentOfReport, sendReportToSector } from './notification';
 import { currentLink, linkUrl } from './reportLinks';
 import { SECTOR_TEMPLATES, mailStatusOf } from './sectorMail';
@@ -293,7 +294,8 @@ export async function resolveAs(
   const id = report.id;
   const note = input.note?.trim() || null;
   const photo: StoredImage | null = input.photoKey ? await storeImage(await takeTemporaryUpload(input.photoKey)) : null;
-  const feedback = report.contactEmail && !report.isTest ? createToken() : null;
+  // The "A u rregullua?" link: for the e-mail of older reports, and for the phones that asked for notifications.
+  const feedback = !report.isTest && (report.contactEmail || (await hasPushSubscribers(id))) ? createToken() : null;
   try {
     await db.$transaction(async (tx) => {
       if (photo) {
@@ -321,6 +323,7 @@ export async function resolveAs(
       await queueEmails([to], mail, id);
     }
   }
+  if (!report.isTest) await queuePush(id, 'resolved', note, feedback?.token);
   if (photo) await enqueue('closing-check', { reportId: id });
 }
 

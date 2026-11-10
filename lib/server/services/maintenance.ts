@@ -115,6 +115,7 @@ export async function eraseOldContacts(now = new Date()): Promise<number> {
       if (updated.count === 0) return;
       erased += 1;
       await tx.reportFollower.updateMany({ where: { reportId: r.id, email: { not: null } }, data: { email: null } });
+      await tx.pushSubscription.deleteMany({ where: { reportId: r.id } });
       if (addresses.length) await tx.emailLog.deleteMany({ where: { reportId: r.id, toAddress: { in: addresses } } });
     });
   }

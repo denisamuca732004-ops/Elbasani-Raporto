@@ -4,6 +4,7 @@
  * - Public pages are fetched from the network first; without a connection the last copy is shown,
  *   so a resident can still fill in a report (it is kept on the phone and sent later).
  * - The municipal panel, sign-in pages and every API are never cached.
+ * - "Më njoftoni në këtë telefon": shows the notifications of the resident's report and opens its page.
  */
 const STATIC_CACHE = 'er-static-v3';
 const PAGE_CACHE = 'er-pages-v3';
@@ -57,4 +58,32 @@ self.addEventListener('fetch', (event) => {
         .catch(async () => (await caches.match(request)) || (await caches.match('/raporto')) || Response.error()),
     );
   }
+});
+
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = {};
+  }
+  event.waitUntil(self.registration.showNotification(data.title || 'Elbasani Raporton', {
+    body: data.body || '',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/favicon-64.png',
+    tag: data.tag,
+    data: { url: data.url || '/' },
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
+  if (url.origin !== self.location.origin) return;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) if (client.url === url.href && 'focus' in client) return client.focus();
+      return self.clients.openWindow(url.href);
+    }),
+  );
 });
