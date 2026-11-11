@@ -33,7 +33,7 @@ export async function getPublicSettings(): Promise<PublicSettings> {
       minDescription: LIMITS.minDescription,
       minAddress: LIMITS.minAddress,
       maxUploadBytes: c.storage.maxBytes,
-      aiChecks: await aiAvailable(),
+      aiChecks: await aiAvailable().catch(() => false),
       pushKey: pushPublicKey(),
     },
   };

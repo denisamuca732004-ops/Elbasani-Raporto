@@ -27,6 +27,14 @@ function client(): Redis | null {
   return redis;
 }
 
+/** The cache is a shortcut: when Redis is slow the page goes to the database instead of waiting. */
+const REDIS_TIMEOUT_MS = 1500;
+function within<T>(p: Promise<T>, what: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error(`${what} timed out`)), REDIS_TIMEOUT_MS); });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
+}
+
 const memory = new Map<string, { value: unknown; expires: number }>();
 const ns = (key: string) => `er:${config().env}:${key}`;
 
@@ -42,7 +50,7 @@ export async function cacheGet<T>(key: string): Promise<T | undefined> {
     return structuredClone(hit.value) as T;
   }
   try {
-    const value = await r.get<T>(ns(key));
+    const value = await within(r.get<T>(ns(key)), 'redis get');
     return value ?? undefined;
   } catch (err) {
     console.warn(`[cache] read failed for ${key}:`, (err as Error).message);
@@ -57,7 +65,7 @@ export async function cacheSet(key: string, value: unknown, ttlSeconds: number):
     return;
   }
   try {
-    await r.set(ns(key), value, { ex: ttlSeconds });
+    await within(r.set(ns(key), value, { ex: ttlSeconds }), 'redis set');
   } catch (err) {
     console.warn(`[cache] write failed for ${key}:`, (err as Error).message);
   }
@@ -72,7 +80,7 @@ export async function invalidate(...keys: string[]): Promise<void> {
     return;
   }
   try {
-    await r.del(...keys.map(ns));
+    await within(r.del(...keys.map(ns)), 'redis del');
   } catch (err) {
     console.warn(`[cache] invalidate failed for ${keys.join(', ')}:`, (err as Error).message);
   }

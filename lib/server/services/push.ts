@@ -14,7 +14,6 @@
  */
 import 'server-only';
 import { createECDH, createHmac } from 'node:crypto';
-import webpush from 'web-push';
 import { db } from '../db';
 import { config } from '../env';
 import { badRequest, notFound, tooMany } from '../errors';
@@ -45,7 +44,13 @@ export function vapidKeys(): { publicKey: string; privateKey: string } {
 
 /** The public key the browser needs to subscribe, or null when notifications are off. */
 export function pushPublicKey(): string | null {
-  return config().push.enabled ? vapidKeys().publicKey : null;
+  if (!config().push.enabled) return null;
+  try {
+    return vapidKeys().publicKey;
+  } catch (err) {
+    console.error('[push] keys unavailable:', err instanceof Error ? err.message : err);
+    return null; // the site works, only without "Më njoftoni"
+  }
 }
 
 export interface SubscriptionInput { endpoint: string; keys: { p256dh: string; auth: string } }
@@ -107,6 +112,8 @@ type Sender = (sub: { endpoint: string; keys: { p256dh: string; auth: string } }
 let sender: Sender = async (sub, payload) => {
   const { publicKey, privateKey } = vapidKeys();
   const app = config().appUrl;
+  // Loaded only when a notification is sent, never with the pages.
+  const { default: webpush } = await import('web-push');
   await webpush.sendNotification(sub, payload, {
     vapidDetails: { subject: app.startsWith('https://') ? app : 'mailto:noreply@elbasani-raporton.app', publicKey, privateKey },
     TTL: 86_400, timeout: 10_000, urgency: 'normal',

@@ -20,6 +20,9 @@ function createClient(): PrismaClient {
     connectionString: c.databaseUrl,
     // Serverless functions each keep a few connections; use a pooled DATABASE_URL in production.
     max: c.isStrict ? 5 : 10,
+    // Never wait forever: an unreachable or overloaded database gives an error page, not a blank one.
+    connectionTimeoutMillis: 10_000,
+    query_timeout: 30_000,
   });
   return new PrismaClient({ adapter, log: c.env === 'development' ? ['warn', 'error'] : ['error'] });
 }
