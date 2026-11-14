@@ -1480,3 +1480,6 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 /* "Më shumë": the rest of the categories on the home page. */
 .home-chip-more { font: inherit; font-weight: 600; font-size: 1.05rem; cursor: pointer; color: var(--pub-green, #1A7F37) !important; border-style: dashed !important; }
 .home-chip-more svg { color: inherit; }
+/* The big title: weight 800 instead of 900 (the black weight has notches at the joints that look like
+   broken pixels when zoomed), a little more room between letters, and outlines drawn exactly. */
+.site .home-title { font-weight: 800; letter-spacing: -0.03em; text-rendering: geometricPrecision; font-kerning: normal; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
