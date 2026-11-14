@@ -57,6 +57,8 @@ const sq = {
     sent: 'Raportimet tuaja u dërguan: {list}',
   },
   home: {
+    about: { title: 'Një rrugë e drejtpërdrejtë te Bashkia', text: 'Çdo raportim merr një numër, shkon te sektori përgjegjës dhe ndiqet hap pas hapi, deri sa problemi të rregullohet. Pa llogari dhe pa pagesë.' },
+    types: { title: 'Çfarë mund të raportoni', sub: 'Zgjidhni llojin e problemit për të plotësuar formularin hap pas hapi.' },
     trackButton: 'Ndiq raportimin',
     categories: 'Zgjidhni kategorinë',
     recent: 'Raportimet e fundit',
@@ -79,8 +81,8 @@ const sq = {
     },
     photoAlt: 'Kalaja e Elbasanit dhe Kulla e Sahatit, parë nga lart',
     map: { label: 'Harta e raportimeve në qytet: hapni hartën', open: { one: '1 raportim i hapur në qytet', other: '{n} raportime të hapura në qytet' } },
-    numbers: { fixedIn: 'të rregulluara në {month}', avgDays: 'ditë mesatarisht për rregullim', openNow: 'të hapura tani' },
-    fixed: { title: 'Rregulluar së fundmi', seeMap: 'Shihini në hartë', badge: 'U rregullua', none: 'Ende asnjë raportim i rregulluar.' },
+    numbers: { fixedIn: 'të rregulluara në {month}', avgDays: 'ditë mesatarisht për rregullim', openNow: 'të hapura tani', always: 'raportoni në çdo kohë, nga telefoni' },
+    fixed: { title: 'Rregulluar së fundmi', text: 'Problemet që raportuat dhe Bashkia i rregulloi. Prekni njërin për të parë historinë e tij.', seeMap: 'Të gjitha në hartë', badge: 'U rregullua', none: 'Ende asnjë raportim i rregulluar.' },
     when: { today: 'sot', yesterday: 'dje', days: { one: '1 ditë më parë', other: '{n} ditë më parë' } },
   },
   sector: {

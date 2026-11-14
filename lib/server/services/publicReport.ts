@@ -454,6 +454,7 @@ export async function recentlyFixed(limit = 3): Promise<FixedReport[]> {
       place: card.neighbourhood && card.address ? `${card.address} · ${card.neighbourhood}` : card.address || card.neighbourhood,
       resolvedAt: r.resolvedAt!.toISOString(),
       note: r.closingNote?.trim() || null,
+      photoUrl: toPublicCase(r).afterPhotoUrl ?? card.photoUrl,
       isTest: card.isTest,
     };
   });

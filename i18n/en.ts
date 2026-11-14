@@ -57,6 +57,8 @@ const en = {
     sent: 'Your reports were sent: {list}',
   },
   home: {
+    about: { title: 'A direct line to the Municipality', text: 'Every report gets a number, goes to the responsible sector and can be followed step by step until the problem is fixed. No account, no fees.' },
+    types: { title: 'What you can report', sub: 'Choose the type of problem to fill in the form step by step.' },
     trackButton: 'Track a report',
     categories: 'Choose a category',
     recent: 'Recent reports',
@@ -79,8 +81,8 @@ const en = {
     },
     photoAlt: 'The Elbasan castle and the clock tower, seen from above',
     map: { label: 'Map of reports in the city: open the map', open: { one: '1 report open across the city', other: '{n} reports open across the city' } },
-    numbers: { fixedIn: 'fixed in {month}', avgDays: 'days on average to fix', openNow: 'open now' },
-    fixed: { title: 'Recently fixed', seeMap: 'See them on the map', badge: 'Fixed', none: 'Nothing has been fixed yet.' },
+    numbers: { fixedIn: 'fixed in {month}', avgDays: 'days on average to fix', openNow: 'open now', always: 'report any time, from your phone' },
+    fixed: { title: 'Recently fixed', text: 'Problems you reported and the Municipality fixed. Tap one to see its history.', seeMap: 'All of them on the map', badge: 'Fixed', none: 'Nothing has been fixed yet.' },
     when: { today: 'today', yesterday: 'yesterday', days: { one: '1 day ago', other: '{n} days ago' } },
   },
   sector: {

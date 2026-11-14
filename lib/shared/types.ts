@@ -84,6 +84,8 @@ export interface FixedReport {
   resolvedAt: string;
   /** The municipality's note for the resident ("Shënimi i Bashkisë"), public on the report's page too. */
   note: string | null;
+  /** The "after" photo (or, without one, the verified "before" photo); null when none is public. */
+  photoUrl: string | null;
   isTest: boolean;
 }
 

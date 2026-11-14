@@ -1,12 +1,11 @@
 'use client';
 /**
- * Home page (design v2 by the mentors):
- *  - the first screen: "Report. Track. Fixed.", "What needs fixing?" (a problem typed here opens
- *    its report type), the categories, and a schematic city map with the reports of the last
- *    3 months, the number open, fixed this month and the average days to fix;
- *  - "Recently fixed" with the municipality's note, next to "Frequently reported" (information
- *    only, not links);
- *  - how it works, in three steps.
+ * Home page, a clean layout of four parts:
+ *  1. the photo of Elbasan with the promise ("Raporto. Ndiqe. U rregullua."), the open reports
+ *     (to the map) and the one main action in its corner ("Raporto me foto", or the form);
+ *  2. what the platform is, the three steps and its numbers;
+ *  3. the categories, the most reported first (the form filled in by hand), "Më shumë" for the rest;
+ *  4. fixed recently, with the photos, and the map of the fixed ones.
  * Questions are answered by the help chat at the bottom right (components/site/ChatHelp.tsx).
  */
 import Link from 'next/link';
@@ -59,112 +58,126 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
   const [allCategories, setAllCategories] = useState(false);
   const chipsId = useId();
 
+  const { types } = useCatalog();
+  const shown = allCategories ? categories : categories.slice(0, TOP_CATEGORIES);
+  const examples = (code: string) => types.filter((ty) => ty.category.code === code && !ty.code.endsWith('.other')).slice(0, 3)
+    .map((ty) => (lang === 'en' ? ty.nameEn : ty.nameSq)).join(', ');
+  const reportHref = rules.aiChecks ? '/raporto' : '/raporto?menyra=formular';
+
   return (
     <>
       <InstallBar />
-      <section className="home-hero">
-        <div className="container home-hero-grid">
-          <div className="home-hero-text">
-            <h1 className="home-title">
-              <span>{t('home.hero.l1')}</span>
-              <span>{t('home.hero.l2')}</span>
-              <span className="accent">{t('home.hero.l3')}</span>
+
+      {/* 1 · The photo of Elbasan, the promise, and the one main action in the corner. */}
+      <section className="container hx-hero">
+        <div className="hx-hero-media">
+          <picture>
+            <source srcSet="/elbasan-hero.webp" type="image/webp" />
+            <img src="/elbasan-hero.jpg" alt={t('home.photoAlt')} width={1200} height={900} fetchPriority="high" />
+          </picture>
+          <div className="hx-hero-shade" aria-hidden="true" />
+          {numbers && (
+            <Link href="/harta" className="hx-hero-chip"><span className="dot" />{t('home.map.open', { n: numbers.openNow })}<Icon name="arrowRight" size={16} /></Link>
+          )}
+          <div className="hx-hero-copy">
+            <h1 className="hx-title">
+              <span>{t('home.hero.l1')} {t('home.hero.l2')}</span> <span className="accent">{t('home.hero.l3')}</span>
             </h1>
-            <p className="home-lead">{t('home.hero.text')}</p>
-            {/* With the AI on: one main action, the photo (the type and the description are proposed from it);
-                choosing the type yourself stays possible from the categories. Without the AI: the search. */}
-            {rules.aiChecks ? (
-              <Link href="/raporto" className="home-photo-cta">
-                <Icon name="camera" size={24} />
-                <span><strong>{t('home.hero.photoButton')}</strong><span>{t('home.hero.photoHint')}</span></span>
-                <Icon name="arrowRight" size={20} />
-              </Link>
-            ) : <ProblemSearch />}
-            {rules.aiChecks && <p className="home-chips-label">{t('home.hero.chooseSelf')}</p>}
-            <nav id={chipsId} className="home-chips" aria-label={rules.aiChecks ? t('home.hero.chooseSelf') : t('home.hero.categories')}>
-              {(allCategories ? categories : categories.slice(0, TOP_CATEGORIES)).map((c) => (
-                <Link key={c.code} href={`/raporto?kategoria=${c.code}`} className="home-chip">
-                  <CategoryIcon icon={c.icon} size={20} />{lang === 'en' ? c.nameEn : c.nameSq}
-                </Link>
-              ))}
-              {categories.length > TOP_CATEGORIES && (
-                <button type="button" className="home-chip home-chip-more" aria-expanded={allCategories} aria-controls={chipsId} onClick={() => setAllCategories((v) => !v)}>
-                  {allCategories ? t('home.hero.fewerCategories') : t('home.hero.moreCategories', { n: categories.length - TOP_CATEGORIES })}
-                  <Icon name={allCategories ? 'chevronUp' : 'chevronDown'} size={18} />
-                </button>
-              )}
-            </nav>
+            <p>{t('home.hero.text')}</p>
           </div>
-          <div className="home-hero-side">
-            <CityPhoto openNow={numbers?.openNow ?? null} />
-            {numbers && <HomeNumbersLine numbers={numbers} />}
-            <Link href="/ndiq" className="home-track"><Icon name="route" size={20} />{t('home.trackButton')}</Link>
+          <div className="hx-hero-tab">
+            <Link href={reportHref} className="hx-cta">
+              <Icon name={rules.aiChecks ? 'camera' : 'pin'} size={20} />
+              {rules.aiChecks ? t('home.hero.photoButton') : t('home.hero.button')}
+            </Link>
           </div>
         </div>
       </section>
-      <div className="home-wall" aria-hidden="true" />
 
-      <section className="home-band">
-        <div className="container home-columns">
-          <div>
-            <div className="home-section-head">
-              <h2>{t('home.fixed.title')}</h2>
-              <Link href="/harta?status=resolved">{t('home.fixed.seeMap')}</Link>
-            </div>
-            {fixed.length === 0 && <p className="muted">{t('home.fixed.none')}</p>}
-            <ul className="home-list">
-              {fixed.map((r) => (
-                <li key={r.caseNumber}>
-                  <span className="home-list-icon"><CategoryIcon icon={r.category?.icon ?? 'other'} size={22} /></span>
-                  <div>
-                    <div className="home-list-title">
-                      <Link href={`/ndiq/${r.caseNumber}`}>{r.type ? (lang === 'en' ? r.type.nameEn : r.type.nameSq) : r.caseNumber}</Link>
-                      <span className="home-fixed-badge"><Icon name="check" size={14} strokeWidth={3} />{t('home.fixed.badge')}</span>
-                      <TestBadge show={r.isTest} />
-                    </div>
-                    <div className="home-list-meta">{[r.place, ago(r.resolvedAt, t)].filter(Boolean).join(' · ')}</div>
-                    {r.note && <p className="home-list-note">{r.note}</p>}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-          {frequentTypes.length > 0 && (
-            <div>
-              <div className="home-section-head"><h2>{t('home.frequent')}</h2></div>
-              {/* Information only: a report starts from a category or the search above. */}
-              <ul className="home-list">
-                {frequentTypes.map(({ ty, count }) => (
-                  <li key={ty.id}>
-                    <span className="home-list-icon"><CategoryIcon icon={ty.category.icon} size={22} /></span>
-                    <div>
-                      <div className="home-list-title"><strong>{lang === 'en' ? ty.nameEn : ty.nameSq}</strong></div>
-                      <div className="home-list-meta">
-                        {lang === 'en' ? ty.category.nameEn : ty.category.nameSq}{count > 0 && ` · ${t('home.frequentCount', { n: count })}`}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-        <div className="container home-how">
-          <h2>{t('home.how.title')}</h2>
-          <ol className="home-steps">
+      {/* 2 · What the platform is, the three steps, and its numbers. */}
+      <section className="container hx-about">
+        <div>
+          <h2>{t('home.about.title')}</h2>
+          <p className="hx-lead">{t('home.about.text')}</p>
+          <ol className="hx-steps">
             {['step1', 'step2', 'step3'].map((k, i) => (
-              <li key={k}>
-                <span className="home-step-number">{i + 1}</span>
-                <h3>{t(`home.how.${k}.title`)}</h3>
-                <p>{t(`home.how.${k}.text`)}</p>
-              </li>
+              <li key={k}><span>{i + 1}</span>{t(`home.how.${k}.title`)}</li>
             ))}
           </ol>
+          <Link href="/ndiq" className="hx-link"><Icon name="route" size={18} />{t('home.trackButton')}</Link>
+        </div>
+        {numbers && (
+          <dl className="hx-stats">
+            <div><dt>{numbers.openNow}</dt><dd>{t('home.numbers.openNow')}</dd></div>
+            <div><dt>{numbers.fixedThisMonth}</dt><dd>{t('home.numbers.fixedIn', { month: monthName(numbers.month, lang) })}</dd></div>
+            <div><dt>{numbers.avgDays === null ? '–' : (Math.round(numbers.avgDays * 10) / 10).toString().replace('.', lang === 'en' ? '.' : ',')}</dt><dd>{t('home.numbers.avgDays')}</dd></div>
+            <div><dt>24/7</dt><dd>{t('home.numbers.always')}</dd></div>
+          </dl>
+        )}
+      </section>
+
+      {/* 3 · Choosing the type yourself (the form filled in by hand), the most reported first. */}
+      <section className="container hx-section">
+        <div className="hx-section-head">
+          <div>
+            <h2>{t('home.types.title')}</h2>
+            <p className="hx-sub">{rules.aiChecks ? t('home.hero.chooseSelf') : t('home.types.sub')}</p>
+          </div>
+          {categories.length > TOP_CATEGORIES && (
+            <button type="button" className="hx-more" aria-expanded={allCategories} aria-controls={chipsId} onClick={() => setAllCategories((v) => !v)}>
+              {allCategories ? t('home.hero.fewerCategories') : t('home.hero.moreCategories', { n: categories.length - TOP_CATEGORIES })}
+              <Icon name={allCategories ? 'chevronUp' : 'chevronDown'} size={18} />
+            </button>
+          )}
+        </div>
+        {!rules.aiChecks && <ProblemSearch />}
+        <ul id={chipsId} className="hx-cards">
+          {shown.map((c, i) => (
+            <li key={c.code}>
+              <Link href={`/raporto?kategoria=${c.code}`} className="hx-card">
+                <span className="hx-card-art"><span className="hx-card-no">{String(i + 1).padStart(2, '0')}</span><CategoryIcon icon={c.icon} size={44} /></span>
+                <strong>{lang === 'en' ? c.nameEn : c.nameSq}</strong>
+                {examples(c.code) && <span className="hx-card-text">{examples(c.code)}</span>}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* 4 · Fixed recently: the municipality's work, with the photos. */}
+      <section className="container hx-section">
+        <div className={`hx-fixed hx-fixed-${Math.min(fixed.length, 4)}`}>
+          <div className="hx-fixed-intro">
+            <h2>{t('home.fixed.title')}</h2>
+            <p className="hx-sub">{t('home.fixed.text')}</p>
+          </div>
+          {fixed.length === 0 && <p className="muted">{t('home.fixed.none')}</p>}
+          {fixed.slice(0, 4).map((r, i) => (
+            <Link key={r.caseNumber} href={`/ndiq/${r.caseNumber}`} className={`hx-fixed-card hx-f${i + 1}${r.photoUrl ? '' : ' hx-noimg'}`}>
+              {r.photoUrl
+                ? <img src={r.photoUrl} alt="" loading="lazy" />
+                : <span className="hx-fixed-blank" aria-hidden="true"><CategoryIcon icon={r.category?.icon ?? 'other'} size={48} /></span>}
+              <span className="hx-fixed-caption">
+                <span className="hx-fixed-badge"><Icon name="check" size={13} strokeWidth={3} />{t('home.fixed.badge')}</span>
+                <strong>{r.type ? (lang === 'en' ? r.type.nameEn : r.type.nameSq) : r.caseNumber}</strong>
+                <span>{[r.place, ago(r.resolvedAt, t)].filter(Boolean).join(' · ')}</span>
+              </span>
+              {r.isTest && <span className="hx-fixed-test"><TestBadge show /></span>}
+            </Link>
+          ))}
+          <Link href="/harta?status=resolved" className="hx-outline hx-fixed-more">{t('home.fixed.seeMap')}</Link>
         </div>
       </section>
     </>
   );
+}
+
+/** "nëntor" / "November" from "2026-11". */
+function monthName(month: string | null, lang: string): string {
+  if (!month) return '';
+  const d = new Date(`${month}-15T12:00:00Z`);
+  if (lang === 'en') return d.toLocaleDateString('en-GB', { month: 'long', timeZone: 'UTC' });
+  return ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'][d.getUTCMonth()]!;
 }
 
 function ago(iso: string, t: ReturnType<typeof useI18n>['t']): string {
@@ -233,34 +246,3 @@ function ProblemSearch() {
   );
 }
 
-/* ── The photo of Elbasan (Kalaja and the clock tower), with the open reports linking to the map ── */
-function CityPhoto({ openNow }: { openNow: number | null }) {
-  const { t } = useI18n();
-  return (
-    <Link href="/harta" className="home-photo" aria-label={t('home.map.label')}>
-      <picture>
-        <source srcSet="/elbasan-hero.webp" type="image/webp" />
-        <img src="/elbasan-hero.jpg" alt={t('home.photoAlt')} width={1200} height={900} fetchPriority="high" />
-      </picture>
-      {openNow !== null && <span className="home-map-pill"><span className="dot" />{t('home.map.open', { n: openNow })}</span>}
-    </Link>
-  );
-}
-
-// Browsers do not all carry Albanian month names, so they are written here.
-const MONTHS_SQ = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'];
-const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-function HomeNumbersLine({ numbers }: { numbers: HomeNumbers }) {
-  const { t, lang } = useI18n();
-  const m = numbers.month ? Number(numbers.month.slice(5, 7)) - 1 : -1;
-  const month = (lang === 'en' ? MONTHS_EN : MONTHS_SQ)[m] ?? '';
-  const days = numbers.avgDays === null ? null : (Math.round(numbers.avgDays * 10) / 10).toString().replace('.', lang === 'en' ? '.' : ',');
-  return (
-    <p className="home-numbers">
-      <span><strong>{numbers.fixedThisMonth}</strong> {t('home.numbers.fixedIn', { month })}</span>
-      {days !== null && <span><strong>{days}</strong> {t('home.numbers.avgDays')}</span>}
-      <span><strong>{numbers.openNow}</strong> {t('home.numbers.openNow')}</span>
-    </p>
-  );
-}

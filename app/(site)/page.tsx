@@ -15,7 +15,7 @@ function orElse<T>(what: string, fallback: T) {
 export default async function HomePage() {
   const [stats, fixed, points, frequent] = await Promise.all([
     publicStats().catch(orElse('statistics', null)),
-    recentlyFixed(3).catch(orElse('recently fixed', [] as FixedReport[])),
+    recentlyFixed(4).catch(orElse('recently fixed', [] as FixedReport[])),
     // The dots on the city map of the first screen: the last 3 months, exact points only.
     mapPoints(mapSchema.parse({ status: 'all', days: 90 }))
       .then((all) => all.filter((p) => !p.approximate))
