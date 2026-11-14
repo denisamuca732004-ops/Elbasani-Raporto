@@ -12,6 +12,17 @@ const sq = {
     network: 'Nuk ka lidhje me internetin ose serveri nuk përgjigjet.',
   },
   time: { now: 'tani', minutes: 'para {n} min', hours: { one: 'para 1 ore', other: 'para {n} orësh' }, days: { one: 'para 1 dite', other: 'para {n} ditësh' } },
+  install: {
+    button: 'Instalo aplikacionin', short: 'Instalo',
+    title: 'Elbasani Raporton në telefonin tuaj',
+    text: 'Hapet si aplikacion, pa kërkuar faqen. Falas, pa App Store.',
+    iosTitle: 'Shtojeni në ekranin kryesor',
+    ios1: 'Prekni butonin “Ndaj” në shiritin e Safari-t',
+    ios2: 'Zgjidhni “Shto në ekranin kryesor”.',
+    ios3: 'Prekni “Shto”: ikona e Elbasani Raporton del te telefoni si çdo aplikacion.',
+    iosNote: 'Kështu punojnë edhe njoftimet për raportimet tuaja.',
+    ok: 'E kuptova',
+  },
   nav: {
     report: 'Raporto', track: 'Ndiq raportimin', map: 'Harta', stats: 'Statistikat', privacy: 'Privatësia',
     staff: 'Hyrja për stafin', adminLogin: 'Hyrja e adminit', trackShort: 'Ndiq', services: 'Shërbime', otherLanguage: 'English', menu: 'Menyja', language: 'Ndrysho gjuhën', panel: 'Paneli',

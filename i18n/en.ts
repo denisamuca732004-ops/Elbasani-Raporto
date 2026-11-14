@@ -12,6 +12,17 @@ const en = {
     network: 'There is no internet connection or the server is not responding.',
   },
   time: { now: 'just now', minutes: '{n} min ago', hours: { one: '1 hour ago', other: '{n} hours ago' }, days: { one: '1 day ago', other: '{n} days ago' } },
+  install: {
+    button: 'Install the app', short: 'Install',
+    title: 'Elbasani Raporton on your phone',
+    text: 'Opens like an app, no need to look for the site. Free, no App Store.',
+    iosTitle: 'Add it to your Home Screen',
+    ios1: 'Tap the “Share” button in the Safari bar',
+    ios2: 'Choose “Add to Home Screen”.',
+    ios3: 'Tap “Add”: the Elbasani Raporton icon appears on your phone like any app.',
+    iosNote: 'This also makes the notifications about your reports work.',
+    ok: 'Got it',
+  },
   nav: {
     report: 'Report', track: 'Track a report', map: 'Map', stats: 'Statistics', privacy: 'Privacy',
     staff: 'Staff login', adminLogin: 'Admin login', trackShort: 'Track', services: 'Services', otherLanguage: 'Shqip', menu: 'Menu', language: 'Change language', panel: 'Panel',

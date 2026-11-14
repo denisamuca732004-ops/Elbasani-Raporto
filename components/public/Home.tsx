@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useId, useMemo, useState, type FormEvent, type KeyboardEvent } from 'react';
 import Icon from '@/components/Icon';
 import { useCatalog, useSettings, type TypeWithCategory } from '@/components/providers';
+import { InstallBar } from '@/components/site/InstallApp';
 import { CategoryIcon, TestBadge } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { matchTypes } from '@/lib/shared/guide';
@@ -60,6 +61,7 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
 
   return (
     <>
+      <InstallBar />
       <section className="home-hero">
         <div className="container home-hero-grid">
           <div className="home-hero-text">

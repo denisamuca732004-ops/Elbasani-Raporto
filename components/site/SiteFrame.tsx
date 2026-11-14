@@ -14,6 +14,7 @@ import { flushQueue, pendingCount } from '@/lib/client/offlineQueue';
 import { brandNames } from '@/lib/shared/branding';
 import type { GuideItem } from '@/lib/shared/guide';
 import ChatHelp from './ChatHelp';
+import { InstallMenuItem } from './InstallApp';
 
 /** The platform's and the municipality's names in the language chosen (EN / SQ). */
 export function useBrandNames() {
@@ -143,6 +144,7 @@ export function SiteHeader() {
         <nav id="main-nav" className={`main-nav${open ? ' open' : ''}`} aria-label={t('nav.menu')}>
           <ul className="nav-links">
             {links.map(([to, icon, label]) => <li key={to}><NavLink href={to} icon={icon}>{label}</NavLink></li>)}
+            <InstallMenuItem />
           </ul>
         </nav>
         <div className="header-actions">
