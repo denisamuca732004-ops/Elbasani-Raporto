@@ -1642,3 +1642,19 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 }
 .hx-hero-media { border-bottom-left-radius: 0; }
 @media (max-width: 900px) { .hx-fixed-4 .hx-noimg, .hx-fixed .hx-noimg { min-height: 180px; } }
+
+/* ══ Public palette "jeshile pylli": white, a deep forest green for the actions, soft green-grey surfaces.
+      The strip at the very top keeps the municipality's own green (#06B006). ══ */
+.site { --pub-green: #14532D; --pub-green-hover: #0F3F22; --pub-ink: #0F2A1D; --pub-text: #3E4B44; --pub-soft: #56635B; --pub-tint: #F2F5F2; --pub-line: #E1E6E2; }
+.site .brand-mark { background: #14532D; }
+.site .hx-about h2, .site .hx-section h2, .hx-stats dt, .hx-steps li, .hx-card, .hx-card-no, .hx-more, .hx-outline { color: #0F2A1D; }
+.hx-more, .hx-outline { border-color: #0F2A1D; }
+.site .hx-lead, .site .hx-sub, .hx-card-text, .hx-stats dd { color: #3E4B44; }
+.hx-card-art, .hx-noimg { background: #EEF2EE; color: #14532D; }
+.hx-card:hover .hx-card-art { background: #E3EAE4; }
+.hx-steps li span { background: #EEF2EE; color: #0F2A1D; }
+.hx-link { color: #14532D; }
+.hx-title .accent { color: #BEE8C6; }
+.hx-fixed-badge { color: #0F2A1D; }
+.hx-noimg .hx-fixed-badge { background: #E2F1E6; }
+.site .site-footer { background: #F2F5F2; }
