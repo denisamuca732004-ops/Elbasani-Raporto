@@ -1485,3 +1485,6 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 .site .home-title { font-weight: 800; letter-spacing: -0.03em; text-rendering: geometricPrecision; font-kerning: normal; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 /* One green on the public site: buttons, links and the form use the green of the home page. */
 .site { --brand-button: var(--pub-green, #1A7F37); --brand-button-hover: var(--pub-green-hover, #146A2D); }
+/* The strip at the very top: the green of the municipality's logo. */
+.site .gov-strip { background: #06B006; }
+.site .gov-strip a, .site .gov-strip span { font-weight: 600; }
