@@ -338,6 +338,8 @@ model Report {
   possibleDuplicateOfId String?     @map("possible_duplicate_of_id") @db.Uuid
   possibleDuplicateOf   Report?     @relation("ReportPossibleDuplicate", fields: [possibleDuplicateOfId], references: [id], onDelete: SetNull)
   /// The AI's comparison of the two photos (the same problem in the same place?), shown to the admin.
+  /// Admin: not shown under "Rregulluar së fundmi" on the home page (still public on its own page).
+  hiddenFromHome        Boolean     @default(false) @map("hidden_from_home")
   dupPhotoSame          Boolean?    @map("dup_photo_same")
   dupPhotoConfidence    Int?        @map("dup_photo_confidence")
   dupPhotoReason        String?     @map("dup_photo_reason") @db.VarChar(200)

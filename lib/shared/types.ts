@@ -150,6 +150,8 @@ export interface ReportListItem {
   overdue: boolean;
   transferPending: boolean;
   isTest: boolean;
+  /** Admin: left out of "Rregulluar së fundmi" on the home page. */
+  hiddenFromHome: boolean;
   createdAt: string;
   updatedAt: string;
 }

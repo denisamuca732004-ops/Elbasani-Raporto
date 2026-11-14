@@ -542,6 +542,14 @@ export async function setTestFlag(user: Principal, id: string, isTest: boolean):
   return buildDetail(user, id);
 }
 
+/** Admin: show or leave out the report under "Rregulluar së fundmi" on the home page. */
+export async function setHomeVisibility(user: Principal, id: string, hidden: boolean): Promise<ReportDetail> {
+  assertAdmin(user);
+  await loadReport(id);
+  await db.report.update({ where: { id }, data: { hiddenFromHome: hidden } });
+  return buildDetail(user, id);
+}
+
 /**
  * Admin: a resident called, wrote on Facebook or came to the office.
  * Description and a location (pin or address) are required; photo and contact are optional.

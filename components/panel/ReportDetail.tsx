@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   addNoteAction, assignReportAction, changePriorityAction, changeStatusAction, deleteReportAction, messageCitizenAction,
-  rejectReportAction, requestTransferAction, resendToSectorAction, resolveReportAction, setPhotoVisibilityAction, setTestFlagAction, updateReportAction,
+  rejectReportAction, requestTransferAction, resendToSectorAction, resolveReportAction, setHomeVisibilityAction, setPhotoVisibilityAction, setTestFlagAction, updateReportAction,
 } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { LocationPicker, MiniMap } from '@/components/maps';
@@ -653,6 +653,19 @@ export default function ReportDetail({ principal, report: initial, assignable, b
                   </li>
                 ))}
               </ul>
+            </Card>
+          )}
+
+          {admin && (
+            <Card title={t('detail.home.title')} icon="home">
+              <label className="check small" style={{ marginBottom: 8 }}>
+                <input
+                  type="checkbox" checked={!report.hiddenFromHome} disabled={Boolean(busy)}
+                  onChange={(e) => act('home', () => call(setHomeVisibilityAction(id, { hidden: !e.target.checked })), t('detail.saved'))}
+                />
+                <span>{t('detail.home.show')}</span>
+              </label>
+              <p className="small muted" style={{ margin: 0 }}>{t('detail.home.hint')}</p>
             </Card>
           )}
 

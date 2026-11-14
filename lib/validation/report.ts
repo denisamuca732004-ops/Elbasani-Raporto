@@ -102,6 +102,7 @@ export const rejectSchema = z.strictObject({ reason: requiredText(LIMITS.minReje
 export const resolveSchema = z.strictObject({ note: optionalText(2000), photoKey: uploadKey.optional() });
 export const photoVisibilitySchema = z.strictObject({ isPublic: z.boolean() });
 export const testFlagSchema = z.strictObject({ isTest: z.boolean() });
+export const homeVisibilitySchema = z.strictObject({ hidden: z.boolean() });
 export const extractSchema = z.strictObject({ text: requiredText(3, 5000) });
 
 export const transferRequestSchema = z.strictObject({

@@ -465,7 +465,7 @@ export async function frequentCategories(): Promise<Array<{ code: string; count:
 /** The reports fixed most recently (real ones before demo ones), with the municipality's note. */
 export async function recentlyFixed(limit = 3): Promise<FixedReport[]> {
   const rows = await db.report.findMany({
-    where: { status: { in: ['RESOLVED', 'CLOSED'] }, resolvedAt: { not: null } },
+    where: { status: { in: ['RESOLVED', 'CLOSED'] }, resolvedAt: { not: null }, hiddenFromHome: false },
     include: publicInclude,
     orderBy: [{ isTest: 'asc' }, { resolvedAt: 'desc' }],
     take: limit,

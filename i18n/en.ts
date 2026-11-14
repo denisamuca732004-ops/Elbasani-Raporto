@@ -480,6 +480,7 @@ const en = {
     cols: { report: 'Report', priority: 'Priority', status: 'Status', sector: 'Sector', place: 'Place', due: 'Deadline', received: 'Received' },
   },
   detail: {
+    home: { title: 'Home page', show: 'Show it under “Recently fixed” on the home page', hint: 'Unticked, the report no longer appears on the home page but stays under “Track a report”. To hide only the photo, use “Hide” on the photo.' },
     draft: { propose: 'Suggest a text with AI', improve: 'Improve the text with AI', busy: 'AI is writing…', hint: 'Read and edit it before sending.' },
     backToList: 'Back to the list', otherSector: 'This report belongs to another sector.', notFound: 'The report was not found or has been deleted.',
     sector: 'Sector', publicPage: 'Public page', report: 'Report', noDescription: 'No description.',

@@ -209,6 +209,7 @@ export function toListItem(r: ListRow | DetailRow): ReportListItem {
     overdue: isOverdue(r),
     transferPending: r.transfers.some((t) => !('status' in t) || t.status === 'PENDING'),
     isTest: r.isTest,
+    hiddenFromHome: r.hiddenFromHome,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   };

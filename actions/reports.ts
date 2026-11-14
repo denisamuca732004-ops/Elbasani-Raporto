@@ -34,7 +34,7 @@ import { extractFromText } from '@/lib/server/services/triage';
 import {
   assignSchema, descriptionCheckSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoAnalyzeSchema, photoCheckSchema,
   photoVisibilitySchema, placeQuerySchema, placeSearchSchema, pointSchema, trackSearchSchema,
-  prioritySchema, rejectSchema, reportUpdateSchema, resolveSchema, staffReportSchema, statusChangeSchema, testFlagSchema,
+  prioritySchema, rejectSchema, reportUpdateSchema, resolveSchema, staffReportSchema, statusChangeSchema, homeVisibilitySchema, testFlagSchema,
   transferDecisionSchema, transferRequestSchema,
 } from '@/lib/validation/report';
 import { clientIp, parseInput, run } from './_shared';
@@ -275,6 +275,17 @@ export async function resendToSectorAction(id: string) {
     const user = await requireAdmin();
     const result = await reports.resendToSector(user, parseInput(reportId, id));
     refreshPanel(id);
+    return result;
+  });
+}
+
+/** Admin: leave the report out of "Rregulluar së fundmi" on the home page, or show it again. */
+export async function setHomeVisibilityAction(id: string, input: unknown) {
+  return run(async () => {
+    const user = await requireAdmin();
+    const result = await reports.setHomeVisibility(user, parseInput(reportId, id), parseInput(homeVisibilitySchema, input).hidden);
+    refreshPanel(id);
+    revalidatePath('/');
     return result;
   });
 }

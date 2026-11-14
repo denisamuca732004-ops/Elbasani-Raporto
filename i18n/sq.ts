@@ -480,6 +480,7 @@ const sq = {
     cols: { report: 'Raportimi', priority: 'Prioriteti', status: 'Statusi', sector: 'Sektori', place: 'Vendi', due: 'Afati', received: 'Marrë më' },
   },
   detail: {
+    home: { title: 'Faqja kryesore', show: 'Shfaqe te “Rregulluar së fundmi” në faqen kryesore', hint: 'Kur e hiqni, raportimi nuk del më te faqja kryesore, por mbetet te “Ndiq raportimin”. Për të fshehur vetëm foton, përdorni “Fshihe” te fotoja.' },
     draft: { propose: 'Propozo tekstin me AI', improve: 'Përmirëso tekstin me AI', busy: 'AI po shkruan…', hint: 'Lexojeni dhe ndryshojeni para se ta dërgoni.' },
     backToList: 'Kthehu te lista', otherSector: 'Ky raportim i përket një sektori tjetër.', notFound: 'Raportimi nuk u gjet ose është fshirë.',
     sector: 'Sektori', publicPage: 'Faqja publike', report: 'Raportimi', noDescription: 'Pa përshkrim.',
