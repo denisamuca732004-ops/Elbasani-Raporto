@@ -19,7 +19,7 @@ const en = {
     ok: 'Got it',
     ios: {
       title: 'Add it to your Home Screen',
-      s1: 'Tap the “Share” button in the browser bar',
+      s1: 'Tap the “Share” button (the square with an arrow up): at the bottom in Safari, or next to the address at the top in Chrome',
       s2: 'Choose “Add to Home Screen”.',
       s3: 'Tap “Add”: the Elbasani Raporton icon appears on your home screen.',
       note: 'This also makes the notifications about your reports work.',
@@ -33,8 +33,8 @@ const en = {
     },
     inapp: {
       title: 'Open it in your browser',
-      s1: 'The page is open inside Facebook, Instagram or Messenger, where it cannot be added to the home screen.',
-      s2: 'Tap ⋮ or ··· at the top right and choose “Open in browser” (Chrome or Safari).',
+      s1: 'The page is open inside another app (Google, Facebook, Instagram or Messenger), where it cannot be added to the home screen.',
+      s2: 'Tap ⋮ or ··· and choose “Open in Safari” or “Open in browser” (Chrome).',
       s3: 'There, tap “Install” again.',
       note: 'Reporting works here too; only adding it to the home screen needs the browser.',
     },

@@ -45,7 +45,7 @@ function currentMode(): Mode {
   if (standalone || installedNow) return 'none';
   if (deferred) return 'prompt';
   const ua = navigator.userAgent;
-  if (/FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|; wv\)/.test(ua)) return 'inapp';
+  if (/FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|; wv\)| GSA\//.test(ua)) return 'inapp'; // GSA: the Google app (e.g. a link from Google Photos)
   const ios = /iPhone|iPad|iPod/.test(ua) || (ua.includes('Macintosh') && navigator.maxTouchPoints > 1);
   if (ios) return 'ios';
   return /Android/.test(ua) ? 'android' : 'none';

@@ -19,7 +19,7 @@ const sq = {
     ok: 'E kuptova',
     ios: {
       title: 'Shtojeni në ekranin kryesor',
-      s1: 'Prekni butonin “Ndaj” në shiritin e shfletuesit',
+      s1: 'Prekni butonin “Ndaj” (katrori me shigjetë lart): poshtë në Safari, ose lart pranë adresës në Chrome',
       s2: 'Zgjidhni “Shto në ekranin kryesor”.',
       s3: 'Prekni “Shto”: ikona e Elbasani Raporton del te ekrani i telefonit.',
       note: 'Kështu punojnë edhe njoftimet për raportimet tuaja.',
@@ -33,8 +33,8 @@ const sq = {
     },
     inapp: {
       title: 'Hapeni në shfletues',
-      s1: 'Faqja është hapur brenda Facebook, Instagram ose Messenger, ku nuk mund të shtohet në ekran.',
-      s2: 'Prekni ⋮ ose ··· lart djathtas dhe zgjidhni “Hap në shfletues” (Chrome ose Safari).',
+      s1: 'Faqja është hapur brenda një aplikacioni tjetër (Google, Facebook, Instagram ose Messenger), ku nuk mund të shtohet në ekran.',
+      s2: 'Prekni ⋮ ose ··· dhe zgjidhni “Hap në Safari” ose “Hap në shfletues” (Chrome).',
       s3: 'Atje prekni sërish “Instalo”.',
       note: 'Raportimi punon edhe këtu, vetëm shtimi në ekran kërkon shfletuesin.',
     },
