@@ -437,6 +437,31 @@ export async function frequentTypes(): Promise<Array<{ id: number; count: number
   });
 }
 
+/** Common categories of a city, in this order, used while there are not enough reports yet. */
+const COMMON_CATEGORIES = ['waste', 'streets', 'lighting', 'animals', 'water', 'parks'];
+
+/**
+ * The order of the categories on the home page: the most reported in the last 90 days first
+ * (every report of the category counts, rejected ones not), with how many. Categories with the same
+ * number keep the common order above, then the catalogue order; "Tjetër" is placed last by the page.
+ * Cached for 10 minutes.
+ */
+export async function frequentCategories(): Promise<Array<{ code: string; count: number }>> {
+  return cached(CACHE_KEYS.frequentCategories, 600, async () => {
+    const since = new Date(Date.now() - 90 * 86_400_000);
+    const [counts, categories] = await Promise.all([
+      db.report.groupBy({ by: ['categoryId'], where: { createdAt: { gte: since }, status: { not: 'REJECTED' } }, _count: { _all: true } }),
+      db.category.findMany({ where: { active: true }, select: { id: true, code: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } }),
+    ]);
+    const countOf = new Map(counts.map((c) => [c.categoryId, c._count._all]));
+    const common = (code: string) => { const i = COMMON_CATEGORIES.indexOf(code); return i < 0 ? COMMON_CATEGORIES.length : i; };
+    return categories
+      .map((c) => ({ code: c.code, count: countOf.get(c.id) ?? 0, sortOrder: c.sortOrder }))
+      .sort((a, b) => b.count - a.count || common(a.code) - common(b.code) || a.sortOrder - b.sortOrder)
+      .map(({ code, count }) => ({ code, count }));
+  });
+}
+
 /** The reports fixed most recently (real ones before demo ones), with the municipality's note. */
 export async function recentlyFixed(limit = 3): Promise<FixedReport[]> {
   const rows = await db.report.findMany({

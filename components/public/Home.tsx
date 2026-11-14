@@ -32,7 +32,8 @@ interface Props {
   fixed: FixedReport[];
   /** No longer drawn on the home page (the photo replaced the schematic map); kept so the page can still pass it. */
   points?: MapPoint[];
-  frequent?: Array<{ id: number; count: number }>;
+  /** The categories, the most reported in the last 90 days first (lib/server/services/publicReport.ts). */
+  frequent?: Array<{ code: string; count: number }>;
 }
 
 /** The categories that have a photo in public/categories/ (the others keep their icon). */
@@ -43,20 +44,15 @@ const TOP_CATEGORIES = 3;
 
 export default function Home({ numbers, fixed, frequent = [] }: Props) {
   const { t, lang } = useI18n();
-  const { catalog, typeById } = useCatalog();
+  const { catalog } = useCatalog();
   const { rules } = useSettings();
-  // Only types still in the catalogue (active), in the order the server counted them.
-  const frequentTypes = frequent.flatMap(({ id, count }) => { const ty = typeById(id); return ty ? [{ ty, count }] : []; });
-  // The categories, the most reported first ("Other" last); only the first few are shown until "Më shumë".
+  // The categories in the order the server counted them (most reported first), "Tjetër" last;
+  // a category the server did not list (just added) goes after the counted ones.
   const categories = useMemo(() => {
-    const reports = new Map<string, number>();
-    for (const { ty, count } of frequentTypes) reports.set(ty.category.code, (reports.get(ty.category.code) ?? 0) + count + 0.001);
-    const order = new Map(catalog.categories.map((c, i) => [c.code, i]));
+    const rank = new Map(frequent.map((f, i) => [f.code, i]));
     return [...catalog.categories].sort((a, b) =>
       Number(a.code === 'other') - Number(b.code === 'other')
-      || (reports.get(b.code) ?? 0) - (reports.get(a.code) ?? 0)
-      || order.get(a.code)! - order.get(b.code)!);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      || (rank.get(a.code) ?? 999) - (rank.get(b.code) ?? 999));
   }, [catalog.categories, frequent]);
   const [allCategories, setAllCategories] = useState(false);
   const chipsId = useId();

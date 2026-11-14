@@ -1,5 +1,5 @@
 import Home, { type HomeNumbers } from '@/components/public/Home';
-import { frequentTypes, mapPoints, recentlyFixed } from '@/lib/server/services/publicReport';
+import { frequentCategories, mapPoints, recentlyFixed } from '@/lib/server/services/publicReport';
 import { publicStats } from '@/lib/server/services/stats';
 import type { FixedReport, MapPoint } from '@/lib/shared/types';
 import { mapSchema } from '@/lib/validation/report';
@@ -20,7 +20,7 @@ export default async function HomePage() {
     mapPoints(mapSchema.parse({ status: 'all', days: 90 }))
       .then((all) => all.filter((p) => !p.approximate))
       .catch(orElse('map points', [] as MapPoint[])),
-    frequentTypes().catch(orElse('frequent types', [] as Array<{ id: number; count: number }>)),
+    frequentCategories().catch(orElse('frequent categories', [] as Array<{ code: string; count: number }>)),
   ]);
   const thisMonth = stats?.months.at(-1);
   const numbers: HomeNumbers | null = stats && {

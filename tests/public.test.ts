@@ -7,7 +7,7 @@ import { isOtherChoice } from '@/lib/shared/domain';
 import { getPublicSettings } from '@/lib/server/services/settings';
 import { brandNames } from '@/lib/shared/branding';
 import {
-  FREQUENT_COUNT, createCitizenReport, findNearbyOpen, findReports, followReport, frequentTypes, getFeedbackInfo, getPublicCase, getPublicPhoto, listRecent, mapPoints,
+  FREQUENT_COUNT, createCitizenReport, findNearbyOpen, findReports, followReport, frequentCategories, frequentTypes, getFeedbackInfo, getPublicCase, getPublicPhoto, listRecent, mapPoints,
   searchOpenByPlace, submitCitizenFeedback,
 } from '@/lib/server/services/publicReport';
 import { changeStatus, getReport, rejectReport, resolveReport } from '@/lib/server/services/report';
@@ -391,6 +391,15 @@ describe('"Raportohen më shpesh" on the home page (information only)', () => {
     assert.ok(!ids.includes(otherAnimals), 'never "Tjetër"');
     assert.ok(!ids.includes(signage), 'rejected reports are not counted');
     assert.ok(ids.includes(lightOut), 'completed with a common problem');
+
+    // The categories on the home page: every report of a category counts (not only its top types).
+    await invalidate(CACHE_KEYS.frequentCategories);
+    const cats = await frequentCategories();
+    const byCode = new Map(cats.map((c) => [c.code, c.count]));
+    assert.equal(cats[0]!.code, 'streets', 'the category of most reports first');
+    assert.ok((byCode.get('animals') ?? 0) >= 3, 'all the reports of the category are counted');
+    assert.ok(cats.every((c, i) => i === 0 || cats[i - 1]!.count >= c.count), 'most reported first');
+    assert.equal(new Set(cats.map((c) => c.code)).size, cats.length);
 
     await db.requestType.update({ where: { id: stray }, data: { active: false } });
     try {
