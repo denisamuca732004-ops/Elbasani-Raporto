@@ -47,6 +47,7 @@ const en = {
       text: 'Tell the Municipality of Elbasan what needs fixing. No account needed, and you can follow it until it is done.',
       ask: 'What needs fixing?', placeholder: 'Pothole, full bin, street light…', button: 'Report a problem',
       suggestions: 'Matching problems', categories: 'Or choose a category',
+      moreCategories: 'More ({n})', fewerCategories: 'Fewer',
       photoButton: 'Report with a photo', photoHint: 'Take a photo, the system fills in the type and the description.', chooseSelf: 'Or choose the type yourself:',
     },
     photoAlt: 'The Elbasan castle and the clock tower, seen from above',

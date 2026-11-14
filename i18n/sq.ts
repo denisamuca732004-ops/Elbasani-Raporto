@@ -47,6 +47,7 @@ const sq = {
       text: 'Tregojini Bashkisë Elbasan çfarë duhet rregulluar. Nuk ju duhet llogari, dhe e ndiqni deri në fund.',
       ask: 'Çfarë duhet rregulluar?', placeholder: 'Gropë, kontejner, dritë…', button: 'Raporto një problem',
       suggestions: 'Problemet që përputhen', categories: 'Ose zgjidhni kategorinë',
+      moreCategories: 'Më shumë ({n})', fewerCategories: 'Më pak',
       photoButton: 'Raporto me foto', photoHint: 'Bëni një foto, sistemi plotëson llojin dhe përshkrimin.', chooseSelf: 'Ose zgjidhni vetë llojin e problemit:',
     },
     photoAlt: 'Kalaja e Elbasanit dhe Kulla e Sahatit, parë nga lart',

@@ -51,6 +51,7 @@ const PATHS: Record<string, string> = {
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a7 7 0 0 1 16 0v1',
   edit: 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
   chevronDown: 'M6 9l6 6 6-6',
+  chevronUp: 'M6 15l6-6 6 6',
   chevronRight: 'M9 6l6 6-6 6',
   refresh: 'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
   external: 'M14 4h6v6M20 4 10 14M18 14v6H4V6h6',

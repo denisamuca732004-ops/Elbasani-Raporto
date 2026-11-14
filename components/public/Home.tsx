@@ -35,12 +35,28 @@ interface Props {
   frequent?: Array<{ id: number; count: number }>;
 }
 
+/** The categories shown before "Më shumë": the most reported ones. */
+const TOP_CATEGORIES = 3;
+
 export default function Home({ numbers, fixed, frequent = [] }: Props) {
   const { t, lang } = useI18n();
   const { catalog, typeById } = useCatalog();
   const { rules } = useSettings();
   // Only types still in the catalogue (active), in the order the server counted them.
   const frequentTypes = frequent.flatMap(({ id, count }) => { const ty = typeById(id); return ty ? [{ ty, count }] : []; });
+  // The categories, the most reported first ("Other" last); only the first few are shown until "Më shumë".
+  const categories = useMemo(() => {
+    const reports = new Map<string, number>();
+    for (const { ty, count } of frequentTypes) reports.set(ty.category.code, (reports.get(ty.category.code) ?? 0) + count + 0.001);
+    const order = new Map(catalog.categories.map((c, i) => [c.code, i]));
+    return [...catalog.categories].sort((a, b) =>
+      Number(a.code === 'other') - Number(b.code === 'other')
+      || (reports.get(b.code) ?? 0) - (reports.get(a.code) ?? 0)
+      || order.get(a.code)! - order.get(b.code)!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalog.categories, frequent]);
+  const [allCategories, setAllCategories] = useState(false);
+  const chipsId = useId();
 
   return (
     <>
@@ -63,12 +79,18 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
               </Link>
             ) : <ProblemSearch />}
             {rules.aiChecks && <p className="home-chips-label">{t('home.hero.chooseSelf')}</p>}
-            <nav className="home-chips" aria-label={rules.aiChecks ? t('home.hero.chooseSelf') : t('home.hero.categories')}>
-              {catalog.categories.map((c) => (
+            <nav id={chipsId} className="home-chips" aria-label={rules.aiChecks ? t('home.hero.chooseSelf') : t('home.hero.categories')}>
+              {(allCategories ? categories : categories.slice(0, TOP_CATEGORIES)).map((c) => (
                 <Link key={c.code} href={`/raporto?kategoria=${c.code}`} className="home-chip">
                   <CategoryIcon icon={c.icon} size={20} />{lang === 'en' ? c.nameEn : c.nameSq}
                 </Link>
               ))}
+              {categories.length > TOP_CATEGORIES && (
+                <button type="button" className="home-chip home-chip-more" aria-expanded={allCategories} aria-controls={chipsId} onClick={() => setAllCategories((v) => !v)}>
+                  {allCategories ? t('home.hero.fewerCategories') : t('home.hero.moreCategories', { n: categories.length - TOP_CATEGORIES })}
+                  <Icon name={allCategories ? 'chevronUp' : 'chevronDown'} size={18} />
+                </button>
+              )}
             </nav>
           </div>
           <div className="home-hero-side">
