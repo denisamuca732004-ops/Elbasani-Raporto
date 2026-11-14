@@ -1,10 +1,14 @@
 'use client';
 /**
- * "Instalo aplikacionin": Elbasani Raporton on the phone's home screen, opening like an app
- * (the site is already an installable web app: app/manifest.ts + public/sw.js).
- *  - Android, Chrome, Edge, Samsung Internet: the browser's own install window (beforeinstallprompt).
+ * "Instalo": Elbasani Raporton on the phone's home screen, opening with one tap
+ * (the site is an installable web app: app/manifest.ts + public/sw.js; not a store app, so the
+ * texts never call it one).
+ *  - When the browser offers it (Chrome on Android, Edge, Samsung Internet): its own install window.
+ *  - Android without that offer (Chrome decides by itself when to offer it): a short guide,
+ *    ⋮ → "Add to Home screen" / "Install", and the same for Samsung Internet.
  *  - iPhone / iPad: Apple has no install window, so a short guide: Share → Add to Home Screen.
- *  - Already opened as the app: nothing is shown.
+ *  - Inside Facebook / Instagram / Messenger: nothing can be installed there, so: open it in the browser.
+ *  - Already opened from the home screen: nothing is shown.
  * Two places: a slim, dismissible bar on the home page, and an item in the menu (always there).
  */
 import { useEffect, useState, useSyncExternalStore } from 'react';
@@ -34,15 +38,17 @@ if (typeof window !== 'undefined') {
   });
 }
 
-type Mode = 'prompt' | 'ios' | 'none';
+type Mode = 'prompt' | 'ios' | 'android' | 'inapp' | 'none';
 function currentMode(): Mode {
   if (typeof window === 'undefined') return 'none';
   const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
   if (standalone || installedNow) return 'none';
   if (deferred) return 'prompt';
   const ua = navigator.userAgent;
+  if (/FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|; wv\)/.test(ua)) return 'inapp';
   const ios = /iPhone|iPad|iPod/.test(ua) || (ua.includes('Macintosh') && navigator.maxTouchPoints > 1);
-  return ios ? 'ios' : 'none';
+  if (ios) return 'ios';
+  return /Android/.test(ua) ? 'android' : 'none';
 }
 
 function useInstallMode(): Mode {
@@ -58,8 +64,7 @@ function useInstall() {
   const mode = useInstallMode();
   const [guide, setGuide] = useState(false);
   async function install() {
-    if (mode === 'ios') { setGuide(true); return; }
-    if (!deferred) return;
+    if (mode !== 'prompt' || !deferred) { setGuide(true); return; }
     const e = deferred;
     await e.prompt();
     const { outcome } = await e.userChoice.catch(() => ({ outcome: 'dismissed' as const }));
@@ -67,26 +72,29 @@ function useInstall() {
     if (outcome === 'accepted') installedNow = true;
     notify();
   }
-  return { mode, install, guide, closeGuide: () => setGuide(false) };
+  return { mode, install, guide: guide && mode !== 'prompt' && mode !== 'none' ? mode : null, closeGuide: () => setGuide(false) };
 }
 
-function IosGuide({ onClose }: { onClose: () => void }) {
+function Guide({ mode, onClose }: { mode: 'ios' | 'android' | 'inapp'; onClose: () => void }) {
   const { t } = useI18n();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+  const mark = mode === 'ios'
+    ? <span className="install-share" aria-hidden="true"><Icon name="arrowUp" size={16} /></span>
+    : <span className="install-dots" aria-hidden="true">⋮</span>;
   return (
     <div className="install-guide-backdrop" onClick={onClose}>
       <div className="install-guide" role="dialog" aria-modal="true" aria-labelledby="install-guide-title" onClick={(e) => e.stopPropagation()}>
-        <h2 id="install-guide-title">{t('install.iosTitle')}</h2>
+        <h2 id="install-guide-title">{t(`install.${mode}.title`)}</h2>
         <ol>
-          <li>{t('install.ios1')} <span className="install-share" aria-hidden="true"><Icon name="arrowUp" size={16} /></span></li>
-          <li>{t('install.ios2')}</li>
-          <li>{t('install.ios3')}</li>
+          <li>{t(`install.${mode}.s1`)} {mode !== 'inapp' && mark}</li>
+          <li>{t(`install.${mode}.s2`)}</li>
+          <li>{t(`install.${mode}.s3`)}</li>
         </ol>
-        <p className="small muted">{t('install.iosNote')}</p>
+        <p className="small muted">{t(`install.${mode}.note`)}</p>
         <button type="button" className="btn" onClick={onClose}>{t('install.ok')}</button>
       </div>
     </div>
@@ -109,7 +117,7 @@ export function InstallBar() {
       setDismissed(false);
     }
   }, []);
-  if (mode === 'none' || dismissed) return guide ? <IosGuide onClose={closeGuide} /> : null;
+  if (mode === 'none' || dismissed) return guide ? <Guide mode={guide} onClose={closeGuide} /> : null;
   return (
     <>
       <div className="install-bar" role="region" aria-label={t('install.button')}>
@@ -127,7 +135,7 @@ export function InstallBar() {
           </button>
         </div>
       </div>
-      {guide && <IosGuide onClose={closeGuide} />}
+      {guide && <Guide mode={guide} onClose={closeGuide} />}
     </>
   );
 }
@@ -143,7 +151,7 @@ export function InstallMenuItem() {
         <button type="button" className="nav-install-btn" onClick={() => void install()}>
           <Icon name="download" size={20} />{t('install.button')}
         </button>
-        {guide && <IosGuide onClose={closeGuide} />}
+        {guide && <Guide mode={guide} onClose={closeGuide} />}
       </li>
     </>
   );

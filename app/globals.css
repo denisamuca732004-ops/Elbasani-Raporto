@@ -1516,3 +1516,4 @@ a.row-link:hover .row-value { color: var(--d-accent); }
   .install-bar-inner { gap: 10px; }
   .install-bar-icon { width: 34px; height: 34px; }
 }
+.install-dots { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 1.5px solid currentColor; border-radius: 6px; font-weight: 800; line-height: 1; vertical-align: middle; color: #3D4642; }
