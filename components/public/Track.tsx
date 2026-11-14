@@ -7,6 +7,7 @@
  * number was not found). The page only shows the report: no "I have this
  * problem too" button (the report form offers that, where it avoids a duplicate).
  */
+import NotifyMe from '@/components/public/NotifyMe';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
@@ -203,6 +204,7 @@ export function CaseView({ lookup }: { lookup: CaseLookup }) {
             {data.supporters > 0 && (<><dt>{t('track.others')}</dt><dd>{t('track.supporters', { n: data.supporters })}</dd></>)}
           </dl>
         </div>
+        {!data.mergedInto && !data.isTest && data.publicStatus !== 'CLOSED' && data.publicStatus !== 'REJECTED' && <NotifyMe caseNumber={data.caseNumber} />}
         <MiniMap latitude={data.latitude} longitude={data.longitude} />
         {data.locationApproximate && <p className="hint" style={{ marginTop: 0 }}>{t('map.approximateCase')}</p>}
       </aside>

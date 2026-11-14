@@ -351,7 +351,8 @@ export async function draftNoteAction(id: string, input: unknown) {
 
 const pushSubscribeSchema = z.strictObject({
   caseNumber: z.string().trim().min(3).max(40),
-  clientRef: z.string().min(8).max(64),
+  /** From the form that sent it; without it, from the report's page with the number. */
+  clientRef: z.string().min(8).max(64).optional(),
   lang: z.enum(['sq', 'en']).default('sq'),
   subscription: z.object({
     endpoint: z.url().max(1000),

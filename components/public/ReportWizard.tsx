@@ -42,6 +42,8 @@ import { isMine, rememberMine, rememberSupported } from '@/lib/client/myReports'
 import { newClientRef, queueReport } from '@/lib/client/offlineQueue';
 import { formToken, prefetchFormToken } from '@/lib/client/formToken';
 import { askPushPermission, pushSupport, subscribeToReport } from '@/lib/client/push';
+import NotifyMe from '@/components/public/NotifyMe';
+import { InstallGuideButton } from '@/components/site/InstallApp';
 import { uploadPhoto } from '@/lib/client/upload';
 import { LIMITS, isOtherChoice } from '@/lib/shared/domain';
 import { looksLikeGibberish } from '@/lib/shared/text';
@@ -510,6 +512,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             <p>{t('report.doneIdLabel')}</p>
             <span className="case-number">{result.caseNumber}</span>
             {result.notified && <p className="small" style={{ margin: '0 0 12px' }}><Icon name="check" size={14} /> {t('report.notify.done')}</p>}
+            {!result.notified && !embedded && result.caseNumber && <NotifyMe caseNumber={result.caseNumber} clientRef={clientRef} />}
             <button
               type="button" className="btn btn-sm btn-ghost" style={{ marginBottom: 14 }}
               onClick={() => navigator.clipboard?.writeText(result.caseNumber ?? '').then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {})}
@@ -841,7 +844,13 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               <p className="hint">{notifyDenied ? t('report.notify.denied') : t('report.notify.hint')}</p>
             </div>
           )}
-          {rules.pushKey && canPush === 'ios-install' && <p className="hint notify-box">{t('report.notify.ios')}</p>}
+          {rules.pushKey && canPush === 'ios-install' && (
+            <div className="notify-box">
+              <p className="notify-ios-title"><Icon name="bell" size={18} /><strong>{t('report.notify.label')}</strong></p>
+              <p className="hint">{t('report.notify.ios')}</p>
+              <InstallGuideButton label={t('report.notify.iosButton')} />
+            </div>
+          )}
         </section>
       )}
 

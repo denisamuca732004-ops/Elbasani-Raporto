@@ -6,7 +6,11 @@
  *  - the Municipality marked it fixed, with the "A u rregullua?" link;
  *  - it was refused or merged into another report, with the reason.
  * No account and no phone number are needed: the browser gives a subscription
- * for this device, kept with the report. It is deleted when the push service
+ * for this device, kept with the report. Two ways in: from the form that sent
+ * the report (proved by its clientRef), or later from the report's page with its
+ * number ("Më njofto", e.g. an iPhone that can receive them only after the site
+ * was added to the home screen). The status is public with the number anyway;
+ * only the form's device gets the "A u rregullua?" link. It is deleted when the push service
  * says it no longer exists, after the last notification (closed or refused)
  * and with the resident's contact data (maintenance.eraseOldContacts).
  * The keys (VAPID) come from AUTH_SECRET, so nothing has to be configured;
@@ -24,7 +28,10 @@ export type PushMoment = 'in_progress' | 'resolved' | 'rejected';
 
 /** Only these push services: the server never posts to an address a browser made up. */
 const PUSH_HOSTS = /^(fcm\.googleapis\.com|android\.googleapis\.com|([a-z0-9-]+\.)*push\.services\.mozilla\.com|([a-z0-9-]+\.)*push\.apple\.com|([a-z0-9-]+\.)*notify\.windows\.com)$/;
-const MAX_PER_REPORT = 5;
+const MAX_PER_REPORT = 10;
+/** Devices subscribed with the number only (so strangers cannot fill a report's places). */
+const MAX_BY_NUMBER = 5;
+const FINISHED = new Set(['CLOSED', 'REJECTED']);
 
 const b64url = (b: Buffer) => b.toString('base64url');
 let keys: { publicKey: string; privateKey: string } | null = null;
@@ -59,7 +66,7 @@ export interface SubscriptionInput { endpoint: string; keys: { p256dh: string; a
  * The resident who just sent the report asks for notifications on this device. Proof that it is
  * them: the random reference their form made (clientRef), which only that browser knows.
  */
-export async function subscribeToReport(input: { caseNumber: string; clientRef: string; subscription: SubscriptionInput; lang: 'sq' | 'en' }): Promise<void> {
+export async function subscribeToReport(input: { caseNumber: string; clientRef?: string | null; subscription: SubscriptionInput; lang: 'sq' | 'en' }): Promise<void> {
   if (!config().push.enabled) throw badRequest('Njoftimet nuk janë aktive.');
   let host = '';
   try {
@@ -67,16 +74,23 @@ export async function subscribeToReport(input: { caseNumber: string; clientRef: 
     host = url.protocol === 'https:' ? url.hostname : '';
   } catch { /* not a URL */ }
   if (!PUSH_HOSTS.test(host)) throw badRequest('Ky shfletues nuk mund të marrë njoftime.');
-  const report = await db.report.findUnique({ where: { caseNumber: input.caseNumber }, select: { id: true, clientRef: true, isTest: true, _count: { select: { pushSubscriptions: true } } } });
-  if (!report || !report.clientRef || report.clientRef !== input.clientRef) throw notFound('Raportimi nuk u gjet.');
+  const report = await db.report.findUnique({ where: { caseNumber: input.caseNumber.trim().toUpperCase() }, select: { id: true, clientRef: true, status: true } });
+  if (!report) throw notFound('Raportimi nuk u gjet.');
+  const fromForm = Boolean(input.clientRef);
+  if (fromForm && report.clientRef !== input.clientRef) throw notFound('Raportimi nuk u gjet.');
+  if (!fromForm && FINISHED.has(report.status)) throw badRequest('Ky raportim është mbyllur: nuk do të ketë më njoftime.');
   const data = { p256dh: input.subscription.keys.p256dh, auth: input.subscription.keys.auth, lang: input.lang };
   const existing = await db.pushSubscription.findUnique({ where: { reportId_endpoint: { reportId: report.id, endpoint: input.subscription.endpoint } } });
   if (existing) {
-    await db.pushSubscription.update({ where: { id: existing.id }, data });
+    await db.pushSubscription.update({ where: { id: existing.id }, data: { ...data, ...(fromForm ? { fromForm: true } : {}) } });
     return;
   }
-  if (report._count.pushSubscriptions >= MAX_PER_REPORT) throw tooMany('Ky raportim ka tashmë shumë pajisje për njoftime.');
-  await db.pushSubscription.create({ data: { reportId: report.id, endpoint: input.subscription.endpoint, ...data } });
+  const [all, byNumber] = await Promise.all([
+    db.pushSubscription.count({ where: { reportId: report.id } }),
+    db.pushSubscription.count({ where: { reportId: report.id, fromForm: false } }),
+  ]);
+  if (all >= MAX_PER_REPORT || (!fromForm && byNumber >= MAX_BY_NUMBER)) throw tooMany('Ky raportim ka tashmë shumë pajisje për njoftime.');
+  await db.pushSubscription.create({ data: { reportId: report.id, endpoint: input.subscription.endpoint, fromForm, ...data } });
 }
 
 export async function hasPushSubscribers(reportId: string): Promise<boolean> {
@@ -135,7 +149,8 @@ export async function sendReportPush(p: { reportId: string; moment: PushMoment; 
   if (!report || report.isTest) return 0;
   let sent = 0;
   for (const s of report.pushSubscriptions) {
-    const message = pushMessage(p.moment, report.caseNumber, p.note ?? null, s.lang === 'en' ? 'en' : 'sq', p.feedbackToken);
+    // The "A u rregullua?" link only to the device of the form that sent the report.
+    const message = pushMessage(p.moment, report.caseNumber, p.note ?? null, s.lang === 'en' ? 'en' : 'sq', s.fromForm ? p.feedbackToken : undefined);
     try {
       await sender({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(message));
       sent++;

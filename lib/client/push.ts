@@ -30,7 +30,7 @@ function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
 }
 
 /** Subscribes this device to the report just sent. False when it did not work (the report is sent anyway). */
-export async function subscribeToReport(p: { caseNumber: string; clientRef: string; key: string; lang: 'sq' | 'en' }): Promise<boolean> {
+export async function subscribeToReport(p: { caseNumber: string; clientRef?: string; key: string; lang: 'sq' | 'en' }): Promise<boolean> {
   try {
     if (Notification.permission !== 'granted') return false;
     await navigator.serviceWorker.register('/sw.js', { scope: '/' });
@@ -47,7 +47,7 @@ export async function subscribeToReport(p: { caseNumber: string; clientRef: stri
     }
     sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
     const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-    await call(subscribePushAction({ caseNumber: p.caseNumber, clientRef: p.clientRef, lang: p.lang, subscription: { endpoint: json.endpoint, keys: json.keys } }));
+    await call(subscribePushAction({ caseNumber: p.caseNumber, ...(p.clientRef ? { clientRef: p.clientRef } : {}), lang: p.lang, subscription: { endpoint: json.endpoint, keys: json.keys } }));
     return true;
   } catch {
     return false;

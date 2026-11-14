@@ -39,7 +39,7 @@ describe('notifications on the resident\'s phone', () => {
     assert.deepEqual(vapidKeys(), k);
   });
 
-  test('only the browser that sent the report can subscribe, only to a real push service', async () => {
+  test('a wrong form reference is refused; only a real push service', async () => {
     const { result } = await submitReport({ clientRef: 'ref-owner-0001' });
     assert.equal((await rejects(() => subscribeToReport({ caseNumber: result.caseNumber, clientRef: 'someone-else-01', subscription: SUB(9), lang: 'sq' }))).status, 404);
     assert.equal((await rejects(() => subscribeToReport({ caseNumber: result.caseNumber, clientRef: 'ref-owner-0001', subscription: { ...SUB(9), endpoint: 'https://evil.example/hook' }, lang: 'sq' }))).status, 400);
@@ -89,5 +89,23 @@ describe('notifications on the resident\'s phone', () => {
     await changeStatus(admin, r.id, { status: 'IN_PROGRESS', publicNote: true });
     await drainJobs();
     assert.equal(await db.pushSubscription.count({ where: { reportId: r.id } }), 0);
+  });
+
+  test('with the number only (e.g. an iPhone from the home screen): notified, but without the confirmation link', async () => {
+    const { result, report } = await submitReport({ clientRef: 'ref-bynumber-01' });
+    await subscribeToReport({ caseNumber: result.caseNumber, subscription: SUB(20), lang: 'sq' });
+    for (let i = 21; i < 25; i++) await subscribeToReport({ caseNumber: result.caseNumber, subscription: SUB(i), lang: 'sq' });
+    assert.equal((await rejects(() => subscribeToReport({ caseNumber: result.caseNumber, subscription: SUB(25), lang: 'sq' }))).status, 429, 'at most 5 by number');
+    await subscribeToReport({ caseNumber: result.caseNumber, clientRef: 'ref-bynumber-01', subscription: SUB(26), lang: 'sq' });
+    sent.length = 0;
+    await resolveReport(admin, report.id, { note: 'U rregullua.' });
+    await drainJobs();
+    assert.equal(sent.length, 6);
+    assert.match(sent.find((m) => m.endpoint === SUB(20).endpoint)!.message.url, /\/ndiq\//, 'the report page, not the confirmation');
+    assert.match(sent.find((m) => m.endpoint === SUB(26).endpoint)!.message.url, /\/konfirmo\//);
+
+    const refused = await submitReport({ clientRef: 'ref-bynumber-02' });
+    await rejectReport(admin, refused.report.id, { reason: 'Nuk i përket Bashkisë, pronë private.' });
+    assert.equal((await rejects(() => subscribeToReport({ caseNumber: refused.result.caseNumber, subscription: SUB(30), lang: 'sq' }))).status, 400);
   });
 });

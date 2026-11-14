@@ -505,6 +505,8 @@ model PushSubscription {
   p256dh    String   @db.VarChar(200)
   auth      String   @db.VarChar(100)
   lang      String   @default("sq") @db.VarChar(2)
+  /// Subscribed from the form that sent the report (gets the "A u rregullua?" link); false: from the report's page with its number.
+  fromForm  Boolean  @default(true) @map("from_form")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@unique([reportId, endpoint])

@@ -156,3 +156,16 @@ export function InstallMenuItem() {
     </>
   );
 }
+
+/** "Si ta shtoj në ekran?": opens the guide of this phone (the iPhone one by default). */
+export function InstallGuideButton({ label, className = 'btn btn-sm btn-outline' }: { label: string; className?: string }) {
+  const mode = useInstallMode();
+  const [open, setOpen] = useState(false);
+  const guideMode = mode === 'android' || mode === 'inapp' ? mode : 'ios';
+  return (
+    <>
+      <button type="button" className={className} onClick={() => setOpen(true)}><Icon name="arrowUp" size={16} />{label}</button>
+      {open && <Guide mode={guideMode} onClose={() => setOpen(false)} />}
+    </>
+  );
+}

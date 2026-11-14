@@ -84,11 +84,19 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
             </h1>
             <p>{t('home.hero.text')}</p>
           </div>
-          <div className="hx-hero-tab">
-            <Link href={reportHref} className="hx-cta">
-              <Icon name={rules.aiChecks ? 'camera' : 'pin'} size={20} />
-              {rules.aiChecks ? t('home.hero.photoButton') : t('home.hero.button')}
-            </Link>
+          {/* The bottom of the photo: the menu as glass buttons, and the main action in the white corner. */}
+          <div className="hx-hero-bar">
+            <nav className="hx-hero-nav" aria-label={t('nav.menu')}>
+              <Link href="/harta" className="hx-glass"><Icon name="map" size={18} />{t('nav.map')}</Link>
+              <Link href="/ndiq" className="hx-glass"><Icon name="route" size={18} /><span className="hx-long">{t('nav.track')}</span><span className="hx-short">{t('nav.trackShort')}</span></Link>
+              <Link href="/statistika" className="hx-glass"><Icon name="chart" size={18} />{t('nav.stats')}</Link>
+            </nav>
+            <div className="hx-hero-tab">
+              <Link href={reportHref} className="hx-cta">
+                <Icon name={rules.aiChecks ? 'camera' : 'pin'} size={20} />
+                {rules.aiChecks ? t('home.hero.photoButton') : t('home.hero.button')}
+              </Link>
+            </div>
           </div>
         </div>
       </section>
