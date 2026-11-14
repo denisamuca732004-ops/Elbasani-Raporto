@@ -1668,3 +1668,11 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 .hx-row-text span { font-size: 0.92rem; line-height: 1.3; color: #56635B; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .hx-row-go { flex: none; color: #14532D; }
 @media (max-width: 900px) { .hx-rows { grid-template-columns: 1fr; gap: 10px; } .hx-row { padding: 12px 12px 12px 12px; } .hx-row-icon { width: 44px; height: 44px; } }
+/* The categories right under the photo: a quieter heading, the list, "all" underneath. */
+.hx-pick { padding-top: 36px; }
+.hx-pick-head { margin-bottom: 14px; }
+.site .hx-pick h2 { margin: 0 0 4px; color: #0F2A1D; font-size: 1.35rem; line-height: 1.2; font-weight: 700; }
+.hx-more-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; padding: 8px 2px; border: 0; background: none; color: #14532D; font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.hx-more-link:hover { color: #0F3F22; }
+.hx-about { padding-top: 64px; }
+@media (max-width: 560px) { .hx-pick { padding-top: 28px; } .site .hx-pick h2 { font-size: 1.2rem; } }

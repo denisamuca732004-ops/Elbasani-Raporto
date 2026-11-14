@@ -58,7 +58,7 @@ const en = {
   },
   home: {
     about: { title: 'A direct line to the Municipality', text: 'Every report gets a number, goes to the responsible sector and can be followed step by step until the problem is fixed. No account, no fees.' },
-    types: { title: 'What you can report', sub: 'Choose the type of problem to fill in the form step by step.' },
+    types: { title: 'What you can report', sub: 'Choose the type of problem to fill in the form step by step.', pickTitle: 'Or choose the type of problem yourself', pickSub: 'Fill in the form step by step.', all: 'All categories ({n})' },
     trackButton: 'Track a report',
     categories: 'Choose a category',
     recent: 'Recent reports',

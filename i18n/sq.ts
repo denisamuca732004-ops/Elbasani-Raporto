@@ -58,7 +58,7 @@ const sq = {
   },
   home: {
     about: { title: 'Një rrugë e drejtpërdrejtë te Bashkia', text: 'Çdo raportim merr një numër, shkon te sektori përgjegjës dhe ndiqet hap pas hapi, deri sa problemi të rregullohet. Pa llogari dhe pa pagesë.' },
-    types: { title: 'Çfarë mund të raportoni', sub: 'Zgjidhni llojin e problemit për të plotësuar formularin hap pas hapi.' },
+    types: { title: 'Çfarë mund të raportoni', sub: 'Zgjidhni llojin e problemit për të plotësuar formularin hap pas hapi.', pickTitle: 'Ose zgjidhni vetë llojin e problemit', pickSub: 'Plotësoni formularin hap pas hapi.', all: 'Të gjitha kategoritë ({n})' },
     trackButton: 'Ndiq raportimin',
     categories: 'Zgjidhni kategorinë',
     recent: 'Raportimet e fundit',

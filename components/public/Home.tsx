@@ -3,8 +3,8 @@
  * Home page, a clean layout of four parts:
  *  1. the photo of Elbasan with the promise ("Raporto. Ndiqe. U rregullua."), the open reports
  *     (to the map) and the one main action in its corner ("Raporto me foto", or the form);
- *  2. what the platform is, the three steps and its numbers;
- *  3. the categories, the most reported first (the form filled in by hand), "Më shumë" for the rest;
+ *  2. right under it, the categories, the most reported first (the form filled in by hand), the rest behind "all";
+ *  3. what the platform is, the three steps and its numbers;
  *  4. fixed recently, with the photos, and the map of the fixed ones.
  * Questions are answered by the help chat at the bottom right (components/site/ChatHelp.tsx).
  */
@@ -94,7 +94,36 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
         </div>
       </section>
 
-      {/* 2 · What the platform is, the three steps, and its numbers. */}
+      {/* 2 · Right under the main action: choosing the type yourself (the form filled in by hand), the most reported first. */}
+      <section className="container hx-pick">
+        <div className="hx-pick-head">
+          <h2>{rules.aiChecks ? t('home.types.pickTitle') : t('home.types.title')}</h2>
+          <p className="hx-sub">{rules.aiChecks ? t('home.types.pickSub') : t('home.types.sub')}</p>
+        </div>
+        {!rules.aiChecks && <ProblemSearch />}
+        <ul id={chipsId} className="hx-rows">
+          {shown.map((c) => (
+            <li key={c.code}>
+              <Link href={`/raporto?kategoria=${c.code}`} className="hx-row">
+                <span className="hx-row-icon" aria-hidden="true"><CategoryIcon icon={c.icon} size={24} /></span>
+                <span className="hx-row-text">
+                  <strong>{lang === 'en' ? c.nameEn : c.nameSq}</strong>
+                  {examples(c.code) && <span>{examples(c.code)}</span>}
+                </span>
+                <Icon name="chevronRight" size={20} className="hx-row-go" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+        {categories.length > TOP_CATEGORIES && (
+          <button type="button" className="hx-more-link" aria-expanded={allCategories} aria-controls={chipsId} onClick={() => setAllCategories((v) => !v)}>
+            {allCategories ? t('home.hero.fewerCategories') : t('home.types.all', { n: categories.length })}
+            <Icon name={allCategories ? 'chevronUp' : 'chevronDown'} size={18} />
+          </button>
+        )}
+      </section>
+
+      {/* 3 · What the platform is, the three steps, and its numbers. */}
       <section className="container hx-about">
         <div>
           <h2>{t('home.about.title')}</h2>
@@ -114,37 +143,6 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
             <div><dt>24/7</dt><dd>{t('home.numbers.always')}</dd></div>
           </dl>
         )}
-      </section>
-
-      {/* 3 · Choosing the type yourself (the form filled in by hand), the most reported first. */}
-      <section className="container hx-section">
-        <div className="hx-section-head">
-          <div>
-            <h2>{t('home.types.title')}</h2>
-            <p className="hx-sub">{rules.aiChecks ? t('home.hero.chooseSelf') : t('home.types.sub')}</p>
-          </div>
-          {categories.length > TOP_CATEGORIES && (
-            <button type="button" className="hx-more" aria-expanded={allCategories} aria-controls={chipsId} onClick={() => setAllCategories((v) => !v)}>
-              {allCategories ? t('home.hero.fewerCategories') : t('home.hero.moreCategories', { n: categories.length - TOP_CATEGORIES })}
-              <Icon name={allCategories ? 'chevronUp' : 'chevronDown'} size={18} />
-            </button>
-          )}
-        </div>
-        {!rules.aiChecks && <ProblemSearch />}
-        <ul id={chipsId} className="hx-rows">
-          {shown.map((c) => (
-            <li key={c.code}>
-              <Link href={`/raporto?kategoria=${c.code}`} className="hx-row">
-                <span className="hx-row-icon" aria-hidden="true"><CategoryIcon icon={c.icon} size={24} /></span>
-                <span className="hx-row-text">
-                  <strong>{lang === 'en' ? c.nameEn : c.nameSq}</strong>
-                  {examples(c.code) && <span>{examples(c.code)}</span>}
-                </span>
-                <Icon name="chevronRight" size={20} className="hx-row-go" />
-              </Link>
-            </li>
-          ))}
-        </ul>
       </section>
 
       {/* 4 · Fixed recently: the municipality's work, with the photos. */}
