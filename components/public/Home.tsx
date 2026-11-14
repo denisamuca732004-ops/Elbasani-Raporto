@@ -61,7 +61,7 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
   const { types } = useCatalog();
   const shown = allCategories ? categories : categories.slice(0, TOP_CATEGORIES);
   const examples = (code: string) => types.filter((ty) => ty.category.code === code && !ty.code.endsWith('.other')).slice(0, 3)
-    .map((ty) => (lang === 'en' ? ty.nameEn : ty.nameSq)).join(', ');
+    .map((ty, i) => { const n = lang === 'en' ? ty.nameEn : ty.nameSq; return i ? n.charAt(0).toLowerCase() + n.slice(1) : n; }).join(', ');
   const reportHref = rules.aiChecks ? '/raporto' : '/raporto?menyra=formular';
 
   return (
@@ -131,13 +131,16 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
           )}
         </div>
         {!rules.aiChecks && <ProblemSearch />}
-        <ul id={chipsId} className="hx-cards">
-          {shown.map((c, i) => (
+        <ul id={chipsId} className="hx-rows">
+          {shown.map((c) => (
             <li key={c.code}>
-              <Link href={`/raporto?kategoria=${c.code}`} className="hx-card">
-                <span className="hx-card-art"><span className="hx-card-no">{String(i + 1).padStart(2, '0')}</span><CategoryIcon icon={c.icon} size={44} /></span>
-                <strong>{lang === 'en' ? c.nameEn : c.nameSq}</strong>
-                {examples(c.code) && <span className="hx-card-text">{examples(c.code)}</span>}
+              <Link href={`/raporto?kategoria=${c.code}`} className="hx-row">
+                <span className="hx-row-icon" aria-hidden="true"><CategoryIcon icon={c.icon} size={24} /></span>
+                <span className="hx-row-text">
+                  <strong>{lang === 'en' ? c.nameEn : c.nameSq}</strong>
+                  {examples(c.code) && <span>{examples(c.code)}</span>}
+                </span>
+                <Icon name="chevronRight" size={20} className="hx-row-go" />
               </Link>
             </li>
           ))}
