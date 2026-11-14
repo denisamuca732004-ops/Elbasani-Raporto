@@ -35,6 +35,9 @@ interface Props {
   frequent?: Array<{ id: number; count: number }>;
 }
 
+/** The categories that have a photo in public/categories/ (the others keep their icon). */
+const CATEGORY_PHOTOS = new Set(['waste', 'streets', 'animals']);
+
 /** The categories shown before "Më shumë": the most reported ones. */
 const TOP_CATEGORIES = 3;
 
@@ -102,18 +105,25 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
         </div>
         {!rules.aiChecks && <ProblemSearch />}
         <ul id={chipsId} className="hx-rows">
-          {shown.map((c) => (
-            <li key={c.code}>
-              <Link href={`/raporto?kategoria=${c.code}`} className="hx-row">
-                <span className="hx-row-icon" aria-hidden="true"><CategoryIcon icon={c.icon} size={24} /></span>
-                <span className="hx-row-text">
-                  <strong>{lang === 'en' ? c.nameEn : c.nameSq}</strong>
-                  {examples(c.code) && <span>{examples(c.code)}</span>}
-                </span>
-                <Icon name="chevronRight" size={20} className="hx-row-go" />
-              </Link>
-            </li>
-          ))}
+          {shown.map((c, i) => {
+            const photo = CATEGORY_PHOTOS.has(c.code) ? c.code : null;
+            return (
+              <li key={c.code}>
+                {/* With a photo: text and "Raporto" on the left, the photo on the right (the first, most reported, in green). */}
+                <Link href={`/raporto?kategoria=${c.code}`} className={`hx-row${photo ? ' hx-row-photo' : ''}${photo && i === 0 ? ' hx-row-feature' : ''}`}>
+                  {!photo && <span className="hx-row-icon" aria-hidden="true"><CategoryIcon icon={c.icon} size={24} /></span>}
+                  <span className="hx-row-text">
+                    <strong>{lang === 'en' ? c.nameEn : c.nameSq}</strong>
+                    {examples(c.code) && <span>{examples(c.code)}</span>}
+                    {photo && <span className="hx-row-pill">{t('nav.report')}<Icon name="arrowRight" size={14} /></span>}
+                  </span>
+                  {photo
+                    ? <picture className="hx-row-img"><source srcSet={`/categories/${photo}.webp`} type="image/webp" /><img src={`/categories/${photo}.jpg`} alt="" loading="lazy" width={800} height={600} /></picture>
+                    : <Icon name="chevronRight" size={20} className="hx-row-go" />}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
         {categories.length > TOP_CATEGORIES && (
           <button type="button" className="hx-more-link" aria-expanded={allCategories} aria-controls={chipsId} onClick={() => setAllCategories((v) => !v)}>
