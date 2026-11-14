@@ -48,7 +48,7 @@ const en = {
       ask: 'What needs fixing?', placeholder: 'Pothole, full bin, street light…', button: 'Report a problem',
       suggestions: 'Matching problems', categories: 'Or choose a category',
       moreCategories: 'More ({n})', fewerCategories: 'Fewer',
-      photoButton: 'Report with a photo', photoHint: 'Take a photo, the system fills in the type and the description.', chooseSelf: 'Or choose the type yourself:',
+      photoButton: 'Report with a photo', photoHint: 'Take a photo, the system fills in the type and the description.', chooseSelf: 'Or fill in the form yourself, step by step, starting with the type of problem:',
     },
     photoAlt: 'The Elbasan castle and the clock tower, seen from above',
     map: { label: 'Map of reports in the city: open the map', open: { one: '1 report open across the city', other: '{n} reports open across the city' } },
