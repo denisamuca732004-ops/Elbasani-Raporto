@@ -1483,3 +1483,5 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 /* The big title: weight 800 instead of 900 (the black weight has notches at the joints that look like
    broken pixels when zoomed), a little more room between letters, and outlines drawn exactly. */
 .site .home-title { font-weight: 800; letter-spacing: -0.03em; text-rendering: geometricPrecision; font-kerning: normal; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+/* One green on the public site: buttons, links and the form use the green of the home page. */
+.site { --brand-button: var(--pub-green, #1A7F37); --brand-button-hover: var(--pub-green-hover, #146A2D); }
