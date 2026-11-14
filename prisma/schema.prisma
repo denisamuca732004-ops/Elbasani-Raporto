@@ -158,6 +158,8 @@ model Department {
   nameSq      String   @map("name_sq") @db.VarChar(160)
   nameEn      String   @map("name_en") @db.VarChar(160)
   description String?
+  /// The same in English (the panel and the site in English); without it the Albanian one is shown.
+  descriptionEn String? @map("description_en")
   /// Shared mailbox that also receives the notifications of this department.
   email       String?  @db.VarChar(200)
   /// Works by e-mail instead of the panel (no staff account): each report is e-mailed to `email`

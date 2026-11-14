@@ -16,13 +16,13 @@ import localityPoints from './data/locality-points.json';
 const LOCALITY_POINTS = (localityPoints as { zones: Record<string, Record<string, [number, number]>> }).zones;
 
 export const DEPARTMENTS = [
-  { code: 'public_services', nameSq: 'Sektori i Shërbimeve Publike', nameEn: 'Public Services Sector', description: 'Mbetjet, pastrimi, gjelbërimi dhe parqet.' },
-  { code: 'infrastructure', nameSq: 'Sektori i Infrastrukturës dhe Punëve Publike', nameEn: 'Infrastructure and Public Works Sector', description: 'Rrugët, trotuaret, sinjalistika dhe ndriçimi publik.' },
-  { code: 'water', nameSq: 'Ujësjellës Kanalizime Elbasan', nameEn: 'Elbasan Water and Sewerage', description: 'Rrjeti i ujit, kanalizimet dhe pusetat.' },
-  { code: 'urban_control', nameSq: 'Inspektorati i Mbrojtjes së Territorit', nameEn: 'Territory Protection Inspectorate', description: 'Ndërtimet pa leje, kantieret dhe mbetjet inerte.' },
-  { code: 'public_health', nameSq: 'Sektori i Shëndetit Publik dhe Shërbimit Veterinar', nameEn: 'Public Health and Veterinary Sector', description: 'Kafshët, dezinsektimi dhe shëndeti publik.' },
-  { code: 'municipal_police', nameSq: 'Policia Bashkiake', nameEn: 'Municipal Police', description: 'Zhurmat, zënia e hapësirës publike dhe automjetet e braktisura.' },
-  { code: 'citizen_service', nameSq: 'Zyra e Shërbimit ndaj Qytetarit', nameEn: 'Citizen Service Office', description: 'Kërkesat e tjera që nuk i përkasin një sektori të caktuar.' },
+  { code: 'public_services', nameSq: 'Sektori i Shërbimeve Publike', nameEn: 'Public Services Sector', description: 'Mbetjet, pastrimi, gjelbërimi dhe parqet.', descriptionEn: 'Waste, street cleaning, green spaces and parks.' },
+  { code: 'infrastructure', nameSq: 'Sektori i Infrastrukturës dhe Punëve Publike', nameEn: 'Infrastructure and Public Works Sector', description: 'Rrugët, trotuaret, sinjalistika dhe ndriçimi publik.', descriptionEn: 'Roads, sidewalks, signs and street lighting.' },
+  { code: 'water', nameSq: 'Ujësjellës Kanalizime Elbasan', nameEn: 'Elbasan Water and Sewerage', description: 'Rrjeti i ujit, kanalizimet dhe pusetat.', descriptionEn: 'The water network, sewers and manholes.' },
+  { code: 'urban_control', nameSq: 'Inspektorati i Mbrojtjes së Territorit', nameEn: 'Territory Protection Inspectorate', description: 'Ndërtimet pa leje, kantieret dhe mbetjet inerte.', descriptionEn: 'Building without a permit, construction sites and construction waste.' },
+  { code: 'public_health', nameSq: 'Sektori i Shëndetit Publik dhe Shërbimit Veterinar', nameEn: 'Public Health and Veterinary Sector', description: 'Kafshët, dezinsektimi dhe shëndeti publik.', descriptionEn: 'Animals, pest control and public health.' },
+  { code: 'municipal_police', nameSq: 'Policia Bashkiake', nameEn: 'Municipal Police', description: 'Zhurmat, zënia e hapësirës publike dhe automjetet e braktisura.', descriptionEn: 'Noise, occupation of public space and abandoned vehicles.' },
+  { code: 'citizen_service', nameSq: 'Zyra e Shërbimit ndaj Qytetarit', nameEn: 'Citizen Service Office', description: 'Kërkesat e tjera që nuk i përkasin një sektori të caktuar.', descriptionEn: 'Other requests that do not belong to a specific sector.' },
 ] as const;
 
 type TypeRow = [code: string, nameSq: string, nameEn: string, kind: RequestKind, department: string, slaDays: number, priority: Priority, keywords: string];

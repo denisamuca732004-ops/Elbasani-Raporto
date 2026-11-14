@@ -18,6 +18,7 @@ const departmentFields = {
   nameSq: name160,
   nameEn: name160,
   description: optionalText(1000),
+  descriptionEn: optionalText(1000),
   email: optionalEmail,
   /** Ignored: a sector works by e-mail exactly when it has an address (kept for older clients). */
   worksByEmail: z.boolean().optional(),

@@ -18,8 +18,8 @@ import { useAdminAction } from './useAdminAction';
 export const slugify = (s: string) => s.toLowerCase().replace(/ë/g, 'e').replace(/ç/g, 'c').normalize('NFD').replace(/[̀-ͯ]/g, '')
   .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60);
 
-type DepartmentForm = { nameSq: string; nameEn: string; code: string; description: string; email: string };
-const EMPTY: DepartmentForm = { nameSq: '', nameEn: '', code: '', description: '', email: '' };
+type DepartmentForm = { nameSq: string; nameEn: string; code: string; description: string; descriptionEn: string; email: string };
+const EMPTY: DepartmentForm = { nameSq: '', nameEn: '', code: '', description: '', descriptionEn: '', email: '' };
 
 function DepartmentFormView({ initial, onSubmit, onCancel, submitLabel, busy, isNew }: {
   initial: DepartmentForm; onSubmit: (body: Record<string, unknown>) => void; onCancel?: () => void; submitLabel: string; busy: boolean; isNew?: boolean;
@@ -46,7 +46,7 @@ function DepartmentFormView({ initial, onSubmit, onCancel, submitLabel, busy, is
       return;
     }
     onSubmit({
-      nameSq: form.nameSq.trim(), nameEn: form.nameEn.trim(), description: form.description.trim(), email: form.email.trim(),
+      nameSq: form.nameSq.trim(), nameEn: form.nameEn.trim(), description: form.description.trim(), descriptionEn: form.descriptionEn.trim(), email: form.email.trim(),
       ...(isNew ? { code: form.code } : {}),
     });
   }
@@ -71,6 +71,9 @@ function DepartmentFormView({ initial, onSubmit, onCancel, submitLabel, busy, is
       </div>
       <Field label={t('admin.sectors.description')} htmlFor={`sf-desc-${suffix}`} hint={t('admin.sectors.descriptionHint')}>
         <textarea id={`sf-desc-${suffix}`} value={form.description} maxLength={1000} onChange={set('description')} style={{ minHeight: 70 }} />
+      </Field>
+      <Field label={t('admin.sectors.descriptionEn')} htmlFor={`sf-desc-en-${suffix}`}>
+        <textarea id={`sf-desc-en-${suffix}`} value={form.descriptionEn} maxLength={1000} onChange={set('descriptionEn')} style={{ minHeight: 70 }} />
       </Field>
       <div className="row">
         <button type="submit" className="btn" disabled={busy}>{busy ? t('common.wait') : submitLabel}</button>
@@ -113,7 +116,7 @@ export default function Departments({ items }: { items: DepartmentRow[] }) {
         <article key={s.id} className={`card sector-card${s.active ? '' : ' inactive'}`}>
           {editing === s.id ? (
             <DepartmentFormView
-              initial={{ nameSq: s.nameSq, nameEn: s.nameEn, code: s.code, description: s.description ?? '', email: s.email ?? '' }}
+              initial={{ nameSq: s.nameSq, nameEn: s.nameEn, code: s.code, description: s.description ?? '', descriptionEn: s.descriptionEn ?? '', email: s.email ?? '' }}
               busy={busy} submitLabel={t('common.save')} onCancel={() => setEditing(null)}
               onSubmit={async (body) => {
                 const ok = await run(() => call(updateDepartmentAction(s.id, body)), t('detail.saved'));
@@ -125,7 +128,7 @@ export default function Departments({ items }: { items: DepartmentRow[] }) {
               <div className="row-between">
                 <div>
                   <h2 className="card-title" style={{ marginBottom: 4 }}>{lang === 'en' ? s.nameEn : s.nameSq}</h2>
-                  <div className="small muted">{s.code}{s.email ? ` · ${s.email}` : ''}</div>
+                  {s.email && <div className="small muted">{s.email}</div>}
                 </div>
                 <div className="row">
                   {s.email
@@ -141,7 +144,9 @@ export default function Departments({ items }: { items: DepartmentRow[] }) {
                   </button>
                 </div>
               </div>
-              {s.description && <p className="small" style={{ margin: '8px 0 0' }}>{s.description}</p>}
+              {(lang === 'en' ? s.descriptionEn || s.description : s.description) && (
+                <p className="small" style={{ margin: '8px 0 0' }}>{lang === 'en' ? s.descriptionEn || s.description : s.description}</p>
+              )}
               <div className="sector-stats">
                 <Link href={`/admin/reports?departmentId=${s.id}`}><strong>{s.openReports}</strong> {t('admin.sectors.openReports')}</Link>
                 <Link href={`/admin/report-types?departmentId=${s.id}`}><strong>{s.activeTypes}</strong> {t('admin.sectors.types')}</Link>

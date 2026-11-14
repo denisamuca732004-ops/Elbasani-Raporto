@@ -567,7 +567,7 @@ const en = {
       add: 'Add sector', create: 'Create the sector', created: 'The sector “{name}” was created.',
       codeHint: 'Lower-case letters without spaces, e.g. public_services', codeRule: 'Only lower-case letters, numbers and _ . - (2–60).',
       email: 'Sector email', emailHint: 'Optional: receives the alerts about new and overdue reports.',
-      description: 'Description', descriptionHint: 'What this sector handles (seen by staff and residents).',
+      description: 'Description (Albanian)', descriptionHint: 'What this sector handles (seen by staff and residents).', descriptionEn: 'Description (English)',
       openReports: 'open reports', types: 'report types', heads: 'active heads',
       noHead: 'No head', addHead: 'Add a head',
       activated: 'The sector was activated.', deactivated: 'The sector was deactivated.',

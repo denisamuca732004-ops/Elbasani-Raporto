@@ -52,6 +52,7 @@ export async function listDepartments(admin: Principal) {
     nameSq: d.nameSq,
     nameEn: d.nameEn,
     description: d.description,
+    descriptionEn: d.descriptionEn,
     email: d.email,
     worksByEmail: d.worksByEmail,
     active: d.active,
@@ -66,7 +67,7 @@ export async function createDepartment(admin: Principal, input: DepartmentInput)
   assertAdmin(admin);
   return saveUnique(() => db.department.create({
     data: {
-      code: input.code, nameSq: input.nameSq, nameEn: input.nameEn, description: input.description ?? null, email: input.email ?? null,
+      code: input.code, nameSq: input.nameSq, nameEn: input.nameEn, description: input.description ?? null, descriptionEn: input.descriptionEn ?? null, email: input.email ?? null,
       // Sectors work only by e-mail: with an address, its reports are e-mailed to it.
       worksByEmail: Boolean(input.email), active: input.active,
     },
@@ -101,6 +102,7 @@ export async function updateDepartment(admin: Principal, id: number, input: Depa
       ...(input.nameSq !== undefined ? { nameSq: input.nameSq } : {}),
       ...(input.nameEn !== undefined ? { nameEn: input.nameEn } : {}),
       ...('description' in input ? { description: input.description ?? null } : {}),
+      ...('descriptionEn' in input ? { descriptionEn: input.descriptionEn ?? null } : {}),
       ...('email' in input ? { email: input.email ?? null, worksByEmail: Boolean(nextEmail) } : {}),
       ...(input.active !== undefined ? { active: input.active } : {}),
     },

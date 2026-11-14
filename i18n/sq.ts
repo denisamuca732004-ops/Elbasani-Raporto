@@ -567,7 +567,7 @@ const sq = {
       add: 'Shto sektor', create: 'Krijo sektorin', created: 'Sektori “{name}” u krijua.',
       codeHint: 'Shkronja të vogla pa hapësira, p.sh. sherbimet_publike', codeRule: 'Vetëm shkronja të vogla, numra dhe _ . - (2–60).',
       email: 'Emaili i sektorit', emailHint: 'Opsionale: merr njoftimet për raportimet e reja dhe me vonesë.',
-      description: 'Përshkrimi', descriptionHint: 'Çfarë trajton ky sektor (e shohin stafi dhe qytetarët).',
+      description: 'Përshkrimi', descriptionHint: 'Çfarë trajton ky sektor (e shohin stafi dhe qytetarët).', descriptionEn: 'Përshkrimi në anglisht',
       openReports: 'raportime të hapura', types: 'lloje raportimesh', heads: 'përgjegjës aktivë',
       noHead: 'Pa përgjegjës', addHead: 'Shto përgjegjës',
       activated: 'Sektori u aktivizua.', deactivated: 'Sektori u çaktivizua.',
