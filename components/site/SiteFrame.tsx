@@ -125,8 +125,8 @@ export function SiteHeader() {
     ['/raporto', 'pin', t('nav.report')],
     ['/harta', 'map', t('nav.map')],
     ['/ndiq', 'route', t('nav.trackShort')],
-    ['/ndihmo', 'heart', t('nav.help')],
     ['/statistika', 'chart', t('nav.stats')],
+    ['/ndihmo', 'heart', t('nav.help')],
   ];
   return (
     <header className="site-header">
