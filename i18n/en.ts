@@ -717,12 +717,12 @@ const en = {
   },
   community: {
     title: 'Help the city',
-    lead: 'Some small problems we can fix ourselves, together with the neighbours. Take a photo and the AI prepares the action for you.',
+    lead: 'Some small problems we can fix ourselves, together with neighbours or friends. Upload a photo and the AI fills in the details of the action.',
     create: 'Create an action',
     how: {
       title: 'How it works',
       s1t: 'Take a photo', s1: 'Of the small problem: litter, leaves, a bench to paint.',
-      s2t: 'Invite others', s2: 'The AI writes the invitation and how many people are needed. You just share it.',
+      s2t: 'Invite neighbours or friends', s2: 'From the photo, the AI fills in the invitation and how many people are needed. You just share it.',
       s3t: 'Scan the QR on the spot', s3: 'Each participant scans the code on the organiser’s phone.',
       s4t: 'Close it with a photo', s4: 'Take the “after” photo. That’s it!',
     },
@@ -780,8 +780,8 @@ const en = {
       title: 'The group’s reward', amount: '{n} lek', people: '{n} people took part', action: 'Action', pin: 'Partner PIN',
       button: 'Mark as used', done: 'The reward was marked as used.', used: 'This reward was used on {date}.', held: 'This reward is on hold.', notFound: 'This reward code was not found.',
     },
-    home: { title: 'Help the city', text: 'Fix something small together with your neighbours. The AI helps with everything.', button: 'See the actions' },
-    invite: { title: 'You could fix this yourselves! 💚', text: 'It looks easy. You could fix it with your neighbours: the AI prepares the action for you.', yes: 'Create an action', no: 'No, send it to the Municipality' },
+    home: { title: 'Help the city', text: 'Fix something small together with your neighbours or friends.', button: 'See the actions' },
+    invite: { title: 'You could fix this yourselves! 💚', text: 'It looks easy. You could fix it with your neighbours or friends: the AI fills in the details of the action from the photo.', yes: 'Create an action', no: 'No, send it to the Municipality' },
   },
   communityAdmin: {
     title: 'Residents’ actions', lead: '“Help the city”: the actions waiting for your decision, and the others. The AI approves clear cases by itself.',

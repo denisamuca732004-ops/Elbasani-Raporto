@@ -717,12 +717,12 @@ const sq = {
   },
   community: {
     title: 'Ndihmo qytetin',
-    lead: 'Disa probleme të vogla i rregullojmë dot vetë, bashkë me fqinjët. Bëni një foto dhe AI e përgatit aksionin për ju.',
+    lead: 'Disa probleme të vogla i rregullojmë dot vetë, bashkë me fqinjët ose miqtë. Ngarkoni një foto dhe AI plotëson të dhënat e aksionit.',
     create: 'Krijo një aksion',
     how: {
       title: 'Si funksionon',
       s1t: 'Bëni një foto', s1: 'Të problemit të vogël: mbeturina, gjethe, një stol për t’u lyer.',
-      s2t: 'Ftoni të tjerët', s2: 'AI shkruan ftesën dhe sa veta duhen. Ju vetëm e ndani.',
+      s2t: 'Ftoni fqinjët ose miqtë', s2: 'AI plotëson ftesën dhe sa veta duhen nga fotoja. Ju vetëm e ndani.',
       s3t: 'Skanoni QR në vend', s3: 'Çdo pjesëmarrës skanon kodin në telefonin e organizatorit.',
       s4t: 'Mbylleni me një foto', s4: 'Bëni foton “pas”. Kaq ishte!',
     },
@@ -780,8 +780,8 @@ const sq = {
       title: 'Çmimi i grupit', amount: '{n} lekë', people: '{n} veta morën pjesë', action: 'Aksioni', pin: 'PIN-i i partnerit',
       button: 'Shëno si të përdorur', done: 'Çmimi u shënua si i përdorur.', used: 'Ky çmim është përdorur më {date}.', held: 'Ky çmim është pezulluar.', notFound: 'Ky kod çmimi nuk u gjet.',
     },
-    home: { title: 'Ndihmo qytetin', text: 'Rregulloni diçka të vogël bashkë me fqinjët. AI ju ndihmon me gjithçka.', button: 'Shiko aksionet' },
-    invite: { title: 'Këtë mund ta rregulloni edhe ju! 💚', text: 'Duket diçka e lehtë. Mund ta rregulloni bashkë me fqinjët: AI e përgatit aksionin për ju.', yes: 'Krijo një aksion', no: 'Jo, dërgoje te Bashkia' },
+    home: { title: 'Ndihmo qytetin', text: 'Rregulloni diçka të vogël bashkë me fqinjët ose miqtë.', button: 'Shiko aksionet' },
+    invite: { title: 'Këtë mund ta rregulloni edhe ju! 💚', text: 'Duket diçka e lehtë. Mund ta rregulloni bashkë me fqinjët ose miqtë: AI plotëson të dhënat e aksionit nga fotoja.', yes: 'Krijo një aksion', no: 'Jo, dërgoje te Bashkia' },
   },
   communityAdmin: {
     title: 'Aksionet e qytetarëve', lead: '“Ndihmo qytetin”: aksionet që presin vendimin tuaj, dhe të tjerat. AI miraton vetë rastet e qarta.',
