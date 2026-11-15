@@ -36,7 +36,7 @@ interface Props {
 }
 
 /** The categories that have a photo in public/categories/ (the others keep their icon). */
-const CATEGORY_PHOTOS = new Set(['waste', 'streets', 'animals']);
+const CATEGORY_PHOTOS = new Set(['waste', 'streets', 'animals', 'lighting', 'water', 'parks', 'construction', 'health', 'business']);
 
 /** The categories shown before "Më shumë": the most reported ones. */
 const TOP_CATEGORIES = 3;
