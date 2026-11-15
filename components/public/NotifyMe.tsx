@@ -14,7 +14,7 @@ import { askPushPermission, pushSupport, subscribeToReport } from '@/lib/client/
 
 const KEY = (n: string) => `er-push-${n}`;
 
-export default function NotifyMe({ caseNumber, clientRef }: { caseNumber: string; clientRef?: string }) {
+export default function NotifyMe({ caseNumber, clientRef, onlyIfReady = false }: { caseNumber: string; clientRef?: string; onlyIfReady?: boolean }) {
   const { t, lang } = useI18n();
   const { rules } = useSettings();
   const [support, setSupport] = useState<'yes' | 'ios-install' | 'no'>('no');
@@ -23,7 +23,7 @@ export default function NotifyMe({ caseNumber, clientRef }: { caseNumber: string
     setSupport(pushSupport());
     try { if (localStorage.getItem(KEY(caseNumber)) && Notification.permission === 'granted') setState('done'); } catch { /* not kept */ }
   }, [caseNumber]);
-  if (!rules.pushKey || support === 'no') return null;
+  if (!rules.pushKey || support === 'no' || (onlyIfReady && support !== 'yes')) return null;
 
   async function turnOn() {
     setState('busy');

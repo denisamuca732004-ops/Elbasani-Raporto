@@ -204,7 +204,8 @@ export function CaseView({ lookup }: { lookup: CaseLookup }) {
             {data.supporters > 0 && (<><dt>{t('track.others')}</dt><dd>{t('track.supporters', { n: data.supporters })}</dd></>)}
           </dl>
         </div>
-        {!data.mergedInto && !data.isTest && data.publicStatus !== 'CLOSED' && data.publicStatus !== 'REJECTED' && <NotifyMe caseNumber={data.caseNumber} />}
+        {/* Only a short button, only where this phone can really get them and the report is still being handled. */}
+        {!data.mergedInto && !data.isTest && !['RESOLVED', 'CLOSED', 'REJECTED'].includes(data.publicStatus) && <NotifyMe caseNumber={data.caseNumber} onlyIfReady />}
         <MiniMap latitude={data.latitude} longitude={data.longitude} />
         {data.locationApproximate && <p className="hint" style={{ marginTop: 0 }}>{t('map.approximateCase')}</p>}
       </aside>
