@@ -10,7 +10,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import { resetConfigForTests } from '@/lib/server/env';
 import {
-  cancelStaleActions, checkClosedAction, choosePrize, closeAction, createAction, decideAction, getOrganizerAction, getPrize,
+  cancelStaleActions, checkClosedAction, getActionForDevice, choosePrize, closeAction, createAction, decideAction, getOrganizerAction, getPrize,
   getPublicAction, joinAction, joinTokenAt, listPublicActions, normalizePhone, prizeForPeople, redeemPrize, setSpotCheckForTests,
   updateCommunitySettings, voteAction,
 } from '@/lib/server/services/community';
@@ -156,7 +156,8 @@ describe('closing, the prize and the partners', () => {
     assert.equal(chosen.prize?.partner, 'Kafe Skampa');
     assert.ok(chosen.prizeCode);
     assert.equal((await rejects(() => choosePrize({ code, token: organizerToken, choice: 'MARKET' }))).status, 409);
-    assert.equal((await getPublicAction(code)).prize?.choice, 'COFFEE');
+    assert.equal((await getPublicAction(code)).prize, null, 'others never see money');
+    assert.equal((await getActionForDevice(code, `participant-${code}-1-yy`)).prize?.choice, 'COFFEE', 'those who took part see the reward');
 
     assert.equal((await rejects(() => redeemPrize(chosen.prizeCode!, '0000'))).status, 403);
     const used = await redeemPrize(chosen.prizeCode!, '4321');
@@ -178,7 +179,7 @@ describe('closing, the prize and the partners', () => {
     const row = await db.communityAction.findUniqueOrThrow({ where: { code: big.code } });
     assert.match(row.reviewReason ?? '', /500 lekë/);
     await decideAction(admin, row.id, 'verify', '');
-    assert.equal((await getPublicAction(big.code)).prize?.amount, 500);
+    assert.equal((await getOrganizerAction(big.code, big.organizerToken)).prize?.amount, 500);
 
     setSpotCheckForTests(() => true);
     const spot = await newAction();
@@ -203,8 +204,8 @@ describe('closing, the prize and the partners', () => {
     await closeAction({ code, token: organizerToken, photoKey: await uploadPhoto() });
     assert.equal((await rejects(() => voteAction({ code, deviceRef: `participant-${code}-1-yy`, done: false }))).status, 409, 'people who took part do not vote');
     await voteAction({ code, deviceRef: 'neighbour-device-0001', done: false });
-    const held = await voteAction({ code, deviceRef: 'neighbour-device-0002', done: false });
-    assert.equal(held.prize?.held, true);
+    await voteAction({ code, deviceRef: 'neighbour-device-0002', done: false });
+    assert.equal((await getOrganizerAction(code, organizerToken)).prize?.held, true);
     assert.equal((await rejects(() => choosePrize({ code, token: organizerToken, choice: 'COFFEE' }))).status, 409);
     const row = await db.communityAction.findUniqueOrThrow({ where: { code } });
     await decideAction(admin, row.id, 'release_prize', '');

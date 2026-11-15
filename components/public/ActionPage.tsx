@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import QRCode from 'qrcode';
 import { useCallback, useEffect, useState } from 'react';
-import { choosePrizeAction, closeActionAction, joinActionAction, organizerActionAction, voteActionAction } from '@/actions/community';
+import { choosePrizeAction, closeActionAction, joinActionAction, organizerActionAction, viewActionAction, voteActionAction } from '@/actions/community';
 import Icon from '@/components/Icon';
 import PhotoInput from '@/components/PhotoInput';
 import { MiniMap } from '@/components/maps';
@@ -49,10 +49,15 @@ export default function ActionPage({ code, initial }: { code: string; initial: P
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
-    setToken(organizerToken(code));
+    const own = organizerToken(code);
+    setToken(own);
     setJoined(hasJoined(code));
     setReady(true);
-  }, [code]);
+    // Those who took part see the group's reward once it is done (nobody else ever sees money).
+    if (!own && hasJoined(code) && initial?.status === 'VERIFIED') {
+      void call(viewActionAction({ code, deviceRef: deviceRef() })).then(setAction).catch(() => {});
+    }
+  }, [code, initial?.status]);
 
   const org = token && action && 'joinToken' in action ? (action as OrganizerAction) : null;
 
@@ -137,7 +142,10 @@ export default function ActionPage({ code, initial }: { code: string; initial: P
 
 function PrizeLine({ action }: { action: PublicAction }) {
   const { t } = useI18n();
-  if (action.status !== 'VERIFIED' || !action.prize) return null;
+  if (action.status !== 'VERIFIED') return null;
+  if (!action.prize) {
+    return <div className="cm-prize-line"><Icon name="heart" size={22} /><div><strong>{t('community.page.doneThanks', { n: action.people })}</strong></div></div>;
+  }
   const p = action.prize;
   return (
     <div className="cm-prize-line">

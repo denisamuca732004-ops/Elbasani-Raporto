@@ -161,10 +161,11 @@ const photoUrl = (id: string | undefined) => (id ? `/api/public/action-photos/${
 type ActionWithAll = Prisma.CommunityActionGetPayload<{ include: { participants: true; photos: true; votes: true } }>;
 const WITH_ALL = { participants: { orderBy: { joinedAt: 'asc' } }, photos: { orderBy: { createdAt: 'asc' } }, votes: true } as const;
 
-function toPublic(a: ActionWithAll, now = Date.now()): PublicAction {
+/** withPrize: only for the organiser, the people who took part and the admin (others never see money). */
+function toPublic(a: ActionWithAll, now = Date.now(), withPrize = false): PublicAction {
   const before = a.photos.find((p) => p.kind === 'BEFORE' && p.isPublic);
   const after = a.photos.find((p) => p.kind === 'AFTER' && p.isPublic);
-  const showPrize = a.status === 'VERIFIED' && a.prizeAmount !== null;
+  const showPrize = withPrize && a.status === 'VERIFIED' && a.prizeAmount !== null;
   return {
     code: a.code,
     status: a.status,
@@ -228,6 +229,7 @@ const DRAFT_SYSTEM = `You help a resident of Elbasan (Albania) invite neighbours
 Answer ONLY with a JSON object:
 {
   "citizensCanDo": boolean,  // true only when ordinary residents can do it safely with simple tools in under 3 hours (litter, leaves, small cleaning, painting). False for electricity, big trees, traffic, heights, dangerous material, building work, animals.
+  "problemSq": string,       // the kind of problem IN ALBANIAN in 2-4 words, e.g. "Mbeturina të shpërndara"
   "titleSq": string,         // a short friendly title IN ALBANIAN, e.g. "Pastrojmë këndin e lojërave", max 60 characters.
   "descriptionSq": string,   // 1-3 friendly sentences IN ALBANIAN inviting people: what we will do and why. No names, no promises of money.
   "peopleNeeded": number,    // 1-20
@@ -250,12 +252,12 @@ const num = (v: unknown, min: number, max: number, fallback: number) =>
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 
 export interface ActionDraft {
-  available: boolean; citizensCanDo: boolean; title: string; description: string; peopleNeeded: number; minutes: number; bring: string; reason: string;
+  available: boolean; citizensCanDo: boolean; problem: string; title: string; description: string; peopleNeeded: number; minutes: number; bring: string; reason: string;
 }
 
 /** "Shkruaje me AI": a proposal for the form from the photo (and a few words). The organiser changes what they want. */
 export async function draftAction(photoKey: string, notes: string): Promise<ActionDraft> {
-  const none: ActionDraft = { available: false, citizensCanDo: true, title: '', description: '', peopleNeeded: 3, minutes: 60, bring: '', reason: '' };
+  const none: ActionDraft = { available: false, citizensCanDo: true, problem: '', title: '', description: '', peopleNeeded: 3, minutes: 60, bring: '', reason: '' };
   if (!aiEnabled()) return none;
   const small = await smallPhoto(photoKey);
   if (!small) return none;
@@ -264,11 +266,12 @@ export async function draftAction(photoKey: string, notes: string): Promise<Acti
       kind: 'action-draft', system: DRAFT_SYSTEM,
       userText: JSON.stringify({ residentNotes: notes.slice(0, 500) }),
       imageDataUrls: [`data:image/jpeg;base64,${small.toString('base64')}`],
-      cacheKey: sha256(`action-draft:v1:${config().ai.model}:${photoKey}:${notes}`),
+      cacheKey: sha256(`action-draft:v2:${config().ai.model}:${photoKey}:${notes}`),
     });
     return {
       available: true,
       citizensCanDo: a.citizensCanDo !== false,
+      problem: text(a.problemSq, 60),
       title: text(a.titleSq, 60),
       description: text(a.descriptionSq, 600),
       peopleNeeded: num(a.peopleNeeded, 1, 20, 3),
@@ -377,10 +380,17 @@ export async function getPublicAction(code: string): Promise<PublicAction> {
   return toPublic(a);
 }
 
+/** The page as this browser sees it: with the group's reward when it took part. */
+export async function getActionForDevice(code: string, deviceRef: string): Promise<PublicAction> {
+  const a = await loadByCode(code);
+  if (a.status === 'REVIEW') throw notFound('Aksioni nuk u gjet ose pret miratimin.');
+  return toPublic(a, Date.now(), a.participants.some((p) => p.deviceRef === deviceRef));
+}
+
 export async function getOrganizerAction(code: string, token: string, now = Date.now()): Promise<OrganizerAction> {
   const a = await loadAsOrganizer(code, token);
   return {
-    ...toPublic(a, now),
+    ...toPublic(a, now, true),
     joinToken: joinOpen(a, now) ? joinTokenAt(a.joinSecret, now) : null,
     prizeCode: a.status === 'VERIFIED' && a.prizeChoice ? a.prizeCode : null,
     reviewReason: a.status === 'REVIEW' || a.status === 'CLOSING' ? (a.status === 'REVIEW' ? 'Aksioni po shikohet nga Bashkia para se të publikohet.' : 'Aksioni po verifikohet.') : null,
@@ -405,7 +415,7 @@ export async function listPublicActions(now = new Date()): Promise<{ upcoming: A
     return {
       code: a.code, status: a.status, title: a.title, place: a.place, startsAt: a.startsAt.toISOString(), minutes: a.minutes,
       peopleNeeded: a.peopleNeeded, people: a._count.participants + 1,
-      photoUrl: photoUrl((a.status === 'VERIFIED' ? after ?? before : before)?.id), prizeAmount: a.status === 'VERIFIED' ? a.prizeAmount : null,
+      photoUrl: photoUrl((a.status === 'VERIFIED' ? after ?? before : before)?.id), prizeAmount: null,
     };
   };
   // Still open: until the end of its scanning time.
@@ -449,7 +459,7 @@ export async function joinAction(input: {
     create: { actionId: a.id, deviceRef: input.deviceRef, ...data },
     update: data,
   });
-  return getPublicAction(a.code);
+  return getActionForDevice(a.code, input.deviceRef);
 }
 
 /* ─── 3. Closing and verifying ─── */
@@ -609,7 +619,7 @@ export async function voteAction(input: { code: string; deviceRef: string; done:
 
 function toAdmin(a: ActionWithAll): AdminActionItem {
   return {
-    ...toPublic(a),
+    ...toPublic(a, Date.now(), true),
     id: a.id,
     organizerPhone: a.organizerPhone,
     reviewReason: a.reviewReason,

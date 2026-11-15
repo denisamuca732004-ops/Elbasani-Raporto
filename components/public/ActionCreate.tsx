@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { createActionAction, draftActionAction } from '@/actions/community';
+import { placeAtAction } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import PhotoInput from '@/components/PhotoInput';
 import { LocationPicker } from '@/components/maps';
@@ -14,7 +15,7 @@ import { useSettings } from '@/components/providers';
 import { ErrorAlert, Field } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { ActionFailure, call, fieldErrorsOf } from '@/lib/client/action';
-import { deviceRef, saveOrganizerToken, takeHandedPhoto } from '@/lib/client/community';
+import { deviceRef, durationText, saveOrganizerToken, takeHandedPhoto } from '@/lib/client/community';
 import { formToken, prefetchFormToken } from '@/lib/client/formToken';
 import type { LatLng } from '@/lib/client/format';
 import { askPushPermission, browserSubscription, pushSupport } from '@/lib/client/push';
@@ -50,6 +51,11 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
   const [notify, setNotify] = useState(false);
   const [canPush, setCanPush] = useState(false);
   const [ai, setAi] = useState<{ busy: boolean; done: boolean; no: string | null }>({ busy: false, done: false, no: null });
+  const [problem, setProblem] = useState('');
+  /** The AI's proposal is shown as a card; "Ndrysho" opens the fields (always open without the AI). */
+  const [editing, setEditing] = useState(!rules.aiChecks);
+  const [goOn, setGoOn] = useState(false);
+  const placeSeq = useRef(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
@@ -83,18 +89,36 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
     try {
       const k = await ensureKey(blob, key);
       const d = await call(draftActionAction({ photoKey: k, notes: words }));
-      if (!d.available) { setAi({ busy: false, done: false, no: null }); return; }
+      if (!d.available) { setAi({ busy: false, done: false, no: null }); setEditing(true); return; }
       if (!d.citizensCanDo) { setAi({ busy: false, done: false, no: d.reason || '' }); return; }
+      setProblem(d.problem);
       if (d.title) setTitle(d.title);
       if (d.description) setDescription(d.description);
       if (d.bring) setBring(d.bring);
       setPeople(d.peopleNeeded);
       setMinutes([30, 60, 90, 120, 180, 240].reduce((best, m) => (Math.abs(m - d.minutes) < Math.abs(best - d.minutes) ? m : best), 60));
       setAi({ busy: false, done: true, no: null });
-    } catch (err) {
+    } catch {
       setAi({ busy: false, done: false, no: null });
-      setError(err);
+      setEditing(true); // no answer: the resident writes it
     }
+  }
+
+  function onPhoto(p: Blob | null) {
+    setPhoto(p);
+    setPhotoKey(null);
+    setAi({ busy: false, done: false, no: null });
+    setGoOn(false);
+    // As soon as the photo is chosen, the AI reads it and fills in the rest.
+    if (p && rules.aiChecks) void runDraft(p, null, notes);
+  }
+
+  function onPoint(p: LatLng) {
+    setPoint(p);
+    const seq = ++placeSeq.current;
+    call(placeAtAction({ latitude: p.latitude, longitude: p.longitude }))
+      .then((r) => { if (seq === placeSeq.current && r.label) setPlace(r.label.slice(0, 200)); })
+      .catch(() => { /* the point is enough */ });
   }
 
   function check(): Record<string, string> {
@@ -102,7 +126,6 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
     if (!photo) e.photoKey = t('community.form.needPhoto');
     if (title.trim().length < 6) e.title = t('community.form.required');
     if (description.trim().length < 15) e.description = t('community.form.required');
-    if (place.trim().length < 3) e.place = t('community.form.required');
     if (!point) e.latitude = t('community.form.needPlace');
     if (!startsAt) e.startsAt = t('community.form.required');
     if (phone.replace(/\D/g, '').length < 9) e.organizerPhone = t('community.form.required');
@@ -116,6 +139,7 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
     const e = check();
     setErrors(e);
     if (Object.keys(e).length) {
+      if (e.title || e.description) setEditing(true);
       document.querySelector('.has-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
@@ -124,7 +148,7 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
       const key = await ensureKey();
       const push = notify && rules.pushKey ? await browserSubscription(rules.pushKey) : null;
       const res = await call(createActionAction({
-        photoKey: key, title, description, bring, place, latitude: point!.latitude, longitude: point!.longitude,
+        photoKey: key, title, description, bring, place: place.trim().length >= 3 ? place.trim() : 'Elbasan', latitude: point!.latitude, longitude: point!.longitude,
         startsAt: new Date(startsAt).toISOString(), minutes, peopleNeeded: people,
         organizerName: name, organizerPhone: phone, deviceRef: deviceRef(), safetyAccepted: true,
         ...(push ? { push } : {}), lang: lang === 'en' ? 'en' : 'sq',
@@ -164,104 +188,115 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
       <Link href="/ndihmo" className="cm-back"><Icon name="arrowLeft" size={16} />{t('community.page.back')}</Link>
       <h1>{t('community.form.title')}</h1>
       <p className="lead">{t('community.form.lead')}</p>
-      <div className="cm-safety cm-safety-sm"><Icon name="alert" size={18} /><p>{t('community.safety.text')}</p></div>
 
       <form className="cm-form" onSubmit={submit} noValidate>
         <input ref={honeypot} type="text" name="website" className="hp-field" tabIndex={-1} autoComplete="off" aria-hidden="true" defaultValue="" />
 
         <fieldset className="cm-fieldset">
-          <legend><span>1</span>{t('community.form.photo')}</legend>
-          <PhotoInput value={photo} onChange={(p) => { setPhoto(p); setPhotoKey(null); setAi({ busy: false, done: false, no: null }); }} required error={errors.photoKey} maxBytes={rules.maxUploadBytes} idPrefix="action-photo" />
-          {rules.aiChecks && (
-            <div className="cm-ai">
-              <Field label={t('community.form.notes')} htmlFor="cm-notes">
-                <input id="cm-notes" value={notes} maxLength={300} placeholder={t('community.form.notesPh')} onChange={(e) => setNotes(e.target.value)} />
-              </Field>
-              <button type="button" className="btn btn-outline" disabled={!photo || ai.busy} onClick={() => void runDraft()}>
-                <Icon name="sparkle" size={18} />{ai.busy ? t('community.form.aiBusy') : t('community.form.aiButton')}
-              </button>
-              {ai.done && <p className="cm-ai-ok"><Icon name="check" size={16} />{t('community.form.aiDone')}</p>}
-              {ai.no !== null && (
-                <div className="cm-ai-no">
-                  <p><strong>{t('community.form.aiNo')}</strong> {ai.no}</p>
-                  <Link href="/raporto" className="btn btn-sm">{t('community.form.reportInstead')}</Link>
-                </div>
-              )}
+          <legend><span>1</span>{t('community.form.step1')}</legend>
+          <PhotoInput value={photo} onChange={onPhoto} required error={errors.photoKey} maxBytes={rules.maxUploadBytes} idPrefix="action-photo" />
+          {ai.busy && <p className="cm-reading"><span className="cm-dots" aria-hidden="true" />{t('community.form.reading')}</p>}
+          {ai.no !== null && !goOn && (
+            <div className="cm-ai-no">
+              <p><strong>{t('community.form.aiNo')}</strong> {ai.no}</p>
+              <div className="cm-invite-row">
+                <Link href="/raporto" className="btn btn-sm">{t('community.form.reportInstead')}</Link>
+                <button type="button" className="btn btn-sm btn-outline" onClick={() => { setGoOn(true); setEditing(true); }}>{t('community.form.continueAnyway')}</button>
+              </div>
             </div>
           )}
-        </fieldset>
-
-        <fieldset className="cm-fieldset">
-          <legend><span>2</span>{t('community.form.what')}</legend>
-          <Field label={t('community.form.titleField')} htmlFor="cm-title" required error={errors.title}>
-            <input id="cm-title" value={title} maxLength={120} placeholder={t('community.form.titlePh')} onChange={(e) => setTitle(e.target.value)} />
-          </Field>
-          <Field label={t('community.form.description')} htmlFor="cm-desc" required error={errors.description}>
-            <textarea id="cm-desc" rows={3} value={description} maxLength={1000} placeholder={t('community.form.descriptionPh')} onChange={(e) => setDescription(e.target.value)} />
-          </Field>
-          <Field label={t('community.form.bring')} htmlFor="cm-bring">
-            <input id="cm-bring" value={bring} maxLength={200} placeholder={t('community.form.bringPh')} onChange={(e) => setBring(e.target.value)} />
-          </Field>
-        </fieldset>
-
-        <fieldset className="cm-fieldset">
-          <legend><span>3</span>{t('community.form.where')}</legend>
-          <Field label={t('community.form.place')} htmlFor="cm-place" required error={errors.place}>
-            <input id="cm-place" value={place} maxLength={200} placeholder={t('community.form.placePh')} onChange={(e) => setPlace(e.target.value)} />
-          </Field>
-          <p className="hint">{t('community.form.mapHint')}</p>
-          <LocationPicker value={point} onChange={setPoint} error={errors.latitude} autoLocate />
-        </fieldset>
-
-        <fieldset className="cm-fieldset">
-          <legend><span>4</span>{t('community.form.when')}</legend>
-          <div className="cm-row3">
-            <Field label={t('community.form.startsAt')} htmlFor="cm-start" required error={errors.startsAt}>
-              <input id="cm-start" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
-            </Field>
-            <Field label={t('community.form.minutes')} htmlFor="cm-min">
-              <select id="cm-min" value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}>
-                {[30, 60, 90, 120, 180, 240].map((m) => <option key={m} value={m}>{m < 60 ? t('community.minutes', { n: m }) : m % 60 ? t('community.hoursMinutes', { h: Math.floor(m / 60), m: m % 60 }) : t('community.hours', { n: m / 60 })}</option>)}
-              </select>
-            </Field>
-            <Field label={t('community.form.people')} htmlFor="cm-people">
-              <select id="cm-people" value={people} onChange={(e) => setPeople(Number(e.target.value))}>
-                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </Field>
-          </div>
-        </fieldset>
-
-        <fieldset className="cm-fieldset">
-          <legend><span>5</span>{t('community.form.organizer')}</legend>
-          <div className="cm-row2">
-            <Field label={t('community.form.name')} htmlFor="cm-name">
-              <input id="cm-name" value={name} maxLength={40} autoComplete="given-name" onChange={(e) => setName(e.target.value)} />
-            </Field>
-            <Field label={t('community.form.phone')} htmlFor="cm-phone" required error={errors.organizerPhone} hint={t('community.form.phoneHint')}>
-              <input id="cm-phone" type="tel" inputMode="tel" value={phone} maxLength={30} autoComplete="tel" placeholder="06x xxx xxxx" onChange={(e) => setPhone(e.target.value)} />
-            </Field>
-          </div>
-          <div className={`field${errors.safetyAccepted ? ' has-error' : ''}`}>
-            <label className="check cm-check">
-              <input type="checkbox" checked={safety} onChange={(e) => setSafety(e.target.checked)} />
-              <span>{t('community.form.safety')}</span>
-            </label>
-            {errors.safetyAccepted && <div className="field-error" role="alert"><Icon name="alert" size={14} />{errors.safetyAccepted}</div>}
-          </div>
-          {canPush && (
-            <label className="switch">
-              <input type="checkbox" role="switch" checked={notify} aria-checked={notify} onChange={async (e) => setNotify(e.target.checked ? await askPushPermission() : false)} />
-              <span className="switch-track" aria-hidden="true" />
-              <span>{t('community.form.notify')}</span>
-            </label>
+          {photo && !ai.busy && (ai.no === null || goOn) && (
+            editing ? (
+              <div className="cm-edit">
+                <Field label={t('community.form.titleField')} htmlFor="cm-title" required error={errors.title}>
+                  <input id="cm-title" value={title} maxLength={120} placeholder={t('community.form.titlePh')} onChange={(e) => setTitle(e.target.value)} />
+                </Field>
+                <Field label={t('community.form.description')} htmlFor="cm-desc" required error={errors.description}>
+                  <textarea id="cm-desc" rows={3} value={description} maxLength={1000} placeholder={t('community.form.descriptionPh')} onChange={(e) => setDescription(e.target.value)} />
+                </Field>
+                <div className="cm-row3">
+                  <Field label={t('community.form.people')} htmlFor="cm-people">
+                    <select id="cm-people" value={people} onChange={(e) => setPeople(Number(e.target.value))}>
+                      {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </Field>
+                  <Field label={t('community.form.minutes')} htmlFor="cm-min">
+                    <select id="cm-min" value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}>
+                      {[30, 60, 90, 120, 180, 240].map((m) => <option key={m} value={m}>{durationText(m, t)}</option>)}
+                    </select>
+                  </Field>
+                  <Field label={t('community.form.bring')} htmlFor="cm-bring">
+                    <input id="cm-bring" value={bring} maxLength={200} placeholder={t('community.form.bringPh')} onChange={(e) => setBring(e.target.value)} />
+                  </Field>
+                </div>
+                {ai.done && <button type="button" className="btn btn-sm btn-outline cm-edit-done" onClick={() => setEditing(false)}><Icon name="check" size={16} />{t('community.form.doneEdit')}</button>}
+              </div>
+            ) : ai.done && (
+              <div className="cm-proposal">
+                <div className="cm-proposal-top">
+                  <span className="cm-ai-tag"><Icon name="sparkle" size={14} />AI</span>
+                  {problem && <span className="cm-chip">{problem}</span>}
+                  <button type="button" className="cm-link" onClick={() => setEditing(true)}><Icon name="edit" size={14} />{t('community.form.edit')}</button>
+                </div>
+                <strong>{title}</strong>
+                <p>{description}</p>
+                <div className="cm-proposal-meta">
+                  <span><Icon name="users" size={15} />{t('community.form.peopleShort', { n: people })}</span>
+                  <span><Icon name="clock" size={15} />{durationText(minutes, t)}</span>
+                  {bring && <span><Icon name="list" size={15} />{bring}</span>}
+                </div>
+              </div>
+            )
           )}
         </fieldset>
 
+        {photo && !ai.busy && (ai.no === null || goOn) && (
+          <>
+            <fieldset className="cm-fieldset">
+              <legend><span>2</span>{t('community.form.step2')}</legend>
+              <LocationPicker value={point} onChange={onPoint} error={errors.latitude} autoLocate />
+              <div className="cm-row2">
+                <Field label={t('community.form.place')} htmlFor="cm-place">
+                  <input id="cm-place" value={place} maxLength={200} placeholder={t('community.form.placePh')} onChange={(e) => setPlace(e.target.value)} />
+                </Field>
+                <Field label={t('community.form.startsAt')} htmlFor="cm-start" required error={errors.startsAt}>
+                  <input id="cm-start" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+                </Field>
+              </div>
+            </fieldset>
+
+            <fieldset className="cm-fieldset">
+              <legend><span>3</span>{t('community.form.step3')}</legend>
+              <div className="cm-row2">
+                <Field label={t('community.form.phone')} htmlFor="cm-phone" required error={errors.organizerPhone} hint={t('community.form.phoneHint')}>
+                  <input id="cm-phone" type="tel" inputMode="tel" value={phone} maxLength={30} autoComplete="tel" placeholder="06x xxx xxxx" onChange={(e) => setPhone(e.target.value)} />
+                </Field>
+                <Field label={t('community.form.name')} htmlFor="cm-name">
+                  <input id="cm-name" value={name} maxLength={40} autoComplete="given-name" onChange={(e) => setName(e.target.value)} />
+                </Field>
+              </div>
+              <div className={`field${errors.safetyAccepted ? ' has-error' : ''}`}>
+                <label className="check cm-check">
+                  <input type="checkbox" checked={safety} onChange={(e) => setSafety(e.target.checked)} />
+                  <span>{t('community.form.safetyShort')}</span>
+                </label>
+                {errors.safetyAccepted && <div className="field-error" role="alert"><Icon name="alert" size={14} />{errors.safetyAccepted}</div>}
+              </div>
+              {canPush && (
+                <label className="switch">
+                  <input type="checkbox" role="switch" checked={notify} aria-checked={notify} onChange={async (e) => setNotify(e.target.checked ? await askPushPermission() : false)} />
+                  <span className="switch-track" aria-hidden="true" />
+                  <span>{t('community.form.notify')}</span>
+                </label>
+              )}
+            </fieldset>
+          </>
+        )}
+
         {error ? <ErrorAlert error={error} /> : null}
-        <button type="submit" className="btn btn-lg cm-submit" disabled={busy}>
+        {photo && !ai.busy && (ai.no === null || goOn) && <button type="submit" className="btn btn-lg cm-submit" disabled={busy}>
           <Icon name="heart" size={20} />{busy ? t('community.form.sending') : t('community.form.submit')}
-        </button>
+        </button>}
       </form>
     </div>
   );

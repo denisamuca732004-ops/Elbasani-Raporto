@@ -10,19 +10,6 @@ import { durationText } from '@/lib/client/community';
 import { formatDate } from '@/lib/client/format';
 import type { ActionCard, CommunitySettings } from '@/lib/shared/types';
 
-export function prizeRows(tiers: CommunitySettings['tiers'], t: (k: string, v?: Record<string, string | number>) => string) {
-  const sorted = [...tiers].sort((a, b) => a.minPeople - b.minPeople);
-  return sorted.map((tier, i) => {
-    const next = sorted[i + 1];
-    return {
-      people: !next ? t('community.prizes.from', { n: tier.minPeople })
-        : next.minPeople - 1 === tier.minPeople ? t('communityAdmin.people', { n: tier.minPeople })
-          : t('community.prizes.range', { from: tier.minPeople, to: next.minPeople - 1 }),
-      amount: t('community.prizes.lek', { n: tier.amount }),
-    };
-  });
-}
-
 export function ActionCardView({ a }: { a: ActionCard }) {
   const { t, lang } = useI18n();
   return (
@@ -38,7 +25,7 @@ export function ActionCardView({ a }: { a: ActionCard }) {
       </span>
       <span className="cm-card-foot">
         <span><Icon name="users" size={15} />{a.status === 'VERIFIED' ? t('communityAdmin.people', { n: a.people }) : t('community.people', { n: a.people, m: a.peopleNeeded })}</span>
-        {a.status === 'VERIFIED' && a.prizeAmount ? <span className="cm-card-prize"><Icon name="gift" size={15} />{t('community.prizes.lek', { n: a.prizeAmount })}</span> : <Icon name="arrowRight" size={16} />}
+        <Icon name="arrowRight" size={16} />
       </span>
     </Link>
   );
@@ -51,21 +38,11 @@ export default function CommunityHome({ upcoming, done, settings }: { upcoming: 
   }
   return (
     <div className="cm-page">
-      <section className="container cm-hero">
-        <div>
-          <span className="cm-kicker"><Icon name="heart" size={16} />{t('community.title')}</span>
-          <h1>{t('community.home.text')}</h1>
-          <p className="lead">{t('community.lead')}</p>
-          <Link href="/ndihmo/krijo" className="btn btn-lg cm-cta"><Icon name="plus" size={20} />{t('community.create')}</Link>
-        </div>
-        <aside className="cm-prize-card" aria-labelledby="cm-prize-title">
-          <h2 id="cm-prize-title"><Icon name="gift" size={20} />{t('community.prizes.title')}</h2>
-          <ul>
-            {prizeRows(settings.tiers, t).map((r) => <li key={r.people}><span>{r.people}</span><strong>{r.amount}</strong></li>)}
-          </ul>
-          <p>{t('community.prizes.choice', { coffee: settings.coffeePartner, market: settings.marketPartner })}</p>
-          <p className="cm-muted">{t('community.prizes.one')}</p>
-        </aside>
+      <section className="container cm-hero cm-hero-simple">
+        <span className="cm-kicker"><Icon name="heart" size={16} />{t('community.title')}</span>
+        <h1>{t('community.home.text')}</h1>
+        <p className="lead">{t('community.lead')}</p>
+        <Link href="/ndihmo/krijo" className="btn btn-lg cm-cta"><Icon name="camera" size={20} />{t('community.create')}</Link>
       </section>
 
       <section className="container cm-section" aria-labelledby="cm-how">

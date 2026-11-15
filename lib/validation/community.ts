@@ -52,6 +52,7 @@ export const actionJoinSchema = z.strictObject({
   lang,
 });
 
+export const actionViewSchema = z.strictObject({ code: actionCode, deviceRef });
 export const organizerSchema = z.strictObject({ code: actionCode, token: organizerToken });
 export const actionCloseSchema = z.strictObject({ code: actionCode, token: organizerToken, photoKey: uploadKey });
 export const prizeChoiceSchema = z.strictObject({ code: actionCode, token: organizerToken, choice: z.enum(['COFFEE', 'MARKET']) });

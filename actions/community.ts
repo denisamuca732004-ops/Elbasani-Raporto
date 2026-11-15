@@ -11,7 +11,7 @@ import { enforceRateLimit } from '@/lib/server/ratelimit';
 import { requireAdmin } from '@/lib/server/session';
 import * as community from '@/lib/server/services/community';
 import {
-  actionCloseSchema, actionCreateSchema, actionDraftSchema, actionJoinSchema, actionVoteSchema, adminActionDecisionSchema,
+  actionCloseSchema, actionCreateSchema, actionViewSchema, actionDraftSchema, actionJoinSchema, actionVoteSchema, adminActionDecisionSchema,
   communitySettingsSchema, organizerSchema, prizeChoiceSchema, redeemSchema,
 } from '@/lib/validation/community';
 import { clientIp, parseInput, run } from './_shared';
@@ -45,6 +45,15 @@ export async function organizerActionAction(input: unknown) {
     await enforceRateLimit('actionOrganizer', await clientIp());
     const { code, token } = parseInput(organizerSchema, input);
     return community.getOrganizerAction(code, token);
+  });
+}
+
+/** The action's page for this browser: the group's reward only for those who took part. */
+export async function viewActionAction(input: unknown) {
+  return run(async () => {
+    await enforceRateLimit('actionOrganizer', await clientIp());
+    const { code, deviceRef } = parseInput(actionViewSchema, input);
+    return community.getActionForDevice(code, deviceRef);
   });
 }
 
