@@ -1742,3 +1742,27 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 .notify-ios-title { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; color: var(--pub-ink, #0F2A1D); }
 .notify-box .btn { display: inline-flex; align-items: center; gap: 6px; }
 @media (max-width: 560px) { .hx-glass svg { display: none; } .hx-glass { padding: 0 8px; } }
+/* Only "Ndiq" on the photo: on the left, on the same line as the main action (also on the phone). */
+@media (max-width: 900px) {
+  .hx-hero-bar { flex-direction: row; align-items: flex-end; gap: 0; }
+  .hx-hero-nav { flex: none; padding: 0 0 12px 14px; }
+  .hx-glass { flex: none; padding: 0 16px; }
+  .hx-hero-bar .hx-hero-tab { flex: 1 1 auto; min-width: 0; margin-left: 28px; align-self: auto; }
+  .hx-hero-copy { bottom: 110px; }
+  .hx-hero-media { min-height: 560px; }
+}
+@media (max-width: 560px) {
+  .hx-glass svg { display: inline-block; }
+  .hx-glass { height: 46px; padding: 0 14px; }
+  .hx-hero-nav { padding: 0 0 10px 12px; }
+  .hx-hero-bar .hx-hero-tab { margin-left: 26px; }
+  .hx-hero-bar .hx-hero-tab .hx-cta { padding: 0 14px; font-size: 1.02rem; gap: 8px; }
+  .hx-hero-copy { bottom: 96px; }
+  .hx-hero-media { min-height: 540px; }
+}
+.hx-hero-bar .hx-cta { white-space: nowrap; }
+@media (max-width: 360px) {
+  .hx-hero-bar .hx-hero-tab .hx-cta { font-size: 0.95rem; padding: 0 10px; }
+  .hx-hero-bar .hx-hero-tab .hx-cta svg { display: none; }
+  .hx-glass { padding: 0 12px; }
+}
