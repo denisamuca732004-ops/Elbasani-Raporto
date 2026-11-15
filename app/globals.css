@@ -2060,3 +2060,6 @@ body { line-height: 1.4; }
 .pw-field .pw-eye { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: transparent; color: var(--ink-soft, #4A5A4A); cursor: pointer; }
 .pw-field .pw-eye:hover { background: rgba(0, 0, 0, 0.05); }
 .auth-box input[type=email], .auth-box .pw-field input { width: 100%; box-sizing: border-box; }
+/* The sunset photo of the castle walk: already bright, shown as it is; the castle and the clock tower in view. */
+.hx-hero-media img { filter: none; object-position: center 30%; }
+@media (min-width: 901px) { .hx-hero-media img { object-position: center 16%; } }
