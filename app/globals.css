@@ -1830,3 +1830,10 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 .hx-pop-badge svg { color: #14532D; }
 .hx-pop-body span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 @media (max-width: 560px) { .hx-popular-head { align-items: flex-start; } .hx-popular-arrows { margin-top: 6px; } }
+
+/* Tighter lines in every text (the municipality's request): paragraphs, lists, hints, labels; titles tighter still. */
+body { line-height: 1.4; }
+.site { line-height: 1.25; }
+.site.site :is(p, li, label, dd, blockquote, td, .hint, .small, .muted, .hx-sub, .hx-lead, .hx-card-text, .hx-pop-body span, .install-bar-text span) { line-height: 1.25; }
+.site.site :is(h1, h2, h3, h4, .hx-title) { line-height: 1.06; }
+.site.site :is(.hx-steps li, .hx-pop-body strong, .hx-row strong, .hx-fixed-caption strong) { line-height: 1.15; }
