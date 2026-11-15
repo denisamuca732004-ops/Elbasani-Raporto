@@ -102,9 +102,9 @@ function Guide({ mode, onClose }: { mode: 'ios' | 'android' | 'inapp'; onClose: 
 }
 
 const DISMISS_KEY = 'er-install-dismissed';
-const DISMISS_DAYS = 30;
+const DISMISS_DAYS = 7;
 
-/** The slim bar on the home page. Hidden for 30 days after "✕". */
+/** The slim bar on the home page. Hidden for 7 days after "✕" (the menu and the footer always offer it). */
 export function InstallBar() {
   const { t } = useI18n();
   const { mode, install, guide, closeGuide } = useInstall();
@@ -166,6 +166,21 @@ export function InstallGuideButton({ label, className = 'btn btn-sm btn-outline'
     <>
       <button type="button" className={className} onClick={() => setOpen(true)}>{className !== 'link-button' && <Icon name="arrowUp" size={16} />}{label}</button>
       {open && <Guide mode={guideMode} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+/** "Instalo në telefon" in the footer: always there, also after the bar was closed with "✕". */
+export function InstallFooterButton() {
+  const { t } = useI18n();
+  const { mode, install, guide, closeGuide } = useInstall();
+  if (mode === 'none') return null;
+  return (
+    <>
+      <button type="button" className="footer-install" onClick={() => void install()}>
+        <Icon name="download" size={18} />{t('install.footer')}
+      </button>
+      {guide && <Guide mode={guide} onClose={closeGuide} />}
     </>
   );
 }

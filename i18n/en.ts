@@ -13,7 +13,7 @@ const en = {
   },
   time: { now: 'just now', minutes: '{n} min ago', hours: { one: '1 hour ago', other: '{n} hours ago' }, days: { one: '1 day ago', other: '{n} days ago' } },
   install: {
-    button: 'Install', short: 'Install',
+    button: 'Install', short: 'Install', footer: 'Install on your phone',
     title: 'Elbasani Raporton on your phone',
     text: 'Add it to your home screen and open it with one tap, no need to look for the site.',
     ok: 'Got it',

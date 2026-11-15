@@ -53,9 +53,9 @@ export default function Login({ setupComplete, next, forbidden }: { setupComplet
               <input id="login-email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </Field>
             <Field label={t('auth.password')} htmlFor="login-password">
-              <div className="input-with-button">
+              <div className="pw-field">
                 <input id="login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}>
+                <button type="button" className="pw-eye" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}>
                   <Icon name={showPassword ? 'eyeOff' : 'eye'} size={18} />
                 </button>
               </div>

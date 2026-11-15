@@ -13,7 +13,7 @@ const sq = {
   },
   time: { now: 'tani', minutes: 'para {n} min', hours: { one: 'para 1 ore', other: 'para {n} orësh' }, days: { one: 'para 1 dite', other: 'para {n} ditësh' } },
   install: {
-    button: 'Instalo', short: 'Instalo',
+    button: 'Instalo', short: 'Instalo', footer: 'Instalo në telefon',
     title: 'Elbasani Raporton në telefonin tuaj',
     text: 'Shtojeni në ekranin kryesor dhe hapeni me një prekje, pa kërkuar faqen.',
     ok: 'E kuptova',

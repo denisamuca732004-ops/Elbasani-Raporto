@@ -14,7 +14,7 @@ import { flushQueue, pendingCount } from '@/lib/client/offlineQueue';
 import { brandNames } from '@/lib/shared/branding';
 import type { GuideItem } from '@/lib/shared/guide';
 import ChatHelp from './ChatHelp';
-import { InstallMenuItem } from './InstallApp';
+import { InstallFooterButton, InstallMenuItem } from './InstallApp';
 
 /** The platform's and the municipality's names in the language chosen (EN / SQ). */
 export function useBrandNames() {
@@ -173,6 +173,7 @@ export function SiteFooter() {
           <section>
             <h2 className="footer-title"><Icon name="home" size={20} />{t('footer.aboutTitle')}</h2>
             <p>{t('footer.about')}</p>
+            <InstallFooterButton />
           </section>
           <section>
             <h2 className="footer-title"><Icon name="mail" size={20} />{t('footer.contact')}</h2>
