@@ -10,6 +10,7 @@ import '@fontsource/montserrat/latin-800.css';
 import '@fontsource/lora/latin-400.css';
 import '@fontsource/lora/latin-400-italic.css';
 import '@fontsource/lora/latin-600.css';
+import '@fontsource/source-sans-3/latin-300.css';
 import '@fontsource/source-sans-3/latin-400.css';
 import '@fontsource/source-sans-3/latin-600.css';
 import '@fontsource/source-sans-3/latin-700.css';

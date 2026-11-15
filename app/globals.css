@@ -1837,3 +1837,7 @@ body { line-height: 1.4; }
 .site.site :is(p, li, label, dd, blockquote, td, .hint, .small, .muted, .hx-sub, .hx-lead, .hx-card-text, .hx-pop-body span, .install-bar-text span) { line-height: 1.25; }
 .site.site :is(h1, h2, h3, h4, .hx-title) { line-height: 1.06; }
 .site.site :is(.hx-steps li, .hx-pop-body strong, .hx-row strong, .hx-fixed-caption strong) { line-height: 1.15; }
+
+/* The line under the hero title: smaller and lighter (Source Sans 3 Light), a little letter-spacing. */
+.site .hx-hero-copy p { max-width: 36ch; margin-top: 4px; font-weight: 300; font-size: 1.02rem; line-height: 1.3; letter-spacing: 0.01em; color: rgba(255, 255, 255, 0.88); text-shadow: 0 1px 10px rgba(0, 0, 0, 0.35); }
+@media (max-width: 560px) { .site .hx-hero-copy p { font-size: 0.92rem; max-width: 32ch; } }
