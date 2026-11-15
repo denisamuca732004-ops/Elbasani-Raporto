@@ -134,6 +134,15 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
         )}
       </section>
 
+      {/* "Ndihmo qytetin": residents fix small things themselves, the group wins a reward. */}
+      <section className="container hx-section">
+        <Link href="/ndihmo" className="hx-help">
+          <span className="hx-help-icon" aria-hidden="true"><Icon name="heart" size={24} /></span>
+          <span className="hx-help-text"><strong>{t('community.home.title')}</strong><span>{t('community.home.text')}</span></span>
+          <span className="hx-help-go">{t('community.home.button')}<Icon name="arrowRight" size={16} /></span>
+        </Link>
+      </section>
+
       {/* 3 · What the platform is, the three steps, and its numbers. */}
       <section className="container hx-about">
         <div>

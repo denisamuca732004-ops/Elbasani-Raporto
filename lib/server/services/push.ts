@@ -137,6 +137,32 @@ export function setPushSenderForTests(fn: Sender): void {
   sender = fn;
 }
 
+/** One notification to one device (also used by "Ndihmo qytetin"): 'gone' when the push service forgot it. */
+export async function pushToDevice(
+  sub: { endpoint: string; p256dh: string; auth: string },
+  message: { title: string; body: string; url: string; tag: string },
+): Promise<'sent' | 'gone' | 'failed'> {
+  try {
+    await sender({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(message));
+    return 'sent';
+  } catch (err) {
+    const status = (err as { statusCode?: number }).statusCode;
+    if (status === 404 || status === 410) return 'gone';
+    console.error('[push] not sent:', status ?? (err instanceof Error ? err.message : err));
+    return 'failed';
+  }
+}
+
+/** A push address may only point to a real push service (never to an address a browser made up). */
+export function isPushEndpoint(endpoint: string): boolean {
+  try {
+    const url = new URL(endpoint);
+    return url.protocol === 'https:' && PUSH_HOSTS.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 /** Queues the notification (the person who changed the status never waits for it). */
 export async function queuePush(reportId: string, moment: PushMoment, note: string | null, feedbackToken?: string): Promise<void> {
   if (!config().push.enabled || !(await hasPushSubscribers(reportId))) return;

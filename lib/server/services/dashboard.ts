@@ -17,6 +17,7 @@ import type { DashboardQuery } from '@/lib/validation/report';
 import { Prisma, db } from '../db';
 import { config } from '../env';
 import { isAdmin } from './access';
+import { countWaitingActions } from './community';
 import { departmentRef } from './mapper';
 import { pendingTransferCount } from './transfer';
 import { bucketWhere } from './board';
@@ -246,6 +247,8 @@ export interface SidebarCounts {
   pendingTransfers: number;
   /** Admin: the reports that wait for the admin ("Të reja" and "Kthyer nga sektori" on the board). */
   attention?: number;
+  /** Admin: "Ndihmo qytetin" actions waiting for a decision. */
+  actions?: number;
   unrouted?: number;
   departments?: Array<NamedRef & { open: number; high: number }>;
   assignedToMe?: number;
@@ -256,12 +259,13 @@ export async function sidebarCounts(user: Principal, includeTest = false): Promi
   const testFilter = includeTest ? Prisma.empty : Prisma.sql`AND r.is_test = false`;
   const pendingTransfers = await pendingTransferCount(user);
   if (isAdmin(user)) {
-    const [rows, departments, attention] = await Promise.all([
+    const [rows, departments, attention, actions] = await Promise.all([
       db.$queryRaw<Array<{ department_id: number | null; open: number; high: number }>>`
         SELECT r.department_id, count(*)::int AS open, count(*) FILTER (WHERE r.priority = 'HIGH')::int AS high
         FROM reports r WHERE r.status IN ${OPEN_SQL} ${testFilter} GROUP BY r.department_id`,
       db.department.findMany({ where: { active: true }, orderBy: { nameSq: 'asc' } }),
       db.report.count({ where: { AND: [includeTest ? {} : { isTest: false }, { OR: [bucketWhere('new'), bucketWhere('returned')] }] } }),
+      countWaitingActions().catch(() => 0),
     ]);
     const byDepartment = new Map(rows.map((r) => [r.department_id === null ? null : Number(r.department_id), r]));
     return {
@@ -270,6 +274,7 @@ export async function sidebarCounts(user: Principal, includeTest = false): Promi
       highTotal: rows.reduce((acc, r) => acc + int(r.high), 0),
       unrouted: int(byDepartment.get(null)?.open),
       attention,
+      actions,
       departments: departments.map((d) => ({
         id: d.id, code: d.code, nameSq: d.nameSq, nameEn: d.nameEn,
         open: int(byDepartment.get(d.id)?.open), high: int(byDepartment.get(d.id)?.high),

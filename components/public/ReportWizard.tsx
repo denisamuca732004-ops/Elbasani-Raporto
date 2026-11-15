@@ -45,6 +45,8 @@ import { askPushPermission, pushSupport, subscribeToReport } from '@/lib/client/
 import NotifyMe from '@/components/public/NotifyMe';
 import { InstallGuideButton } from '@/components/site/InstallApp';
 import { uploadPhoto } from '@/lib/client/upload';
+import { handOverPhoto } from '@/lib/client/community';
+import { useRouter } from 'next/navigation';
 import { LIMITS, isOtherChoice } from '@/lib/shared/domain';
 import { looksLikeGibberish } from '@/lib/shared/text';
 import { plainWords, searchLocalities, type PlaceSuggestion } from '@/lib/shared/places';
@@ -59,6 +61,8 @@ export type ReportMode = 'form' | 'photo';
 type Analysis = {
   photo: Blob; status: 'analysing' | 'done';
   verdict?: 'ok' | 'unrelated' | 'not_photo' | 'inappropriate' | 'unchecked'; requestTypeId?: number | null; description?: string;
+  /** Small and safe: residents could fix it themselves ("Ndihmo qytetin"). */
+  citizenCanFix?: boolean;
 };
 /** The check of the description for the chosen type, made when "Vazhdo" is pressed. */
 type DescriptionCheck = { text: string; typeId: number; status: 'ok' | 'unrelated' | 'unchecked'; confirmed: boolean };
@@ -94,6 +98,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   // What the AI last filled in: replaced by a new proposal only while the resident has not changed it.
   const aiFilled = useRef<{ typeId: number | null; description: string }>({ typeId: null, description: '' });
   const [showTypePicker, setShowTypePicker] = useState(false);
+  const [inviteDismissed, setInviteDismissed] = useState(false);
+  const router = useRouter();
   const [categoryCode, setCategoryCode] = useState<string | null>(initialCategory ?? null);
   const [typeId, setTypeId] = useState<number | null>(initialTypeValid);
   // "Vendndodhja" (as on BOS:311): one field to search a street, lagje or village, and the pin on the map.
@@ -765,6 +771,23 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       {stepName === 'check' && (
         <section>
           <h2>{t('report.analyze.checkTitle')}</h2>
+          {/* A friendly invitation: this looks small enough to fix together with the neighbours. */}
+          {rules.community && !embedded && !inviteDismissed && currentAnalysis?.citizenCanFix && photo && (
+            <div className="cm-invite">
+              <span className="cm-invite-icon" aria-hidden="true"><Icon name="heart" size={22} /></span>
+              <div>
+                <strong>{t('community.invite.title')}</strong>
+                <p>{t('community.invite.text')}</p>
+                <div className="cm-invite-row">
+                  <button type="button" className="btn btn-sm" onClick={() => {
+                    handOverPhoto({ blob: photo, key: uploaded.current?.photo === photo ? uploaded.current.key : null, notes: description });
+                    router.push('/ndihmo/krijo');
+                  }}><Icon name="users" size={16} />{t('community.invite.yes')}</button>
+                  <button type="button" className="btn btn-sm btn-outline" onClick={() => setInviteDismissed(true)}>{t('community.invite.no')}</button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="check-intro">
             {photoUrl && <img className="check-photo" src={photoUrl} alt={t('report.photoAdded')} />}
             {currentAnalysis?.verdict === 'ok' && (currentAnalysis.requestTypeId || currentAnalysis.description) ? (

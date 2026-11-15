@@ -409,13 +409,13 @@ describe('"Raporto me foto": the type and the description proposed from the phot
     analyzeAnswer = { safe: true, kind: 'screenshot', problemVisible: false, typeCode: null, confidence: 0, descriptionSq: '' };
     assert.equal((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A3E')))).verdict, 'not_photo');
     analyzeAnswer = { safe: true, kind: 'people', problemVisible: false, typeCode: 'streets.pothole', confidence: 90, descriptionSq: 'Një person buzëqesh.' };
-    assert.deepEqual(await analyzePhoto(await uploadPhoto(await jpeg('#3A4A3F'))), { verdict: 'unrelated', requestTypeId: null, confidence: 0, description: '' });
+    assert.deepEqual(await analyzePhoto(await uploadPhoto(await jpeg('#3A4A3F'))), { verdict: 'unrelated', requestTypeId: null, confidence: 0, description: '', citizenCanFix: false });
   });
 
   test('without an answer from the AI the form simply goes on', async () => {
     mode = 'error';
     try {
-      assert.deepEqual(await analyzePhoto(await uploadPhoto(await jpeg('#3A4A40'))), { verdict: 'unchecked', requestTypeId: null, confidence: 0, description: '' });
+      assert.deepEqual(await analyzePhoto(await uploadPhoto(await jpeg('#3A4A40'))), { verdict: 'unchecked', requestTypeId: null, confidence: 0, description: '', citizenCanFix: false });
     } finally {
       mode = 'ok';
     }

@@ -309,6 +309,8 @@ export interface PublicSettings extends AppSettings {
     aiChecks: boolean;
     /** The public key for "Më njoftoni në këtë telefon" (browser push); null when notifications are off. */
     pushKey: string | null;
+    /** "Ndihmo qytetin" is on (the report form may invite residents to fix small things themselves). */
+    community: boolean;
   };
 }
 
@@ -318,3 +320,78 @@ export interface RepeatPlace {
   /** The most recent report there (opens it in the panel), and up to 5 case numbers. */
   latestId: string; caseNumbers: string[]; latitude: number; longitude: number;
 }
+
+/* ─── "Ndihmo qytetin": actions residents organise themselves ─── */
+
+export type ActionStatusName = 'REVIEW' | 'PUBLISHED' | 'REJECTED' | 'CLOSING' | 'VERIFIED' | 'NOT_VERIFIED' | 'CANCELLED';
+export type PrizeChoiceName = 'COFFEE' | 'MARKET';
+
+/** What anyone sees on the action's page. Never the organiser's phone. */
+export interface PublicAction {
+  code: string;
+  status: ActionStatusName;
+  title: string;
+  description: string;
+  bring: string | null;
+  place: string;
+  latitude: number;
+  longitude: number;
+  startsAt: string;
+  minutes: number;
+  peopleNeeded: number;
+  organizerName: string | null;
+  /** The organiser plus everyone who scanned the QR on the spot. */
+  people: number;
+  /** First names of those who scanned (only the ones who wrote one). */
+  names: string[];
+  beforePhotoUrl: string | null;
+  afterPhotoUrl: string | null;
+  /** Scanning is possible now (the action is public and it is around its time). */
+  joinOpen: boolean;
+  prize: { amount: number; choice: PrizeChoiceName | null; partner: string | null; held: boolean; redeemed: boolean } | null;
+  /** Neighbours' answers to "A u bë vërtet?" after closing. */
+  votes: { done: number; notDone: number };
+  rejectReason: string | null;
+  closedAt: string | null;
+  verifiedAt: string | null;
+}
+
+export interface ActionCard {
+  code: string; status: ActionStatusName; title: string; place: string; startsAt: string; minutes: number;
+  peopleNeeded: number; people: number; photoUrl: string | null; prizeAmount: number | null;
+}
+
+/** The organiser's view (with the secret link): the QR, closing and the prize code. */
+export interface OrganizerAction extends PublicAction {
+  /** What the QR carries right now (changes every 30 seconds); null when scanning is closed. */
+  joinToken: string | null;
+  prizeCode: string | null;
+  reviewReason: string | null;
+}
+
+export interface CommunitySettings {
+  enabled: boolean;
+  /** Prize for the whole group by how many people took part (organiser included). */
+  tiers: Array<{ minPeople: number; amount: number }>;
+  coffeePartner: string;
+  marketPartner: string;
+  /** Lek per month for all prizes; when spent, actions are thanked without a prize. */
+  monthlyBudget: number;
+  /** Prizes of this value or more wait for a person's OK. */
+  checkFrom: number;
+  /** The partners' PIN for "Shëno si të përdorur" is set (the PIN itself is never sent). */
+  hasPartnerPin: boolean;
+}
+
+/** A row of the admin's "Aksionet". */
+export interface AdminActionItem extends PublicAction {
+  id: string;
+  organizerPhone: string;
+  reviewReason: string | null;
+  ai: { safe: boolean | null; confidence: number | null; reason: string | null; fixed: boolean | null; fixedConfidence: number | null };
+  prizeCode: string | null;
+  createdAt: string;
+}
+
+/** A reward's page for the partner (café or market). */
+export interface PrizeView { code: string; actionCode: string; title: string; amount: number; choice: 'COFFEE' | 'MARKET'; partner: string; people: number; redeemedAt: string | null; held: boolean }

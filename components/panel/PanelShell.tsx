@@ -68,6 +68,7 @@ function navGroups(principal: Principal, counts: SidebarCounts | null, t: (k: st
         items: [
           { href: '/admin/reports', icon: 'inbox', label: t('panel.nav.reports'), badge: counts?.attention, badgeTone: 'alert', badgeLabel: t('panel.waitingShort') },
           { href: '/admin', icon: 'dashboard', label: t('panel.nav.dashboard'), exact: true },
+          { href: '/admin/community', icon: 'heart', label: t('panel.nav.community'), badge: counts?.actions, badgeTone: 'alert', badgeLabel: t('panel.waitingShort') },
         ],
       },
       {

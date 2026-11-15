@@ -4,6 +4,7 @@ import type { AppSettings, Branding, PublicSettings } from '@/lib/shared/types';
 import { LIMITS } from '@/lib/shared/domain';
 import type { SettingsInput } from '@/lib/validation/admin';
 import { aiAvailable } from '../ai';
+import { getCommunitySettings } from './community';
 import { pushPublicKey } from './push';
 import { CACHE_KEYS, cached, invalidate } from '../cache';
 import { db } from '../db';
@@ -35,6 +36,7 @@ export async function getPublicSettings(): Promise<PublicSettings> {
       maxUploadBytes: c.storage.maxBytes,
       aiChecks: await aiAvailable().catch(() => false),
       pushKey: pushPublicKey(),
+      community: await getCommunitySettings().then((c) => c.enabled).catch(() => false),
     },
   };
 }

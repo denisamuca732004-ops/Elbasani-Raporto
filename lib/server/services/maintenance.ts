@@ -17,6 +17,7 @@ import { queueEmails, retryStuckEmails } from '../mail';
 import { overdueDigest, sectorReminder } from '../mailTemplates';
 import { enqueue } from '../queue';
 import { cleanupTemporaryUploads } from '../storage';
+import { cancelStaleActions, eraseOldActionPhones } from './community';
 import { maskContacts } from './mapper';
 import { issueLink, linkUrl } from './reportLinks';
 import { settlePendingTransfer } from './routing';
@@ -164,11 +165,18 @@ export async function runDaily(now = new Date()) {
   for (const reportId of stuck) await enqueue('triage', { reportId });
   const cleaned = await cleanupTemporaryUploads();
   const reminded = await remindUnanswered(now);
+  let actions = 0;
+  try {
+    actions = await cancelStaleActions(now);
+    await eraseOldActionPhones(now);
+  } catch (err) {
+    console.error('[daily] community actions failed:', err instanceof Error ? err.message : err);
+  }
   let weekly = 0;
   try {
     weekly = await weeklySummaryIfDue(now);
   } catch (err) {
     console.error('[daily] weekly summary failed:', err instanceof Error ? err.message : err);
   }
-  return { closed, erasedContacts: erased, sent: digests, retriedEmails: retried, rechecked: stuck.length, removedUploads: cleaned, remindedSectors: reminded, weeklySummary: weekly };
+  return { closed, erasedContacts: erased, sent: digests, retriedEmails: retried, rechecked: stuck.length, removedUploads: cleaned, remindedSectors: reminded, weeklySummary: weekly, cancelledActions: actions };
 }

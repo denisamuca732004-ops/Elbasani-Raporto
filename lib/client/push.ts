@@ -29,13 +29,13 @@ function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
-/** Subscribes this device to the report just sent. False when it did not work (the report is sent anyway). */
-export async function subscribeToReport(p: { caseNumber: string; clientRef?: string; key: string; lang: 'sq' | 'en' }): Promise<boolean> {
+/** This browser's push subscription for our key (made when missing), or null when it is not possible. */
+export async function browserSubscription(key: string): Promise<{ endpoint: string; keys: { p256dh: string; auth: string } } | null> {
   try {
-    if (Notification.permission !== 'granted') return false;
+    if (Notification.permission !== 'granted') return null;
     await navigator.serviceWorker.register('/sw.js', { scope: '/' });
     const reg = await navigator.serviceWorker.ready;
-    const applicationServerKey = keyBytes(p.key);
+    const applicationServerKey = keyBytes(key);
     let sub = await reg.pushManager.getSubscription();
     if (sub) {
       // A subscription made with another key cannot be reused.
@@ -47,7 +47,18 @@ export async function subscribeToReport(p: { caseNumber: string; clientRef?: str
     }
     sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
     const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-    await call(subscribePushAction({ caseNumber: p.caseNumber, ...(p.clientRef ? { clientRef: p.clientRef } : {}), lang: p.lang, subscription: { endpoint: json.endpoint, keys: json.keys } }));
+    return { endpoint: json.endpoint, keys: json.keys };
+  } catch {
+    return null;
+  }
+}
+
+/** Subscribes this device to the report just sent. False when it did not work (the report is sent anyway). */
+export async function subscribeToReport(p: { caseNumber: string; clientRef?: string; key: string; lang: 'sq' | 'en' }): Promise<boolean> {
+  try {
+    const subscription = await browserSubscription(p.key);
+    if (!subscription) return false;
+    await call(subscribePushAction({ caseNumber: p.caseNumber, ...(p.clientRef ? { clientRef: p.clientRef } : {}), lang: p.lang, subscription }));
     return true;
   } catch {
     return false;

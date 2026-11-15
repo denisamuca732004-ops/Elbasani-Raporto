@@ -31,13 +31,15 @@ export interface PhotoAnalysis {
   confidence: number;
   /** The proposed description (Albanian), or '' when there is none worth showing. */
   description: string;
+  /** Small and safe enough for residents to fix themselves ("Ndihmo qytetin" invites them). */
+  citizenCanFix: boolean;
 }
 
 /** Below this the type is not proposed: a wrong type sends the report to the wrong department. */
 export const MIN_TYPE_CONFIDENCE = 60;
 const MAX_PROPOSED_DESCRIPTION = 400;
 
-const NONE: PhotoAnalysis = { verdict: 'unchecked', requestTypeId: null, confidence: 0, description: '' };
+const NONE: PhotoAnalysis = { verdict: 'unchecked', requestTypeId: null, confidence: 0, description: '', citizenCanFix: false };
 
 const SYSTEM = `You help a resident report a problem in a public place to the Municipality of Elbasan (Albania), starting from a photo.
 Answer ONLY with a JSON object with exactly these keys:
@@ -50,6 +52,9 @@ Answer ONLY with a JSON object with exactly these keys:
   "confidence": number,      // 0-100: how sure you are about typeCode.
   "descriptionSq": string    // 1-2 short sentences IN ALBANIAN describing only what is visible (the problem, its size, where it is in the picture).
                           // Never names of people, licence plates, faces or guesses about who caused it. Empty string when no problem is visible.
+  "citizenCanFix": boolean   // true ONLY when ordinary residents could fix it themselves safely in under 3 hours with gloves and bags or a brush:
+                          // scattered litter, a few bags of rubbish, leaves blocking a drain, graffiti on a bench. False for electricity or lamps,
+                          // trees, roads or holes, water or sewage leaks, buildings, animals, big dumps, anything dangerous or needing machines.
 }
 Prefer a specific type over a ".other" type. Use a ".other" type only when the problem clearly belongs to that category but no specific type fits.`;
 
@@ -65,7 +70,7 @@ export function analysisOf(answer: AiJson, types: Array<{ id: number; code: stri
   let description = visible && typeof answer.descriptionSq === 'string' ? answer.descriptionSq.replace(/\s+/g, ' ').trim() : '';
   if (description.length > MAX_PROPOSED_DESCRIPTION) description = `${description.slice(0, MAX_PROPOSED_DESCRIPTION - 1).replace(/\s+\S*$/, '')}…`;
   if (description.length < LIMITS.minDescription || looksLikeGibberish(description)) description = '';
-  return { verdict: visible ? 'ok' : 'unrelated', requestTypeId, confidence: requestTypeId ? confidence : 0, description };
+  return { verdict: visible ? 'ok' : 'unrelated', requestTypeId, confidence: requestTypeId ? confidence : 0, description, citizenCanFix: visible && answer.citizenCanFix === true };
 }
 
 /** Analyses the temporary upload `photoKey` (actions/upload.ts). Throws only when the photo itself is missing. */
@@ -80,7 +85,7 @@ export async function analyzePhoto(photoKey: string): Promise<PhotoAnalysis> {
 
   // The list of types is part of the question: a change in the catalogue asks again.
   const catalogue = types.map((t) => `${t.code}: ${t.nameEn} (category: ${t.category.nameEn})${isOtherChoice(t.code) ? ' — anything else in this category' : ''}`).join('\n');
-  const cacheKey = sha256(`photo-analyze:v1:${config().ai.model}:${photoKey}:${sha256(catalogue)}`);
+  const cacheKey = sha256(`photo-analyze:v2:${config().ai.model}:${photoKey}:${sha256(catalogue)}`);
   const cached = await db.aiResult.findUnique({ where: { cacheKey } });
   if (cached) return analysisOf(cached.output as AiJson, types);
 

@@ -34,6 +34,12 @@ const RULES = {
   feedback: () => ({ limit: 20, windowSeconds: 3600 }),
   setup: () => ({ limit: 10, windowSeconds: 3600 }),
   register: () => ({ limit: 10, windowSeconds: 3600 }),
+  // "Ndihmo qytetin": new actions, scans of the QR, the organiser's page (it asks for a fresh QR often), the partners' PIN.
+  action: () => ({ limit: 5, windowSeconds: 3600 }),
+  actionJoin: () => ({ limit: 40, windowSeconds: 3600 }),
+  actionOrganizer: () => ({ limit: 600, windowSeconds: 3600 }),
+  actionVote: () => ({ limit: 30, windowSeconds: 3600 }),
+  partnerPin: () => ({ limit: 10, windowSeconds: 900 }),
 } satisfies Record<string, () => Rule>;
 export type RateRule = keyof typeof RULES;
 

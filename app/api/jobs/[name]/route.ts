@@ -19,6 +19,7 @@ const payloads: { [N in JobName]: z.ZodType } = {
     reportId: z.uuid(), moment: z.enum(['in_progress', 'resolved', 'rejected']),
     note: z.string().max(400).nullable().optional(), feedbackToken: z.string().max(200).optional(),
   }),
+  'action-push': z.strictObject({ actionId: z.uuid(), moment: z.enum(['published', 'rejected', 'verified', 'not_verified', 'prize_chosen']) }),
 };
 
 export async function POST(request: Request, ctx: { params: Promise<{ name: string }> }) {

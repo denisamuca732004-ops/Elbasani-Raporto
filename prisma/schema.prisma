@@ -598,3 +598,129 @@ model ReportLink {
   @@index([departmentId])
   @@map("report_links")
 }
+
+/// "Ndihmo qytetin": an action residents organise themselves (clean a park, clear leaves from a drain).
+/// REVIEW: waits for a person before going public; PUBLISHED: public, people join by scanning its QR;
+/// CLOSING: the organiser closed it with the "after" photo, being checked; VERIFIED / NOT_VERIFIED;
+/// REJECTED: not published; CANCELLED: by the organiser, or never closed.
+enum ActionStatus {
+  REVIEW
+  PUBLISHED
+  REJECTED
+  CLOSING
+  VERIFIED
+  NOT_VERIFIED
+  CANCELLED
+}
+
+enum PrizeChoice {
+  COFFEE
+  MARKET
+}
+
+model CommunityAction {
+  id                 String          @id @default(uuid()) @db.Uuid
+  /// Public number, e.g. AK-2026-0007.
+  code               String          @unique @db.VarChar(20)
+  status             ActionStatus    @default(REVIEW)
+  title              String          @db.VarChar(120)
+  description        String          @db.VarChar(1000)
+  bring              String?         @db.VarChar(200)
+  place              String          @db.VarChar(200)
+  latitude           Float
+  longitude          Float
+  startsAt           DateTime        @map("starts_at") @db.Timestamptz(3)
+  minutes            Int
+  peopleNeeded       Int             @map("people_needed")
+  /// Shown only as a first name ("Organizon: Ana"); the phone is never public.
+  organizerName      String?         @map("organizer_name") @db.VarChar(40)
+  organizerPhone     String          @map("organizer_phone") @db.VarChar(30)
+  /// sha256 of the organiser's secret link (kept in their browser).
+  organizerTokenHash String          @map("organizer_token_hash") @db.VarChar(64)
+  organizerDevice    String          @map("organizer_device") @db.VarChar(64)
+  /// Signs the QR that changes every 30 seconds.
+  joinSecret         String          @map("join_secret") @db.VarChar(64)
+  lang               String          @default("sq") @db.VarChar(2)
+  pushEndpoint       String?         @map("push_endpoint") @db.VarChar(600)
+  pushP256dh         String?         @map("push_p256dh") @db.VarChar(200)
+  pushAuth           String?         @map("push_auth") @db.VarChar(100)
+  aiSafe             Boolean?        @map("ai_safe")
+  aiConfidence       Int?            @map("ai_confidence")
+  aiReason           String?         @map("ai_reason") @db.VarChar(400)
+  aiFixed            Boolean?        @map("ai_fixed")
+  aiFixedConfidence  Int?            @map("ai_fixed_confidence")
+  /// Why a person has to look at it (null: nothing waits).
+  reviewReason       String?         @map("review_reason") @db.VarChar(400)
+  rejectReason       String?         @map("reject_reason") @db.VarChar(500)
+  /// Lek for the whole group; 0: thanks only (budget, monthly limit).
+  prizeAmount        Int?            @map("prize_amount")
+  prizeChoice        PrizeChoice?    @map("prize_choice")
+  prizePartner       String?         @map("prize_partner") @db.VarChar(80)
+  prizeCode          String?         @unique @map("prize_code") @db.VarChar(16)
+  /// Neighbours said it was not done: the prize waits for the admin.
+  prizeHeld          Boolean         @default(false) @map("prize_held")
+  prizeRedeemedAt    DateTime?       @map("prize_redeemed_at") @db.Timestamptz(3)
+  publishedAt        DateTime?       @map("published_at") @db.Timestamptz(3)
+  closedAt           DateTime?       @map("closed_at") @db.Timestamptz(3)
+  verifiedAt         DateTime?       @map("verified_at") @db.Timestamptz(3)
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  participants       ActionParticipant[]
+  photos             ActionPhoto[]
+  votes              ActionVote[]
+
+  @@index([status, startsAt])
+  @@index([organizerPhone])
+  @@map("community_actions")
+}
+
+/// Someone who scanned the action's QR on the spot (no account: a random reference of their browser).
+model ActionParticipant {
+  id           String          @id @default(uuid()) @db.Uuid
+  actionId     String          @map("action_id") @db.Uuid
+  action       CommunityAction @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  deviceRef    String          @map("device_ref") @db.VarChar(64)
+  name         String?         @db.VarChar(40)
+  /// How far from the action's point they scanned (only this is kept, not where they were).
+  meters       Int
+  lang         String          @default("sq") @db.VarChar(2)
+  pushEndpoint String?         @map("push_endpoint") @db.VarChar(600)
+  pushP256dh   String?         @map("push_p256dh") @db.VarChar(200)
+  pushAuth     String?         @map("push_auth") @db.VarChar(100)
+  joinedAt     DateTime        @default(now()) @map("joined_at") @db.Timestamptz(3)
+
+  @@unique([actionId, deviceRef])
+  @@index([deviceRef, joinedAt])
+  @@map("action_participants")
+}
+
+model ActionPhoto {
+  id         String          @id @default(uuid()) @db.Uuid
+  actionId   String          @map("action_id") @db.Uuid
+  action     CommunityAction @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  kind       AttachmentKind  @default(BEFORE)
+  storageKey String          @map("storage_key") @db.VarChar(300)
+  storageUrl String          @map("storage_url") @db.VarChar(600)
+  mime       String          @db.VarChar(60)
+  size       Int
+  width      Int?
+  height     Int?
+  isPublic   Boolean         @default(true) @map("is_public")
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([actionId])
+  @@map("action_photos")
+}
+
+/// "A u bë vërtet?": a neighbour's answer after the action was closed (one per browser).
+model ActionVote {
+  id        String          @id @default(uuid()) @db.Uuid
+  actionId  String          @map("action_id") @db.Uuid
+  action    CommunityAction @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  deviceRef String          @map("device_ref") @db.VarChar(64)
+  done      Boolean
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([actionId, deviceRef])
+  @@map("action_votes")
+}

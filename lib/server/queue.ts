@@ -22,9 +22,11 @@ export type JobPayloads = {
   'deliver-email': { ids: string[] };
   /** "Më njoftoni në këtë telefon": a notification to the resident's devices. */
   push: { reportId: string; moment: 'in_progress' | 'resolved' | 'rejected'; note?: string | null; feedbackToken?: string };
+  /** "Ndihmo qytetin": the organiser (and the group, for the prize) is told. */
+  'action-push': { actionId: string; moment: 'published' | 'rejected' | 'verified' | 'not_verified' | 'prize_chosen' };
 };
 export type JobName = keyof JobPayloads;
-export const JOB_NAMES: readonly JobName[] = ['triage', 'closing-check', 'deliver-email', 'push'];
+export const JOB_NAMES: readonly JobName[] = ['triage', 'closing-check', 'deliver-email', 'push', 'action-push'];
 
 type Mode = 'auto' | 'manual';
 let mode: Mode = 'auto';
