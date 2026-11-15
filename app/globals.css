@@ -1784,3 +1784,16 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 }
 .chat-fab { transition: opacity 0.2s, transform 0.2s; }
 .chat-fab-away { opacity: 0; transform: translateY(12px); pointer-events: none; }
+/* The three steps always on one line (smaller on the phone). */
+.hx-steps { flex-wrap: nowrap; gap: 20px; }
+.hx-steps li { white-space: nowrap; }
+@media (max-width: 560px) {
+  .hx-steps { gap: 12px; justify-content: space-between; }
+  .hx-steps li { gap: 6px; font-size: 0.95rem; }
+  .hx-steps li span { width: 24px; height: 24px; font-size: 0.8rem; flex: none; }
+}
+@media (max-width: 360px) {
+  .hx-steps { gap: 8px; }
+  .hx-steps li { font-size: 0.86rem; gap: 5px; }
+  .hx-steps li span { width: 22px; height: 22px; }
+}
