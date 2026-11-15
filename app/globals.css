@@ -1797,3 +1797,36 @@ a.row-link:hover .row-value { color: var(--d-accent); }
   .hx-steps li { font-size: 0.86rem; gap: 5px; }
   .hx-steps li span { width: 22px; height: 22px; }
 }
+
+/* "Raportohen më shpesh": a row of small cards that slides (arrows on the right of the title). */
+.hx-popular { padding-bottom: 72px; }
+.hx-popular-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.hx-popular-head .hx-sub { margin: 0; }
+.hx-popular-arrows { display: flex; gap: 8px; flex: none; }
+.hx-popular-arrows button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid #E1E6E2; background: #fff; color: #0F2A1D; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.hx-popular-arrows button:hover { background: #F2F5F2; border-color: #C9D3CC; }
+.hx-popular-track { list-style: none; margin: 0; padding: 4px 2px 12px; display: grid; grid-auto-flow: column; grid-auto-columns: 232px; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.hx-popular-track::-webkit-scrollbar { display: none; }
+.hx-popular-track li { scroll-snap-align: start; }
+.hx-pop-card { display: flex; flex-direction: column; height: 100%; padding: 8px; border-radius: 20px; background: #fff; border: 1px solid #E8ECE9; box-shadow: 0 1px 2px rgba(15, 42, 29, 0.04); color: #0F2A1D; text-decoration: none; transition: box-shadow 0.15s, transform 0.15s; }
+.hx-pop-card:hover { box-shadow: 0 8px 24px rgba(15, 42, 29, 0.08); transform: translateY(-2px); color: #0F2A1D; }
+.hx-pop-photo { position: relative; display: block; height: 140px; border-radius: 14px; overflow: hidden; background: #F2F5F2; }
+.hx-pop-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hx-pop-blank { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #14532D; }
+.hx-pop-badge { position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; gap: 5px; max-width: calc(100% - 16px); padding: 4px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.94); color: #0F2A1D; font-size: 0.72rem; font-weight: 600; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hx-pop-badge svg { flex: none; color: #14532D; }
+.hx-pop-count { position: absolute; left: 10px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; color: #fff; font-size: 0.8rem; font-weight: 700; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); }
+.hx-pop-count svg { color: #F5C542; }
+.hx-pop-body { display: flex; flex-direction: column; gap: 4px; padding: 12px 8px 10px; flex: 1; }
+.hx-pop-body strong { font-size: 1.02rem; line-height: 1.25; font-weight: 600; }
+.hx-pop-body span { font-size: 0.8rem; line-height: 1.3; color: #66716A; }
+.hx-pop-foot { display: flex; align-items: center; justify-content: space-between; margin: 0 8px; padding: 10px 0 4px; border-top: 1px solid #EEF1EF; font-size: 0.85rem; font-weight: 600; }
+@media (max-width: 560px) {
+  .hx-popular { padding-bottom: 56px; }
+  .hx-popular-track { grid-auto-columns: 200px; gap: 12px; }
+  .hx-popular-arrows button { width: 38px; height: 38px; }
+  .hx-pop-photo { height: 120px; }
+}
+.hx-pop-badge svg { color: #14532D; }
+.hx-pop-body span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 560px) { .hx-popular-head { align-items: flex-start; } .hx-popular-arrows { margin-top: 6px; } }

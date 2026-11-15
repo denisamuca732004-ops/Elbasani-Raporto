@@ -62,6 +62,7 @@ const sq = {
     trackButton: 'Ndiq raportimin',
     categories: 'Zgjidhni kategorinë',
     recent: 'Raportimet e fundit',
+    frequentSub: 'Llojet e problemeve që qytetarët raportojnë më shumë këto 3 muaj.', frequentBadge: { one: '1 raportim', other: '{n} raportime' }, frequentReport: 'Raporto', frequentPrev: 'Më parë', frequentNext: 'Më pas', 
     frequent: 'Raportohen më shpesh', frequentCount: { one: '1 raportim në 3 muajt e fundit', other: '{n} raportime në 3 muajt e fundit' },
     seeMap: 'Shiko hartën',
     noRecent: 'Ende nuk ka raportime publike.',

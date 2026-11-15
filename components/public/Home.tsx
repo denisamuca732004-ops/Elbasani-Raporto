@@ -9,7 +9,7 @@
  */
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useId, useMemo, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useId, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import Icon from '@/components/Icon';
 import { useCatalog, useSettings, type TypeWithCategory } from '@/components/providers';
 import { InstallBar } from '@/components/site/InstallApp';
@@ -179,6 +179,9 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
           <Link href="/harta?status=resolved" className="hx-outline hx-fixed-more">{t('home.fixed.seeMap')}</Link>
         </div>
       </section>
+
+      {/* 5 · Reported most often: the categories as small cards in a row that slides, each opening the form. */}
+      <Popular categories={categories.filter((c) => c.code !== 'other').slice(0, 8)} counts={frequent} examples={examples} />
     </>
   );
 }
@@ -257,3 +260,58 @@ function ProblemSearch() {
   );
 }
 
+
+function Popular({ categories, counts, examples }: {
+  categories: Array<{ code: string; icon: string; nameSq: string; nameEn: string }>;
+  counts: Array<{ code: string; count: number }>;
+  examples: (code: string) => string;
+}) {
+  const { t, lang } = useI18n();
+  const track = useRef<HTMLUListElement>(null);
+  if (categories.length === 0) return null;
+  const countOf = new Map(counts.map((c) => [c.code, c.count]));
+  const slide = (dir: 1 | -1) => {
+    const el = track.current;
+    const card = el?.querySelector('li');
+    if (el && card) el.scrollBy({ left: dir * (card.getBoundingClientRect().width + 16), behavior: 'smooth' });
+  };
+  return (
+    <section className="container hx-section hx-popular" aria-labelledby="hx-popular-title">
+      <div className="hx-popular-head">
+        <div>
+          <h2 id="hx-popular-title">{t('home.frequent')}</h2>
+          <p className="hx-sub">{t('home.frequentSub')}</p>
+        </div>
+        <div className="hx-popular-arrows">
+          <button type="button" aria-label={t('home.frequentPrev')} onClick={() => slide(-1)}><Icon name="arrowLeft" size={18} /></button>
+          <button type="button" aria-label={t('home.frequentNext')} onClick={() => slide(1)}><Icon name="arrowRight" size={18} /></button>
+        </div>
+      </div>
+      <ul className="hx-popular-track" ref={track}>
+        {categories.map((c) => {
+          const n = countOf.get(c.code) ?? 0;
+          return (
+            <li key={c.code}>
+              <Link href={`/raporto?kategoria=${c.code}`} className="hx-pop-card">
+                <span className="hx-pop-photo">
+                  {CATEGORY_PHOTOS.has(c.code) ? (
+                    <picture>
+                      <source srcSet={`/categories/${c.code}.webp`} type="image/webp" />
+                      <img src={`/categories/${c.code}.jpg`} alt="" loading="lazy" />
+                    </picture>
+                  ) : <span className="hx-pop-blank"><CategoryIcon icon={c.icon} size={36} /></span>}
+                  {n > 0 && <span className="hx-pop-badge"><Icon name="flag" size={13} />{t('home.frequentBadge', { n })}</span>}
+                </span>
+                <span className="hx-pop-body">
+                  <strong>{lang === 'en' ? c.nameEn : c.nameSq}</strong>
+                  <span>{examples(c.code)}</span>
+                </span>
+                <span className="hx-pop-foot">{t('home.frequentReport')}<Icon name="arrowRight" size={16} /></span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}

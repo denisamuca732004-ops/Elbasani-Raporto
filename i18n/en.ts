@@ -62,6 +62,7 @@ const en = {
     trackButton: 'Track a report',
     categories: 'Choose a category',
     recent: 'Recent reports',
+    frequentSub: 'The kinds of problems residents reported most in the last 3 months.', frequentBadge: { one: '1 report', other: '{n} reports' }, frequentReport: 'Report', frequentPrev: 'Previous', frequentNext: 'Next', 
     frequent: 'Frequently reported', frequentCount: { one: '1 report in the last 3 months', other: '{n} reports in the last 3 months' },
     seeMap: 'See the map',
     noRecent: 'There are no public reports yet.',
