@@ -421,6 +421,7 @@ const en = {
     mailOff: 'Note: sending emails is not turned on, so the departments do not receive the reports. In Vercel set MAIL_DRIVER=smtp and the SMTP details; until then emails can only be seen under “Emails”.',
     otherSector: 'Or to the department:', chooseSector: '— Department —', send: 'Send',
     groups: { HIGH: 'High priority: handle at once', MEDIUM: 'Medium priority', LOW: 'Low priority' },
+    sectorEmail: 'Department email', emailPlaceholder: 'e.g. services@elbasani.gov.al', saveAndSend: 'Save and send', sectorEmailHint: 'Saved for the department: its future reports will be sent automatically.',
     noSector: 'No department: choose where it goes.', noEmail: '{sector} has no email, so the report was not sent.', addEmail: 'Add the department’s email',
     sentTo: 'Sent to {email}, {when}', reminded: 'reminded {when}', opened: 'opened {when}', notOpened: 'not opened yet',
     unanswered: { one: 'No answer for 1 day', other: 'No answer for {n} days' }, expired: 'The link has expired: send it again.',

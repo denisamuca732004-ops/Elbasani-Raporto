@@ -421,6 +421,7 @@ const sq = {
     mailOff: 'Kujdes: dërgimi i emaileve nuk është aktivizuar, ndaj sektorët nuk i marrin raportimet. Në Vercel vendosni MAIL_DRIVER=smtp dhe të dhënat SMTP; deri atëherë emailet shihen vetëm te “Emailet”.',
     otherSector: 'Ose te sektori:', chooseSector: '— Sektori —', send: 'Dërgo',
     groups: { HIGH: 'Prioritet i lartë: trajtim i menjëhershëm', MEDIUM: 'Prioritet mesatar', LOW: 'Prioritet i ulët' },
+    sectorEmail: 'Emaili i sektorit', emailPlaceholder: 'p.sh. sherbimet@elbasani.gov.al', saveAndSend: 'Ruaj dhe dërgo', sectorEmailHint: 'Ruhet për sektorin: raportimet e tij të ardhshme do të dërgohen vetë.',
     noSector: 'Pa sektor: zgjidhni ku të shkojë.', noEmail: '{sector} nuk ka email, ndaj raportimi nuk u dërgua.', addEmail: 'Vendosni emailin e sektorit',
     sentTo: 'Dërguar te {email}, {when}', reminded: 'kujtesë {when}', opened: 'e hapi {when}', notOpened: 'ende pa e hapur',
     unanswered: { one: 'Pa përgjigje prej 1 dite', other: 'Pa përgjigje prej {n} ditësh' }, expired: 'Lidhja ka skaduar: dërgojeni përsëri.',

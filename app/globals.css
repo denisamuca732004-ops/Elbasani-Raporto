@@ -1766,3 +1766,6 @@ a.row-link:hover .row-value { color: var(--d-accent); }
   .hx-hero-bar .hx-hero-tab .hx-cta svg { display: none; }
   .hx-glass { padding: 0 12px; }
 }
+.send-email { display: grid; gap: 4px; margin: 6px 0 10px; }
+.send-email input { min-width: 0; flex: 1 1 auto; min-height: 0; padding: 7px 10px; font-size: 0.92rem; }
+.send-email .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; white-space: nowrap; }

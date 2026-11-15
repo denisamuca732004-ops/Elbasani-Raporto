@@ -11,6 +11,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
+import { updateDepartmentAction } from '@/actions/admin';
 import { dismissDuplicateAction, mergeDuplicateAction, resendToSectorAction, updateReportAction } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { useCatalog } from '@/components/providers';
@@ -268,6 +269,7 @@ function SendControls({ r, onChanged }: { r: BoardItem; onChanged: () => void })
   const { t, lang } = useI18n();
   const { departments } = useCatalog();
   const [other, setOther] = useState('');
+  const [sectorEmail, setSectorEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<ActionFailure | null>(null);
@@ -292,9 +294,31 @@ function SendControls({ r, onChanged }: { r: BoardItem; onChanged: () => void })
     <div className="send-controls">
       {!r.department && <p className="small warn-text">{t('board.noSector')}</p>}
       {r.department && !r.departmentEmail && (
-        <p className="small warn-text">
-          {t('board.noEmail', { sector: sector ?? '' })} <Link href="/admin/departments">{t('board.addEmail')}</Link>
-        </p>
+        <>
+          <p className="small warn-text">{t('board.noEmail', { sector: sector ?? '' })}</p>
+          {/* The sector it belongs to, right here: its e-mail is saved for the sector and this report goes out at once. */}
+          <form
+            className="send-email"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const deptId = r.department!.id;
+              void run(async () => {
+                await call(updateDepartmentAction(deptId, { email: sectorEmail.trim() }));
+                await call(resendToSectorAction(r.id));
+              }, t('board.done', { sector: sector ?? '' }));
+            }}
+          >
+            <label htmlFor={`b-email-${r.id}`} className="small muted">{t('board.sectorEmail')}</label>
+            <div className="row" style={{ gap: 6, flexWrap: 'nowrap' }}>
+              <input id={`b-email-${r.id}`} type="email" inputMode="email" autoComplete="off" required maxLength={254}
+                placeholder={t('board.emailPlaceholder')} value={sectorEmail} onChange={(e) => setSectorEmail(e.target.value)} />
+              <button type="submit" className="btn btn-sm" disabled={busy || !sectorEmail.includes('@')}>
+                <Icon name="send" size={16} />{t('board.saveAndSend')}
+              </button>
+            </div>
+            <p className="small muted" style={{ margin: '4px 0 0' }}>{t('board.sectorEmailHint')} <Link href="/admin/departments">{t('board.allSectors')}</Link></p>
+          </form>
+        </>
       )}
       {r.department && r.departmentEmail && (
         <button type="button" className={`btn btn-sm${r.sent ? ' btn-outline' : ''}`} disabled={busy}
