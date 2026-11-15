@@ -6,7 +6,6 @@
  *  2. right under it, the categories, the most reported first (the form filled in by hand), the rest behind "all";
  *  3. what the platform is, the three steps and its numbers;
  *  4. fixed recently, with the photos, and the map of the fixed ones.
- * Questions are answered by the help chat at the bottom right (components/site/ChatHelp.tsx).
  */
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
