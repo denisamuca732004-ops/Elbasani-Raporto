@@ -440,7 +440,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       const photoKey = await photoKeyFor(photo);
       const res = await call(createReportAction({ ...data, photoKey }));
       rememberMine(res.caseNumber);
-      const notified = notify && rules.pushKey
+      const notified = notify && rules.pushKey && canPush === 'yes'
         ? await subscribeToReport({ caseNumber: res.caseNumber, clientRef, key: rules.pushKey, lang: lang === 'en' ? 'en' : 'sq' })
         : false;
       setResult({ caseNumber: res.caseNumber, notified });
@@ -826,13 +826,15 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               </div>
             </>
           )}
-          {rules.pushKey && canPush === 'yes' && (
+          {rules.pushKey && canPush !== 'no' && (
             <div className="notify-box">
               <label className="switch">
                 <input
                   type="checkbox" role="switch" checked={notify} aria-checked={notify}
                   onChange={async (e) => {
                     if (!e.target.checked) { setNotify(false); return; }
+                    // An iPhone in Safari can receive them only from the home-screen icon: the "done" screen says how.
+                    if (canPush === 'ios-install') { setNotify(true); return; }
                     const granted = await askPushPermission();
                     setNotify(granted);
                     setNotifyDenied(!granted);
@@ -842,13 +844,12 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
                 <span>{t('report.notify.label')}</span>
               </label>
               <p className="hint">{notifyDenied ? t('report.notify.denied') : t('report.notify.hint')}</p>
-            </div>
-          )}
-          {rules.pushKey && canPush === 'ios-install' && (
-            <div className="notify-box">
-              <p className="notify-ios-title"><Icon name="bell" size={18} /><strong>{t('report.notify.label')}</strong></p>
-              <p className="hint">{t('report.notify.ios')}</p>
-              <InstallGuideButton label={t('report.notify.iosButton')} />
+              {canPush === 'ios-install' && notify && (
+                <p className="hint notify-ios-note">
+                  {t('report.notify.ios')}{' '}
+                  <InstallGuideButton label={t('report.notify.iosButton')} className="link-button" />
+                </p>
+              )}
             </div>
           )}
         </section>

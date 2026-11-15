@@ -164,7 +164,7 @@ export function InstallGuideButton({ label, className = 'btn btn-sm btn-outline'
   const guideMode = mode === 'android' || mode === 'inapp' ? mode : 'ios';
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)}><Icon name="arrowUp" size={16} />{label}</button>
+      <button type="button" className={className} onClick={() => setOpen(true)}>{className !== 'link-button' && <Icon name="arrowUp" size={16} />}{label}</button>
       {open && <Guide mode={guideMode} onClose={() => setOpen(false)} />}
     </>
   );

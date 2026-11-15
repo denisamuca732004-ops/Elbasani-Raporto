@@ -41,7 +41,7 @@ export default function NotifyMe({ caseNumber, clientRef }: { caseNumber: string
         {support === 'ios-install' ? (
           <>
             <p>{t('report.notify.iosSteps', { n: caseNumber })}</p>
-            <InstallGuideButton label={t('report.notify.iosButton')} />
+            <InstallGuideButton label={t('report.notify.iosGuide')} />
           </>
         ) : state === 'done' ? (
           <p className="notify-ok"><Icon name="check" size={16} /> {t('report.notify.done')}</p>
