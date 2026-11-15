@@ -144,14 +144,13 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
               <li key={k}><span>{i + 1}</span>{t(`home.how.${k}.title`)}</li>
             ))}
           </ol>
-          <Link href="/ndiq" className="hx-link"><Icon name="route" size={18} />{t('home.trackButton')}</Link>
         </div>
         {numbers && (
           <dl className="hx-stats">
-            <div><dt>{numbers.openNow}</dt><dd>{t('home.numbers.openNow')}</dd></div>
-            <div><dt>{numbers.fixedThisMonth}</dt><dd>{t('home.numbers.fixedIn', { month: monthName(numbers.month, lang) })}</dd></div>
-            <div><dt>{numbers.avgDays === null ? '–' : (Math.round(numbers.avgDays * 10) / 10).toString().replace('.', lang === 'en' ? '.' : ',')}</dt><dd>{t('home.numbers.avgDays')}</dd></div>
-            <div><dt>24/7</dt><dd>{t('home.numbers.always')}</dd></div>
+            <div><span className="hx-stat-icon" aria-hidden="true"><Icon name="pin" size={18} /></span><dt>{numbers.openNow}</dt><dd>{t('home.numbers.openNow')}</dd></div>
+            <div><span className="hx-stat-icon" aria-hidden="true"><Icon name="check" size={18} /></span><dt>{numbers.fixedThisMonth}</dt><dd>{t('home.numbers.fixedIn', { month: monthName(numbers.month, lang) })}</dd></div>
+            <div><span className="hx-stat-icon" aria-hidden="true"><Icon name="clock" size={18} /></span><dt>{numbers.avgDays === null ? '–' : (Math.round(numbers.avgDays * 10) / 10).toString().replace('.', lang === 'en' ? '.' : ',')}</dt><dd>{t('home.numbers.avgDays')}</dd></div>
+            <div><span className="hx-stat-icon" aria-hidden="true"><Icon name="phone" size={18} /></span><dt>24/7</dt><dd>{t('home.numbers.always')}</dd></div>
           </dl>
         )}
       </section>

@@ -1769,3 +1769,18 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 .send-email { display: grid; gap: 4px; margin: 6px 0 10px; }
 .send-email input { min-width: 0; flex: 1 1 auto; min-height: 0; padding: 7px 10px; font-size: 0.92rem; }
 .send-email .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; white-space: nowrap; }
+
+/* The numbers: one quiet card, four cells split by hairlines, left-aligned (icon, number, words). */
+.hx-stats { gap: 1px; background: #E1E6E2; border: 1px solid #E1E6E2; border-radius: 24px; overflow: hidden; }
+.hx-stats div { display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 22px 22px 24px; background: #F7F9F7; }
+.hx-stat-icon { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #fff; color: #14532D; box-shadow: 0 0 0 1px #E1E6E2; margin-bottom: 16px; }
+.hx-stats dt { font-size: clamp(2rem, 3.4vw, 2.6rem); letter-spacing: -0.02em; }
+.hx-stats dd { margin: 6px 0 0; max-width: 20ch; font-size: 0.92rem; line-height: 1.3; }
+.hx-steps { margin-bottom: 0; }
+@media (max-width: 560px) {
+  .hx-stats div { padding: 18px 16px 20px; }
+  .hx-stat-icon { width: 30px; height: 30px; margin-bottom: 12px; }
+  .hx-stats dd { font-size: 0.88rem; }
+}
+.chat-fab { transition: opacity 0.2s, transform 0.2s; }
+.chat-fab-away { opacity: 0; transform: translateY(12px); pointer-events: none; }

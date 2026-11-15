@@ -202,8 +202,8 @@ export function SiteFooter() {
   );
 }
 
-/** The help chat at the bottom right ("Keni pyetje?"): turned off at the municipality's request (it covered the page). */
-const HELP_CHAT = false;
+/** The help chat at the bottom right ("Keni pyetje?"). */
+const HELP_CHAT = true;
 
 /** guide: the questions the help chat answers (empty on the "page not found" page: it still finds report numbers, problems and streets). */
 export default function SiteFrame({ children, guide }: { children: ReactNode; guide?: GuideItem[] }) {

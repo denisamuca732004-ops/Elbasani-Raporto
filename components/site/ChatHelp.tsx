@@ -14,6 +14,7 @@
  * when nothing was found.
  */
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { searchOpenReportsAction } from '@/actions/reports';
 import Icon from '@/components/Icon';
@@ -55,6 +56,17 @@ export default function ChatHelp({ guide }: { guide: GuideItem[] }) {
   const nextId = useRef(1);
   const inputRef = useRef<HTMLInputElement>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
+  // On the phone's home page the button waits until the visitor scrolls: at the top it would cover "Raporto me foto".
+  const pathname = usePathname();
+  const [away, setAway] = useState(false);
+  useEffect(() => {
+    if (pathname !== '/') { setAway(false); return; }
+    const check = () => setAway(window.innerWidth < 900 && window.scrollY < 360);
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    return () => { window.removeEventListener('scroll', check); window.removeEventListener('resize', check); };
+  }, [pathname]);
   const endRef = useRef<HTMLDivElement>(null);
 
   const common = useMemo(() => commonQuestions(guide), [guide]);
@@ -188,7 +200,7 @@ export default function ChatHelp({ guide }: { guide: GuideItem[] }) {
 
   if (!open) {
     return (
-      <button ref={fabRef} type="button" className="chat-fab" onClick={() => setOpen(true)} aria-haspopup="dialog">
+      <button ref={fabRef} type="button" className={`chat-fab${away ? ' chat-fab-away' : ''}`} onClick={() => setOpen(true)} aria-haspopup="dialog">
         <Icon name="chat" size={24} /><span>{t('chat.button')}</span>
       </button>
     );
