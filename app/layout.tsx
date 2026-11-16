@@ -47,8 +47,8 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export async function generateViewport(): Promise<Viewport> {
-  const { branding } = await pageSettings();
+/** The phone's top bar in the site's one green (the forest green). */
+export function generateViewport(): Viewport {
   return { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#14532D' };
 }
 
