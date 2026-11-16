@@ -1486,7 +1486,7 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 /* One green on the public site: buttons, links and the form use the green of the home page. */
 .site { --brand-button: var(--pub-green, #14532D); --brand-button-hover: var(--pub-green-hover, #0F3F22); }
 /* The strip at the very top: the green of the municipality's logo. */
-.site .gov-strip { background: #06B006; }
+.site .gov-strip { background: #14532D; }
 .site .gov-strip a, .site .gov-strip span { font-weight: 600; }
 
 /* ── "Instalo aplikacionin" (components/site/InstallApp.tsx) ── */

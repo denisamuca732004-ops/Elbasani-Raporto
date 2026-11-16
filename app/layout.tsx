@@ -49,7 +49,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export async function generateViewport(): Promise<Viewport> {
   const { branding } = await pageSettings();
-  return { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: branding.headerColor };
+  return { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#14532D' };
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
