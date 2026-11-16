@@ -2042,7 +2042,7 @@ body { line-height: 1.4; }
 .hx-hero-media img { filter: brightness(1.14) saturate(1.06) contrast(1.02); }
 .hx-hero-shade { background: linear-gradient(180deg, rgba(8, 18, 12, 0) 45%, rgba(8, 18, 12, 0.5) 72%, rgba(8, 18, 12, 0.66) 100%), linear-gradient(90deg, rgba(8, 18, 12, 0.3) 0%, rgba(8, 18, 12, 0) 60%); }
 .site .hx-hero-copy h1, .site .hx-hero-copy p { text-shadow: 0 2px 14px rgba(0, 0, 0, 0.45); }
-.site .hx-hero .hx-title .accent { color: rgba(255, 255, 255, 0.9); }
+.site .hx-hero .hx-title .accent { color: #BEE8C6; }
 /* A dark footer: more contrast and a clean end of the page. */
 .site .site-footer { background: #0F2A1D; color: rgba(255, 255, 255, 0.78); border-top: 0; }
 .site .site-footer a { color: #fff; }
