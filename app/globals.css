@@ -2063,3 +2063,11 @@ body { line-height: 1.4; }
 /* The sunset photo of the castle walk: already bright, shown as it is; the castle and the clock tower in view. */
 .hx-hero-media img { filter: none; object-position: center 30%; }
 @media (min-width: 901px) { .hx-hero-media img { object-position: center 16%; } }
+/* "Nuk mund të bëj foto" (components/public/ReportWizard.tsx) */
+.no-photo-link { margin: 12px 0 0; }
+.no-photo-box { display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 16px; background: #F2F5F2; border: 1px solid #E1E6E2; color: #0F2A1D; }
+.no-photo-box svg { flex: none; color: #14532D; margin-top: 2px; }
+.no-photo-box p { margin: 4px 0 8px; color: #3E4B44; }
+.cm-invite-after { margin: 18px auto 0; max-width: 520px; text-align: left; }
+/* One green also for the lines that follow the branding colour (steps, tabs, numbers, the panel). */
+.site, .panel-shell { --brand-header: #14532D; }

@@ -10,7 +10,7 @@ import { durationText } from '@/lib/client/community';
 import { formatDate } from '@/lib/client/format';
 import type { ActionCard, CommunitySettings } from '@/lib/shared/types';
 
-export function ActionCardView({ a }: { a: ActionCard }) {
+export function ActionCardView({ a, checkIn = false }: { a: ActionCard; checkIn?: boolean }) {
   const { t, lang } = useI18n();
   return (
     <Link href={`/ndihmo/${a.code}`} className="cm-card">
@@ -24,7 +24,7 @@ export function ActionCardView({ a }: { a: ActionCard }) {
         <span className="cm-card-meta"><Icon name="pin" size={14} />{a.place}</span>
       </span>
       <span className="cm-card-foot">
-        <span><Icon name="users" size={15} />{a.status === 'VERIFIED' ? t('communityAdmin.people', { n: a.people }) : t('community.people', { n: a.people, m: a.peopleNeeded })}</span>
+        <span><Icon name="users" size={15} />{a.status === 'VERIFIED' && checkIn ? t('communityAdmin.people', { n: a.people }) : checkIn ? t('community.people', { n: a.people, m: a.peopleNeeded }) : t('community.form.peopleShort', { n: a.peopleNeeded })}</span>
         <Icon name="arrowRight" size={16} />
       </span>
     </Link>
@@ -48,11 +48,11 @@ export default function CommunityHome({ upcoming, done, settings }: { upcoming: 
       <section className="container cm-section" aria-labelledby="cm-how">
         <h2 id="cm-how">{t('community.how.title')}</h2>
         <ol className="cm-steps">
-          {(['camera', 'users', 'qr', 'gift'] as const).map((icon, i) => (
+          {(['camera', 'users', settings.rewards ? 'qr' : 'pin', 'check'] as const).map((icon, i) => (
             <li key={icon}>
               <span className="cm-step-icon" aria-hidden="true"><Icon name={icon} size={20} /></span>
-              <strong>{t(`community.how.s${i + 1}t`)}</strong>
-              <span>{t(`community.how.s${i + 1}`)}</span>
+              <strong>{t(`community.how.s${i + 1}t${i === 2 && !settings.rewards ? 'Simple' : ''}`)}</strong>
+              <span>{t(`community.how.s${i + 1}${i === 2 && !settings.rewards ? 'Simple' : ''}`)}</span>
             </li>
           ))}
         </ol>
@@ -61,7 +61,7 @@ export default function CommunityHome({ upcoming, done, settings }: { upcoming: 
       <section className="container cm-section" aria-labelledby="cm-upcoming">
         <h2 id="cm-upcoming">{t('community.upcoming')}</h2>
         {upcoming.length ? (
-          <div className="cm-grid">{upcoming.map((a) => <ActionCardView key={a.code} a={a} />)}</div>
+          <div className="cm-grid">{upcoming.map((a) => <ActionCardView key={a.code} a={a} checkIn={settings.rewards} />)}</div>
         ) : (
           <div className="cm-empty"><Icon name="heart" size={22} /><p>{t('community.noneUpcoming')}</p><Link href="/ndihmo/krijo" className="btn btn-outline btn-sm">{t('community.create')}</Link></div>
         )}
@@ -70,7 +70,7 @@ export default function CommunityHome({ upcoming, done, settings }: { upcoming: 
       {done.length > 0 && (
         <section className="container cm-section" aria-labelledby="cm-done">
           <h2 id="cm-done">{t('community.done')}</h2>
-          <div className="cm-grid">{done.map((a) => <ActionCardView key={a.code} a={a} />)}</div>
+          <div className="cm-grid">{done.map((a) => <ActionCardView key={a.code} a={a} checkIn={settings.rewards} />)}</div>
         </section>
       )}
 

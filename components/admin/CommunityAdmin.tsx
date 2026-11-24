@@ -85,7 +85,7 @@ function SettingsForm({ settings }: { settings: CommunitySettings }) {
     <form className="card ca-settings" onSubmit={(e) => {
       e.preventDefault();
       void run(() => call(updateCommunitySettingsAction({
-        enabled: s.enabled, tiers: s.tiers, coffeePartner: s.coffeePartner, marketPartner: s.marketPartner,
+        enabled: s.enabled, rewards: s.rewards, tiers: s.tiers, coffeePartner: s.coffeePartner, marketPartner: s.marketPartner,
         monthlyBudget: s.monthlyBudget, checkFrom: s.checkFrom, partnerPin: s.partnerPin,
       })), t('communityAdmin.saved')).then(() => setS((x) => ({ ...x, partnerPin: '' })));
     }}>
@@ -95,6 +95,13 @@ function SettingsForm({ settings }: { settings: CommunitySettings }) {
         <span className="switch-track" aria-hidden="true" />
         <span>{t('communityAdmin.enabled')}</span>
       </label>
+      <label className="switch">
+        <input type="checkbox" role="switch" checked={s.rewards} aria-checked={s.rewards} onChange={(e) => setS({ ...s, rewards: e.target.checked })} />
+        <span className="switch-track" aria-hidden="true" />
+        <span>{t('communityAdmin.rewards')}</span>
+      </label>
+      <p className="muted small" style={{ margin: '-6px 0 0' }}>{t('communityAdmin.rewardsHint')}</p>
+      {s.rewards && <>
       <fieldset className="ca-tiers">
         <legend>{t('communityAdmin.tiers')}</legend>
         {s.tiers.map((tier, i) => (
@@ -115,6 +122,7 @@ function SettingsForm({ settings }: { settings: CommunitySettings }) {
           <input id="ca-pin" inputMode="numeric" autoComplete="off" value={s.partnerPin} maxLength={12} onChange={(e) => setS({ ...s, partnerPin: e.target.value.replace(/\D/g, '') })} />
         </Field>
       </div>
+      </>}
       {error && <ErrorAlert error={error} />}
       {notice && <SuccessAlert>{notice}</SuccessAlert>}
       <div><button type="submit" className="btn" disabled={busy}>{t('communityAdmin.save')}</button></div>

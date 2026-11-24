@@ -99,13 +99,18 @@ describe('strict reporting: a report is created only when every step is complete
     assert.deepEqual(Object.keys(result).sort(), ['caseNumber', 'duplicateSubmission', 'publicStatus', 'trackUrl']);
   });
 
-  test('without a photo nothing is created and the photo step is reported', async () => {
+  test('without a photo ("Nuk mund të bëj foto") the description must say more; a lost photo sends back to the photo step', async () => {
     const before = await countReports();
-    const missing = await problemsOf(await citizenData({ photoKey: null }));
-    assert.deepEqual(fieldsOf(missing, true), [['photo', 'required', 'photo']]);
+    const data = await citizenData();
+    delete (data as Record<string, unknown>).photoKey;
+    const short = await problemsOf({ ...data, description: 'Llamba nuk ndizet natën.' });
+    assert.deepEqual(fieldsOf(short, true), [['description', 'too_short_no_photo', 'details']]);
+    assert.equal(await countReports(), before);
+    const { report } = await submitReport({ photoKey: undefined, description: 'Llamba e rrugës nuk ndizet prej një jave, natën rruga është krejt e errët.' });
+    assert.equal(await db.attachment.count({ where: { reportId: report.id } }), 0, 'sent without a photo');
     const unknownKey = await problemsOf(await citizenData({ photoKey: 'tmp/00000000-0000-4000-8000-000000000000.jpg' }));
     assert.deepEqual(fieldsOf(unknownKey, true), [['photo', 'required', 'photo']]);
-    assert.equal(await countReports(), before);
+    assert.equal(await countReports(), before + 1);
   });
 
   test('without a description (or with a too short one) nothing is created', async () => {
@@ -123,7 +128,8 @@ describe('strict reporting: a report is created only when every step is complete
   test('a report with only a category reports every missing step at once', async () => {
     const problems = await problemsOf({ requestTypeId: await typeId('streets.pothole') });
     const steps = new Set(problems.map((p) => p.step));
-    for (const step of ['location', 'photo', 'details', 'contact']) assert.ok(steps.has(step), `missing step ${step}`);
+    // The photo is optional (without one, a longer description).
+    for (const step of ['location', 'details', 'contact']) assert.ok(steps.has(step), `missing step ${step}`);
   });
 
   test('a pin on the map must be inside the Municipality (see tests/location.test.ts for both ways)', async () => {

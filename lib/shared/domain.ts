@@ -142,6 +142,8 @@ export type DashboardPeriod = (typeof DASHBOARD_PERIODS)[number];
 /** Report form limits, shared by the browser and the server. */
 export const LIMITS = {
   minDescription: 10,
+  /** Without a photo (night, noise, a smell, an unsafe place) the words must say more. */
+  minDescriptionNoPhoto: 40,
   maxDescription: 4000,
   minAddress: 3,
   maxAddress: 300,

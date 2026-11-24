@@ -190,7 +190,8 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
       <p className="lead">{t('community.form.lead')}</p>
 
       <form className="cm-form" onSubmit={submit} noValidate>
-        <input ref={honeypot} type="text" name="website" className="hp-field" tabIndex={-1} autoComplete="off" aria-hidden="true" defaultValue="" />
+        {/* A trap for robots only: a name no browser or password manager fills in by itself. */}
+      <input ref={honeypot} type="text" name="er_trap_leave_empty" className="hp-field" tabIndex={-1} autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" aria-hidden="true" defaultValue="" />
 
         <fieldset className="cm-fieldset">
           <legend><span>1</span>{t('community.form.step1')}</legend>

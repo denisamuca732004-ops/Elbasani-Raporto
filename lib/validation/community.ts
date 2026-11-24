@@ -66,6 +66,7 @@ export const adminActionDecisionSchema = z.strictObject({
 
 export const communitySettingsSchema = z.strictObject({
   enabled: z.boolean(),
+  rewards: z.boolean().default(false),
   tiers: z.array(z.strictObject({ minPeople: z.coerce.number().int().min(1).max(100), amount: z.coerce.number().int().min(0).max(100_000) })).min(1).max(6),
   coffeePartner: singleLine(2, 80),
   marketPartner: singleLine(2, 80),

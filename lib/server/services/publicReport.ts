@@ -55,6 +55,7 @@ const MESSAGES: Record<string, string> = {
   'photo.required': 'Shtoni një foto të problemit.',
   'description.required': 'Përshkruani problemin.',
   'description.too_short': `Përshkrimi duhet të ketë të paktën ${LIMITS.minDescription} shkronja.`,
+  'description.too_short_no_photo': `Pa foto, përshkruajeni problemin më hollësisht (të paktën ${LIMITS.minDescriptionNoPhoto} shkronja).`,
   'description.gibberish': 'Përshkrimi nuk kuptohet. Shkruani me fjalë çfarë ndodh, p.sh. “Gropë e thellë në mes të rrugës”.',
   'description.abusive': 'Përshkrimi ka fjalë fyese ose të papërshtatshme. Përshkruani problemin pa to.',
   'anonymous.required': 'Zgjidhni nëse doni të përfshini kontaktin ose të raportoni anonim.',
@@ -151,7 +152,8 @@ const PHOTO_NOT_A_PHOTO = 'Kjo duket si dokument ose screenshot, jo si foto e ve
 
 /**
  * Creates a resident's report only when EVERY step is complete:
- * type → location (a point on the map, or zone + lagje/village + street) → photo → description → name + phone (or anonymous).
+ * type → location (a point on the map, or zone + lagje/village + street) → photo (or, without one, a longer
+ * description) → description → name + phone (or anonymous).
  * All problems are returned together, each with the wizard step it belongs to.
  */
 export async function createCitizenReport(raw: unknown) {
@@ -186,6 +188,7 @@ export async function createCitizenReport(raw: unknown) {
     const description = cleanMultiline(data.description);
     if (!description) problems.push(problem('description', 'required'));
     else if (description.length < LIMITS.minDescription) problems.push(problem('description', 'too_short'));
+    else if (!data.photoKey && description.length < LIMITS.minDescriptionNoPhoto) problems.push(problem('description', 'too_short_no_photo'));
     else if (looksLikeGibberish(description)) problems.push(problem('description', 'gibberish'));
 
     if (!data.anonymous) {
@@ -246,7 +249,7 @@ export async function createCitizenReport(raw: unknown) {
       contactPhone: phone || null,
       createdById: null,
       clientRef: data.clientRef?.trim() || null,
-      photoKey: data.photoKey,
+      photoKey: data.photoKey ?? null,
     });
   } catch (err) {
     // A missing, too large or unreadable photo sends the resident back to the photo step.

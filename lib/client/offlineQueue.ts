@@ -11,7 +11,7 @@ import { ActionFailure, call } from './action';
 import { uploadPhoto } from './upload';
 import { rememberMine } from './myReports';
 
-type QueuedReport = { data: Record<string, unknown> & { clientRef: string }; photo: Blob; queuedAt: number };
+type QueuedReport = { data: Record<string, unknown> & { clientRef: string }; photo: Blob | null; queuedAt: number };
 
 let store: UseStore | null | undefined;
 function outbox(): UseStore | null {
@@ -24,7 +24,7 @@ export function newClientRef(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export async function queueReport(data: QueuedReport['data'], photo: Blob): Promise<void> {
+export async function queueReport(data: QueuedReport['data'], photo: Blob | null): Promise<void> {
   const s = outbox();
   if (!s) throw new Error('offline storage unavailable');
   await set(data.clientRef, { data, photo, queuedAt: Date.now() } satisfies QueuedReport, s);
@@ -45,10 +45,10 @@ export async function flushQueue(): Promise<string[]> {
   try {
     for (const [key, item] of await entries<string, QueuedReport>(s)) {
       try {
-        const photoKey = await uploadPhoto(item.photo);
+        const photoKey = item.photo ? await uploadPhoto(item.photo) : undefined;
         // Reports queued before the form token existed, or without one (the form opened offline): one now.
         const token = typeof item.data.formToken === 'string' ? item.data.formToken : await formToken();
-        const res = await call(createReportAction({ ...item.data, formToken: token, photoKey }));
+        const res = await call(createReportAction({ ...item.data, formToken: token, ...(photoKey ? { photoKey } : {}) }));
         sent.push(res.caseNumber);
         rememberMine(res.caseNumber);
         await del(key, s);

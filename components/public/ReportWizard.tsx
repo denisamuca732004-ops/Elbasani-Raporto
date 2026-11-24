@@ -98,7 +98,6 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   // What the AI last filled in: replaced by a new proposal only while the resident has not changed it.
   const aiFilled = useRef<{ typeId: number | null; description: string }>({ typeId: null, description: '' });
   const [showTypePicker, setShowTypePicker] = useState(false);
-  const [inviteDismissed, setInviteDismissed] = useState(false);
   const router = useRouter();
   const [categoryCode, setCategoryCode] = useState<string | null>(initialCategory ?? null);
   const [typeId, setTypeId] = useState<number | null>(initialTypeValid);
@@ -117,6 +116,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   // The chosen photo, shown small on the last step.
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photo, setPhoto] = useState<Blob | null>(null);
+  /** "Nuk mund të bëj foto": night, noise, a smell, an unsafe place. A longer description is asked instead. */
+  const [noPhoto, setNoPhoto] = useState(false);
   const [photoCheck, setPhotoCheck] = useState<PhotoCheck | null>(null);
   // The last photo was refused (inappropriate, or a document / screenshot): the message stays until another photo is chosen.
   const [photoRefused, setPhotoRefused] = useState<'inappropriate' | 'not_photo' | null>(null);
@@ -271,13 +272,14 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       if (!location) e.latitude = t('report.errors.pin');
       else if (!pinZoneCode) e.latitude = t('report.outsideArea');
     }
-    if (name === 'photo' && !photo) e.photo = t('report.errors.photo');
+    if (name === 'photo' && !photo && !noPhoto) e.photo = t('report.errors.photo');
     if (name === 'photo' && analysing) e.photo = t('report.analyze.wait');
     if (name === 'photo' && currentCheck?.status === 'checking') e.photo = t('report.photoCheck.wait');
     if (name === 'photo' && currentCheck?.status === 'unrelated' && !currentCheck.confirmed) e.photo = t('report.photoCheck.confirmFirst');
     if (name === 'details' || name === 'check') {
       if (!description.trim()) e.description = t('report.errors.description');
       else if (description.trim().length < LIMITS.minDescription) e.description = t('report.errors.descriptionShort', { n: LIMITS.minDescription });
+      else if (!photo && noPhoto && description.trim().length < LIMITS.minDescriptionNoPhoto) e.description = t('report.errors.descriptionNoPhoto', { n: LIMITS.minDescriptionNoPhoto });
       else if (looksLikeGibberish(description)) e.description = t('report.errors.descriptionGibberish');
     }
     if (name === 'contact') {
@@ -289,7 +291,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       }
     }
     return e;
-  }, [type, location, pinZoneCode, photo, currentCheck, analysing, description, contactMode, contact, t]);
+  }, [type, location, pinZoneCode, photo, noPhoto, currentCheck, analysing, description, contactMode, contact, t]);
 
   const currentErrors = useMemo(() => errorsFor(stepName), [errorsFor, stepName]);
   const firstIncompleteStep = useMemo(() => STEPS.findIndex((s) => s !== 'review' && Object.keys(errorsFor(s)).length > 0), [errorsFor, STEPS]);
@@ -418,7 +420,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       setShowErrors(true);
       return;
     }
-    if (!type || !photo || !location) return;
+    if (!type || (!photo && !noPhoto) || !location) return;
     setSubmitting(true);
     setError(null);
     setServerErrors({});
@@ -443,8 +445,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     };
     try {
       if (!navigator.onLine) throw new ActionFailure({ code: 'NETWORK', status: 0, message: 'network' });
-      const photoKey = await photoKeyFor(photo);
-      const res = await call(createReportAction({ ...data, photoKey }));
+      const photoKey = photo ? await photoKeyFor(photo) : undefined;
+      const res = await call(createReportAction({ ...data, ...(photoKey ? { photoKey } : {}) }));
       rememberMine(res.caseNumber);
       const notified = notify && rules.pushKey && canPush === 'yes'
         ? await subscribeToReport({ caseNumber: res.caseNumber, clientRef, key: rules.pushKey, lang: lang === 'en' ? 'en' : 'sq' })
@@ -454,7 +456,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       const err = raw as ActionFailure;
       if (err.code === 'NETWORK') {
         try {
-          await queueReport(data, photo);
+          await queueReport(data, photo ?? null);
           window.dispatchEvent(new Event('er-queue-changed'));
           setResult({ queued: true });
         } catch {
@@ -534,6 +536,21 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               <Link className="btn" href={`${trackBase}/${result.caseNumber}`}>{t('report.trackIt')}</Link>
               <button type="button" className="btn btn-outline" onClick={() => window.location.assign(embedded ? '/embed' : '/raporto')}>{t('report.another')}</button>
             </div>
+            {/* The report is sent first; only then, for small things, a friendly offer to fix it together. */}
+            {rules.community && !embedded && currentAnalysis?.citizenCanFix && photo && (
+              <div className="cm-invite cm-invite-after">
+                <span className="cm-invite-icon" aria-hidden="true"><Icon name="heart" size={22} /></span>
+                <div>
+                  <strong>{t('community.invite.title')}</strong>
+                  <p>{t('community.invite.afterText')}</p>
+                  <button type="button" className="btn btn-sm btn-outline" onClick={() => {
+                    // The report used the uploaded copy: the action uploads the photo again.
+                    handOverPhoto({ blob: photo, key: null, notes: description });
+                    router.push('/ndihmo/krijo');
+                  }}><Icon name="users" size={16} />{t('community.invite.yes')}</button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -628,7 +645,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
 
   return (
     <div className="wizard" ref={topRef}>
-      <input ref={honeypot} type="text" name="website" className="hp-field" tabIndex={-1} autoComplete="off" aria-hidden="true" defaultValue="" />
+      {/* A trap for robots only: a name no browser or password manager fills in by itself. */}
+      <input ref={honeypot} type="text" name="er_trap_leave_empty" className="hp-field" tabIndex={-1} autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" aria-hidden="true" defaultValue="" />
       <ol className="stepper" aria-label={t('report.progress')}>
         {STEPS.map((s, i) => {
           const done = i < step;
@@ -739,12 +757,36 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
         <section>
           <h2>{photoMode ? t('report.analyze.photoTitle') : t('report.photoTitle')}</h2>
           {photoMode && <p className="muted" style={{ marginTop: -4 }}>{t('report.analyze.photoIntro')}</p>}
-          <PhotoInput
-            value={photo}
-            onChange={(p) => { setPhoto(p); setServerErrors((e) => ({ ...e, photo: undefined })); if (p) setPhotoRefused(null); }}
-            required maxBytes={rules.maxUploadBytes}
-            error={photoRefused === 'not_photo' ? t('report.photoCheck.notPhoto') : photoRefused ? t('report.photoCheck.inappropriate') : visibleError('photo')}
-          />
+          {noPhoto && !photo ? (
+            <div className="no-photo-box" role="status">
+              <Icon name="camera" size={22} />
+              <div>
+                <strong>{t('report.noPhoto.chosenTitle')}</strong>
+                <p>{t('report.noPhoto.chosenText', { n: LIMITS.minDescriptionNoPhoto })}</p>
+                <button type="button" className="link-button" onClick={() => setNoPhoto(false)}>{t('report.noPhoto.addAfterAll')}</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <PhotoInput
+                value={photo}
+                onChange={(p) => { setPhoto(p); setServerErrors((e) => ({ ...e, photo: undefined })); if (p) { setPhotoRefused(null); setNoPhoto(false); } }}
+                required maxBytes={rules.maxUploadBytes}
+                error={photoRefused === 'not_photo' ? t('report.photoCheck.notPhoto') : photoRefused ? t('report.photoCheck.inappropriate') : visibleError('photo')}
+              />
+              {!photo && (
+                <p className="no-photo-link">
+                  <button type="button" className="link-button" onClick={() => {
+                    setNoPhoto(true);
+                    setServerErrors((e) => ({ ...e, photo: undefined }));
+                    // Without a photo the AI has nothing to read: the step-by-step form, with this step already done.
+                    if (photoMode) switchMode('form');
+                  }}>{t('report.noPhoto.button')}</button>
+                  <span className="muted small"> {t('report.noPhoto.why')}</span>
+                </p>
+              )}
+            </>
+          )}
           {analysing && <p className="hint analysing" role="status"><span className="spinner" aria-hidden="true" />{t('report.analyze.analysing')}</p>}
           {currentCheck?.status === 'checking' && <p className="hint" role="status">{t('report.photoCheck.checking')}</p>}
           {currentCheck?.status === 'ok' && <p className="hint ok" role="status"><Icon name="check" size={14} /> {t('report.photoCheck.ok')}</p>}
@@ -771,23 +813,6 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       {stepName === 'check' && (
         <section>
           <h2>{t('report.analyze.checkTitle')}</h2>
-          {/* A friendly invitation: this looks small enough to fix together with the neighbours. */}
-          {rules.community && !embedded && !inviteDismissed && currentAnalysis?.citizenCanFix && photo && (
-            <div className="cm-invite">
-              <span className="cm-invite-icon" aria-hidden="true"><Icon name="heart" size={22} /></span>
-              <div>
-                <strong>{t('community.invite.title')}</strong>
-                <p>{t('community.invite.text')}</p>
-                <div className="cm-invite-row">
-                  <button type="button" className="btn btn-sm" onClick={() => {
-                    handOverPhoto({ blob: photo, key: uploaded.current?.photo === photo ? uploaded.current.key : null, notes: description });
-                    router.push('/ndihmo/krijo');
-                  }}><Icon name="users" size={16} />{t('community.invite.yes')}</button>
-                  <button type="button" className="btn btn-sm btn-outline" onClick={() => setInviteDismissed(true)}>{t('community.invite.no')}</button>
-                </div>
-              </div>
-            </div>
-          )}
           <div className="check-intro">
             {photoUrl && <img className="check-photo" src={photoUrl} alt={t('report.photoAdded')} />}
             {currentAnalysis?.verdict === 'ok' && (currentAnalysis.requestTypeId || currentAnalysis.description) ? (
@@ -900,7 +925,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               },
               {
                 step: 'photo', icon: <Icon name="camera" size={28} strokeWidth={1.6} />,
-                value: photoUrl ? <img className="review-photo" src={photoUrl} alt={t('report.photoAdded')} /> : '–',
+                value: photoUrl ? <img className="review-photo" src={photoUrl} alt={t('report.photoAdded')} /> : noPhoto ? t('report.noPhoto.review') : '–',
               },
               { step: 'details', icon: <Icon name="list" size={28} strokeWidth={1.6} />, value: description.trim() || '–' },
               {

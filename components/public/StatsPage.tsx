@@ -17,7 +17,7 @@ export default function StatsPage({ data }: { data: PublicStats | null }) {
           <>
             <div className="kpis">
               <div className="kpi"><div className="value">{data.totals.total}</div><div className="label">{t('stats.total')}</div></div>
-              <div className="kpi"><div className="value">{data.totals.open}</div><div className="label">{t('stats.open')}</div></div>
+              <div className="kpi"><div className="value">{data.totals.openNow}</div><div className="label">{t('stats.open')}</div></div>
               <div className="kpi"><div className="value">{data.totals.resolved}</div><div className="label">{t('stats.resolved')}</div></div>
               <div className="kpi"><div className="value">{data.totals.avgDaysToResolve ?? '–'}</div><div className="label">{t('stats.avgDays')}</div></div>
               <div className="kpi"><div className="value">{data.totals.onTimePct !== null ? `${data.totals.onTimePct}%` : '–'}</div><div className="label">{t('stats.onTime')}</div></div>

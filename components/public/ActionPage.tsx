@@ -117,7 +117,7 @@ export default function ActionPage({ code, initial }: { code: string; initial: P
         <dl className="cm-facts">
           <div><dt><Icon name="clock" size={16} />{t('community.page.when')}</dt><dd>{formatDate(action.startsAt, lang, true)} · {durationText(action.minutes, t)}</dd></div>
           <div><dt><Icon name="pin" size={16} />{t('community.page.where')}</dt><dd>{action.place}</dd></div>
-          <div><dt><Icon name="users" size={16} />{t('community.form.people')}</dt><dd>{t('community.people', { n: action.people, m: action.peopleNeeded })}</dd></div>
+          <div><dt><Icon name="users" size={16} />{t('community.form.people')}</dt><dd>{action.checkIn ? t('community.people', { n: action.people, m: action.peopleNeeded }) : t('community.form.peopleShort', { n: action.peopleNeeded })}</dd></div>
           {action.bring && <div><dt><Icon name="list" size={16} />{t('community.page.bring')}</dt><dd>{action.bring}</dd></div>}
         </dl>
         {action.names.length > 0 && <p className="cm-muted">{t('community.page.names', { names: action.names.join(', ') })}</p>}
@@ -127,10 +127,10 @@ export default function ActionPage({ code, initial }: { code: string; initial: P
 
         {isOrganizer ? <OrganizerPanel action={org!} token={token!} onChange={setAction} setError={setError} />
           : action.status === 'PUBLISHED' && !showJoin && (
-            <div className="cm-howjoin"><Icon name="qr" size={22} /><div><strong>{t('community.page.join')}</strong><p>{joined ? t('community.joinBox.already') : t('community.page.joinText')}</p></div></div>
+            <div className="cm-howjoin"><Icon name={action.checkIn ? 'qr' : 'users'} size={22} /><div><strong>{t('community.page.join')}</strong><p>{joined ? t('community.joinBox.already') : action.checkIn ? t('community.page.joinText') : t('community.page.joinTextSimple')}</p></div></div>
           )}
 
-        {!isOrganizer && !joined && <VoteBox action={action} onChange={setAction} />}
+        {!isOrganizer && !joined && action.checkIn && <VoteBox action={action} onChange={setAction} />}
         {error ? <ErrorAlert error={error} /> : null}
 
         <ShareRow action={action} />
@@ -284,7 +284,7 @@ function OrganizerPanel({ action, token, onChange, setError }: { action: Organiz
             <span className="cm-qr-count"><Icon name="users" size={16} />{t('community.org.joined', { n: action.people })}</span>
             <p className="hint">{t('community.org.qrText')}</p>
           </div>
-        ) : <p className="hint">{t('community.org.qrLater', { time: formatDate(action.startsAt, lang, true) })}</p>
+        ) : <p className="hint">{action.checkIn ? t('community.org.qrLater', { time: formatDate(action.startsAt, lang, true) }) : t('community.org.shareHint')}</p>
       )}
 
       {action.status === 'PUBLISHED' && started && (
@@ -301,7 +301,7 @@ function OrganizerPanel({ action, token, onChange, setError }: { action: Organiz
       {action.status === 'CLOSING' && <p><Icon name="clock" size={16} /> {t('community.org.checking')}</p>}
 
       {action.status === 'VERIFIED' && action.prize && (
-        action.prize.amount <= 0 ? <p>{t('community.org.noPrize')}</p>
+        action.prize.amount <= 0 ? <p>{action.checkIn ? t('community.org.noPrize') : t('community.org.thanks')}</p>
           : !action.prize.choice ? (
             <div className="cm-choose">
               <strong>{t('community.org.choose')}</strong>

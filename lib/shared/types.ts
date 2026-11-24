@@ -348,6 +348,8 @@ export interface PublicAction {
   afterPhotoUrl: string | null;
   /** Scanning is possible now (the action is public and it is around its time). */
   joinOpen: boolean;
+  /** The full version: people confirm on the spot with the QR (and the group may get a reward). Off in the MVP. */
+  checkIn: boolean;
   prize: { amount: number; choice: PrizeChoiceName | null; partner: string | null; held: boolean; redeemed: boolean } | null;
   /** Neighbours' answers to "A u bë vërtet?" after closing. */
   votes: { done: number; notDone: number };
@@ -371,6 +373,8 @@ export interface OrganizerAction extends PublicAction {
 
 export interface CommunitySettings {
   enabled: boolean;
+  /** The full version: QR check-in on the spot, rewards, AI approval. Off: the staff approves and verifies each action. */
+  rewards: boolean;
   /** Prize for the whole group by how many people took part (organiser included). */
   tiers: Array<{ minPeople: number; amount: number }>;
   coffeePartner: string;

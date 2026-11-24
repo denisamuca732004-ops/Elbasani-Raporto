@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PrivacyPage() {
   const { t } = await getT();
-  const sections = ['what', 'why', 'public', 'photos', 'ai', 'keep', 'rights'];
+  const sections = ['what', 'why', 'public', 'photos', 'ai', 'help', 'services', 'keep', 'rights'];
   // The real retention period (CONTACT_RETENTION_DAYS), so the page says what the daily job does.
   let days = 90;
   try { days = config().rules.contactRetentionDays; } catch { /* configuration problem: keep the default */ }

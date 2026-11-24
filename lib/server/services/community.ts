@@ -67,6 +67,8 @@ const SETTINGS_KEY = 'community';
 interface StoredSettings extends Omit<CommunitySettings, 'hasPartnerPin'> { partnerPinHash?: string | null }
 const DEFAULTS: StoredSettings = {
   enabled: true,
+  // The MVP: the staff approves each action and checks its photos; no QR check-in, no rewards, no AI approval.
+  rewards: false,
   tiers: [{ minPeople: 1, amount: 200 }, { minPeople: 3, amount: 300 }, { minPeople: 6, amount: 500 }],
   coffeePartner: 'Kafe partnere',
   marketPartner: 'Market partner',
@@ -91,12 +93,17 @@ export async function updateCommunitySettings(user: Principal, input: CommunityS
   const tiers = [...input.tiers].sort((a, b) => a.minPeople - b.minPeople);
   if (tiers[0]!.minPeople !== 1) throw badRequest('Niveli i parë i çmimit duhet të nisë nga 1 person.');
   const value: StoredSettings = {
-    enabled: input.enabled, tiers, coffeePartner: input.coffeePartner, marketPartner: input.marketPartner,
+    enabled: input.enabled, rewards: input.rewards, tiers, coffeePartner: input.coffeePartner, marketPartner: input.marketPartner,
     monthlyBudget: input.monthlyBudget, checkFrom: input.checkFrom,
     partnerPinHash: input.partnerPin ? sha256(`partner-pin:${input.partnerPin}`) : current.partnerPinHash ?? null,
   };
   await db.setting.upsert({ where: { key: SETTINGS_KEY }, create: { key: SETTINGS_KEY, value: value as unknown as Prisma.InputJsonValue }, update: { value: value as unknown as Prisma.InputJsonValue } });
   return getCommunitySettings();
+}
+
+/** The full version (QR check-in on the spot, rewards, AI approval) is on; otherwise the simple MVP. */
+async function checkInOn(): Promise<boolean> {
+  return (await getCommunitySettings()).rewards;
 }
 
 export function prizeForPeople(tiers: CommunitySettings['tiers'], people: number): number {
@@ -162,7 +169,7 @@ type ActionWithAll = Prisma.CommunityActionGetPayload<{ include: { participants:
 const WITH_ALL = { participants: { orderBy: { joinedAt: 'asc' } }, photos: { orderBy: { createdAt: 'asc' } }, votes: true } as const;
 
 /** withPrize: only for the organiser, the people who took part and the admin (others never see money). */
-function toPublic(a: ActionWithAll, now = Date.now(), withPrize = false): PublicAction {
+function toPublic(a: ActionWithAll, now = Date.now(), withPrize = false, checkIn = false): PublicAction {
   const before = a.photos.find((p) => p.kind === 'BEFORE' && p.isPublic);
   const after = a.photos.find((p) => p.kind === 'AFTER' && p.isPublic);
   const showPrize = withPrize && a.status === 'VERIFIED' && a.prizeAmount !== null;
@@ -183,7 +190,8 @@ function toPublic(a: ActionWithAll, now = Date.now(), withPrize = false): Public
     names: a.participants.map((p) => p.name).filter((n): n is string => Boolean(n)),
     beforePhotoUrl: photoUrl(before?.id),
     afterPhotoUrl: photoUrl(after?.id),
-    joinOpen: joinOpen(a, now),
+    joinOpen: checkIn && joinOpen(a, now),
+    checkIn,
     prize: showPrize ? {
       amount: a.prizeAmount!, choice: a.prizeChoice, partner: a.prizePartner, held: a.prizeHeld, redeemed: Boolean(a.prizeRedeemedAt),
     } : null,
@@ -340,7 +348,13 @@ export async function createAction(input: CreateActionInput, now = new Date()): 
   if (input.push && !isPushEndpoint(input.push.endpoint)) input.push = undefined;
 
   const small = await smallPhoto(input.photoKey);
-  const check = await checkNewAction(small, input);
+  const full = await checkInOn();
+  const ai = await checkNewAction(small, input);
+  // The MVP: a person at the Municipality approves every action (the AI's opinion is shown to them).
+  const check = full ? ai : {
+    ...ai, publish: false,
+    review: ai.review ?? `Pret miratimin e stafit.${ai.reason ? ` AI: ${ai.reason}` : ''}`,
+  };
   const stored = await storeUploadedPhoto(input.photoKey);
   const { token, hash } = createToken(24);
 
@@ -377,21 +391,22 @@ export async function createAction(input: CreateActionInput, now = new Date()): 
 export async function getPublicAction(code: string): Promise<PublicAction> {
   const a = await loadByCode(code);
   if (a.status === 'REVIEW') throw notFound('Aksioni nuk u gjet ose pret miratimin.');
-  return toPublic(a);
+  return toPublic(a, Date.now(), false, await checkInOn());
 }
 
 /** The page as this browser sees it: with the group's reward when it took part. */
 export async function getActionForDevice(code: string, deviceRef: string): Promise<PublicAction> {
   const a = await loadByCode(code);
   if (a.status === 'REVIEW') throw notFound('Aksioni nuk u gjet ose pret miratimin.');
-  return toPublic(a, Date.now(), a.participants.some((p) => p.deviceRef === deviceRef));
+  return toPublic(a, Date.now(), a.participants.some((p) => p.deviceRef === deviceRef), await checkInOn());
 }
 
 export async function getOrganizerAction(code: string, token: string, now = Date.now()): Promise<OrganizerAction> {
   const a = await loadAsOrganizer(code, token);
+  const checkIn = await checkInOn();
   return {
-    ...toPublic(a, now, true),
-    joinToken: joinOpen(a, now) ? joinTokenAt(a.joinSecret, now) : null,
+    ...toPublic(a, now, true, checkIn),
+    joinToken: checkIn && joinOpen(a, now) ? joinTokenAt(a.joinSecret, now) : null,
     prizeCode: a.status === 'VERIFIED' && a.prizeChoice ? a.prizeCode : null,
     reviewReason: a.status === 'REVIEW' || a.status === 'CLOSING' ? (a.status === 'REVIEW' ? 'Aksioni po shikohet nga Bashkia para se të publikohet.' : 'Aksioni po verifikohet.') : null,
   };
@@ -437,6 +452,7 @@ export async function joinAction(input: {
   push?: { endpoint: string; keys: { p256dh: string; auth: string } } | undefined; lang: 'sq' | 'en';
 }, now = Date.now()): Promise<PublicAction> {
   await assertEnabled();
+  if (!(await checkInOn())) throw conflict('Për këtë aksion nuk ka nevojë për skanim: thjesht ejani në vend.');
   const a = await loadByCode(input.code);
   if (a.status !== 'PUBLISHED') throw conflict('Ky aksion nuk pranon më pjesëmarrës.');
   if (!joinOpen(a, now)) throw conflict('Skanimi hapet 30 minuta para fillimit të aksionit dhe mbyllet pas mbarimit të tij.');
@@ -520,9 +536,11 @@ export async function checkClosedAction(id: string, now = new Date()): Promise<v
     }
   }
   const s = await getCommunitySettings();
-  const amount = await prizeFor(a, now);
+  const amount = s.rewards ? await prizeFor(a, now) : 0;
   const notDone = a.votes.filter((v) => !v.done).length;
-  const review = fixed === null ? 'AI nuk i krahasoi fotot: shikojini para/pas.'
+  const advice = fixed === null ? 'AI nuk i krahasoi fotot.' : `AI: ${fixed ? 'u bë' : 'nuk duket e bërë'} (${confidence ?? 0}%).${reason ? ` ${reason}` : ''}`;
+  const review = !s.rewards ? `Shikoni fotot para/pas dhe verifikojeni. ${advice}`
+    : fixed === null ? 'AI nuk i krahasoi fotot: shikojini para/pas.'
     : !fixed || (confidence ?? 0) < VERIFY_MIN_CONFIDENCE ? `AI nuk është i sigurt që u bë (${confidence ?? 0}%).${reason ? ` ${reason}` : ''}`
       : notDone >= NOT_DONE_VOTES_TO_HOLD ? 'Banorët thonë që nuk u bë.'
         : amount > 0 && amount >= s.checkFrom ? `Çmim me vlerë (${amount} lekë): kërkon një miratim.`
@@ -535,7 +553,7 @@ export async function checkClosedAction(id: string, now = new Date()): Promise<v
 async function verify(id: string, now: Date): Promise<void> {
   const a = await db.communityAction.findUnique({ where: { id }, include: { participants: true } });
   if (!a || a.status !== 'CLOSING') return;
-  const amount = await prizeFor(a, now);
+  const amount = (await checkInOn()) ? await prizeFor(a, now) : 0;
   await db.communityAction.update({ where: { id }, data: { status: 'VERIFIED', verifiedAt: now, prizeAmount: amount, reviewReason: null } });
   await enqueue('action-push', { actionId: id, moment: 'verified' });
 }
@@ -592,6 +610,7 @@ export async function redeemPrize(prizeCodeValue: string, pin: string, now = new
 /* ─── 5. Neighbours: "A u bë vërtet?" ─── */
 
 export async function voteAction(input: { code: string; deviceRef: string; done: boolean }, now = new Date()): Promise<PublicAction> {
+  if (!(await checkInOn())) throw conflict('Ky aksion verifikohet nga stafi i Bashkisë.');
   const a = await loadByCode(input.code);
   if (!(a.status === 'CLOSING' || a.status === 'VERIFIED') || !a.closedAt || now.getTime() - a.closedAt.getTime() > VOTE_DAYS * 86_400_000) {
     throw conflict('Ky aksion nuk pret më përgjigje.');
@@ -617,9 +636,9 @@ export async function voteAction(input: { code: string; deviceRef: string; done:
 
 /* ─── The admin ─── */
 
-function toAdmin(a: ActionWithAll): AdminActionItem {
+function toAdmin(a: ActionWithAll, checkIn = false): AdminActionItem {
   return {
-    ...toPublic(a, Date.now(), true),
+    ...toPublic(a, Date.now(), true, checkIn),
     id: a.id,
     organizerPhone: a.organizerPhone,
     reviewReason: a.reviewReason,
@@ -637,7 +656,8 @@ export async function listAdminActions(user: Principal): Promise<{ waiting: Admi
   assertAdmin(user);
   const rows = await db.communityAction.findMany({ include: WITH_ALL, orderBy: { createdAt: 'desc' }, take: 200 });
   const waits = (a: ActionWithAll) => a.status === 'REVIEW' || (a.status === 'CLOSING' && Boolean(a.reviewReason)) || a.prizeHeld;
-  return { waiting: rows.filter(waits).map(toAdmin), others: rows.filter((a) => !waits(a)).map(toAdmin) };
+  const checkIn = await checkInOn();
+  return { waiting: rows.filter(waits).map((a) => toAdmin(a, checkIn)), others: rows.filter((a) => !waits(a)).map((a) => toAdmin(a, checkIn)) };
 }
 
 export async function countWaitingActions(): Promise<number> {
@@ -691,7 +711,7 @@ export async function decideAction(
       break;
   }
   const fresh = await db.communityAction.findUniqueOrThrow({ where: { id }, include: WITH_ALL });
-  return toAdmin(fresh);
+  return toAdmin(fresh, await checkInOn());
 }
 
 /* ─── Notifications ─── */

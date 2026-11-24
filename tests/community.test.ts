@@ -49,6 +49,7 @@ before(async () => {
   resetConfigForTests();
   await setupTestDb();
   admin = await adminSession();
+  await fullVersion(true);
   setPushSenderForTests(async (sub, payload) => { sent.push({ endpoint: sub.endpoint, title: JSON.parse(payload).title }); });
 });
 after(async () => {
@@ -60,6 +61,12 @@ beforeEach(() => {
   ai.close = { samePlace: true, done: true, confidence: 95, reasonSq: 'Zona është pastruar.' };
   setSpotCheckForTests(() => false);
 });
+
+const TIERS = [{ minPeople: 1, amount: 200 }, { minPeople: 3, amount: 300 }, { minPeople: 6, amount: 500 }];
+/** The full version (QR check-in, rewards, AI approval) or the simple MVP (the default). */
+async function fullVersion(on: boolean) {
+  await updateCommunitySettings(admin, { enabled: true, rewards: on, tiers: TIERS, coffeePartner: 'Kafe partnere', marketPartner: 'Market partner', monthlyBudget: 20000, checkFrom: 500, partnerPin: '' });
+}
 
 async function newAction(overrides: Partial<Parameters<typeof createAction>[0]> = {}) {
   phoneN++;
@@ -150,7 +157,7 @@ describe('closing, the prize and the partners', () => {
     await drainJobs();
     assert.equal(sent.filter((m) => m.title.includes('300 lekë')).length, 3, 'the organiser and both people who scanned');
 
-    await updateCommunitySettings(admin, { enabled: true, tiers: [{ minPeople: 1, amount: 200 }, { minPeople: 3, amount: 300 }, { minPeople: 6, amount: 500 }], coffeePartner: 'Kafe Skampa', marketPartner: 'Market X', monthlyBudget: 20000, checkFrom: 500, partnerPin: '4321' });
+    await updateCommunitySettings(admin, { enabled: true, rewards: true, tiers: [{ minPeople: 1, amount: 200 }, { minPeople: 3, amount: 300 }, { minPeople: 6, amount: 500 }], coffeePartner: 'Kafe Skampa', marketPartner: 'Market X', monthlyBudget: 20000, checkFrom: 500, partnerPin: '4321' });
     const chosen = await choosePrize({ code, token: organizerToken, choice: 'COFFEE' });
     assert.equal(chosen.prize?.choice, 'COFFEE');
     assert.equal(chosen.prize?.partner, 'Kafe Skampa');
@@ -221,5 +228,32 @@ describe('closing, the prize and the partners', () => {
     assert.equal((await getPublicAction(code)).status, 'CANCELLED');
     // checkClosedAction on a missing or open action does nothing.
     await checkClosedAction('00000000-0000-4000-8000-000000000000');
+  });
+});
+
+describe('the simple MVP (the default): the staff approves and verifies, no check-in, no rewards', () => {
+  before(async () => { await fullVersion(false); });
+  after(async () => { await fullVersion(true); });
+
+  test('even a clear action waits for a person; scanning and votes are off; closing waits for the staff; no money', async () => {
+    const { code, organizerToken, status } = await newAction();
+    assert.equal(status, 'REVIEW', 'a person approves every action');
+    const row = await db.communityAction.findUniqueOrThrow({ where: { code } });
+    assert.match(row.reviewReason ?? '', /Pret miratimin e stafit/);
+    await decideAction(admin, row.id, 'publish', '');
+    const pub = await getPublicAction(code);
+    assert.equal(pub.checkIn, false);
+    assert.equal(pub.joinOpen, false);
+    assert.equal((await getOrganizerAction(code, organizerToken)).joinToken, null, 'no QR');
+    assert.equal((await rejects(() => join(code, 1))).status, 409);
+
+    const closed = await closeAction({ code, token: organizerToken, photoKey: await uploadPhoto() });
+    assert.equal(closed.status, 'CLOSING', 'even a sure AI does not verify by itself');
+    assert.match((await db.communityAction.findUniqueOrThrow({ where: { code } })).reviewReason ?? '', /AI: u bë/);
+    assert.equal((await rejects(() => voteAction({ code, deviceRef: 'neighbour-device-mvp1', done: true }))).status, 409);
+    await decideAction(admin, row.id, 'verify', '');
+    const done = await getOrganizerAction(code, organizerToken);
+    assert.equal(done.status, 'VERIFIED');
+    assert.equal(done.prize?.amount, 0, 'no rewards in the MVP');
   });
 });

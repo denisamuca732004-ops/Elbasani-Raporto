@@ -43,7 +43,8 @@ export const citizenReportShape = z.strictObject({
   /** Only reports queued offline by an older version of the form have it: accepted, never stored (residents leave no e-mail). */
   contactEmail: z.string().max(200).optional(),
   contactPhone: z.string().max(40).optional(),
-  photoKey: uploadKey,
+  /** Optional: "Nuk mund të bëj foto" (night, noise, a smell, an unsafe place) asks for a longer description instead. */
+  photoKey: uploadKey.optional(),
   channel: z.enum(CITIZEN_CHANNELS).default('WEB'),
   clientRef: z.string().max(64).optional(),
 });
