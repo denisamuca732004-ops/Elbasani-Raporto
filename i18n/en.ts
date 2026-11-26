@@ -210,6 +210,7 @@ const en = {
       switchToPhoto: 'Report with a photo', switchToPhotoHint: 'Take a photo and the system fills in the type and the description.',
       checkTitle: 'Check the problem',
       found: 'The type and the description were filled in from the photo. Check them and change them if they are not right.',
+      noAnswer: 'The AI did not answer right now. Choose the type of problem and write a short description.',
       notFound: 'The problem could not be made out clearly from the photo. Choose the type and write a short description.',
       typeLabel: 'Type of problem', proposed: 'suggested from the photo',
       editHint: 'You can change the description or add details, e.g. how long it has been like this.',

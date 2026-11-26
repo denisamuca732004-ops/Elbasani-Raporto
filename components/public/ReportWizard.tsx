@@ -853,6 +853,9 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             {photoUrl && <img className="check-photo" src={photoUrl} alt={t('report.photoAdded')} />}
             {currentAnalysis?.verdict === 'ok' && (currentAnalysis.requestTypeId || currentAnalysis.description) ? (
               <p>{t('report.analyze.found')}</p>
+            ) : currentAnalysis?.verdict === 'unchecked' ? (
+              // No answer (AI unavailable, too slow, offline): not the photo's fault.
+              <p>{t('report.analyze.noAnswer')}</p>
             ) : (
               <p>{t('report.analyze.notFound')}</p>
             )}

@@ -210,6 +210,7 @@ const sq = {
       switchToPhoto: 'Raporto me foto', switchToPhotoHint: 'Bëni një foto dhe sistemi plotëson llojin dhe përshkrimin.',
       checkTitle: 'Kontrolloni problemin',
       found: 'Nga fotoja u plotësuan lloji dhe përshkrimi. Kontrollojini dhe ndryshojini nëse nuk janë të sakta.',
+      noAnswer: 'AI nuk u përgjigj tani. Zgjidhni llojin e problemit dhe shkruani një përshkrim të shkurtër.',
       notFound: 'Nga fotoja nuk u kuptua qartë problemi. Zgjidhni llojin dhe shkruani një përshkrim të shkurtër.',
       typeLabel: 'Lloji i problemit', proposed: 'propozuar nga fotoja',
       editHint: 'Mund ta ndryshoni përshkrimin ose t’i shtoni detaje, p.sh. prej sa kohësh është kështu.',
