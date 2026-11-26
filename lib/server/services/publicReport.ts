@@ -10,7 +10,7 @@ import type { z } from 'zod';
 import { FINAL_STATUSES, LIMITS, OPEN_STATUSES, PUBLIC_LISTED_STATUSES, isOtherChoice, publicStatusOf, type Status } from '@/lib/shared/domain';
 import type { FieldError } from '@/lib/shared/result';
 import type { FixedReport, MapPoint, PublicCard, PublicCase } from '@/lib/shared/types';
-import { citizenReportShape, type FeedbackInput, type MapQuery, type RecentQuery, type TrackSearch } from '@/lib/validation/report';
+import { citizenReportShape, type DeviceFeedbackInput, type FeedbackInput, type MapQuery, type RecentQuery, type TrackSearch } from '@/lib/validation/report';
 import { check } from '@/lib/validation/zod';
 import type { RequestType } from '@/lib/generated/prisma/client';
 import { CACHE_KEYS, cached } from '../cache';
@@ -591,7 +591,23 @@ export async function getFeedbackInfo(token: string): Promise<PublicCase> {
 }
 
 export async function submitCitizenFeedback(input: FeedbackInput) {
-  const report = await findByFeedbackToken(input.token);
+  return applyFeedback(await findByFeedbackToken(input.token), input);
+}
+
+/**
+ * "A u rregullua?" on the report's page: only the phone or browser that sent the report can answer
+ * (it keeps the random reference of its form); anyone else with the number cannot.
+ */
+export async function submitFeedbackFromDevice(input: DeviceFeedbackInput) {
+  const report = await db.report.findUnique({ where: { caseNumber: input.caseNumber }, include: publicInclude });
+  if (!report || !report.clientRef || report.clientRef !== input.clientRef) throw notFound('Raportimi nuk u gjet.');
+  return applyFeedback(report, input);
+}
+
+async function applyFeedback(
+  report: Awaited<ReturnType<typeof findByFeedbackToken>>,
+  input: { action: 'confirm' | 'reopen'; rating?: number | undefined; comment?: string | null | undefined },
+) {
   if (report.status !== 'RESOLVED') throw conflict('Ky raportim nuk pret konfirmimin tuaj.');
   const comment = input.comment ?? null;
   const rating = input.rating ?? null;
@@ -599,6 +615,7 @@ export async function submitCitizenFeedback(input: FeedbackInput) {
   const next = await db.$transaction(async (tx) => {
     // Only the first answer counts: the token is cleared in the same statement.
     const claimed = await tx.report.updateMany({
+      // Only the first answer counts (the e-mailed link and the page cannot both answer).
       where: { id: report.id, status: 'RESOLVED', citizenTokenHash: report.citizenTokenHash },
       data: confirm
         ? { status: 'CLOSED', closedAt: new Date(), citizenRating: rating, citizenComment: comment, citizenTokenHash: null }

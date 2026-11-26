@@ -281,7 +281,7 @@ export interface Paged<T> { items: T[]; total: number; page: number; pageSize: n
 
 /* ─── Catalogue and settings (public) ─── */
 
-export interface CatalogType { id: number; code: string; nameSq: string; nameEn: string; kind: RequestKind; departmentId: number | null }
+export interface CatalogType { id: number; code: string; nameSq: string; nameEn: string; kind: RequestKind; departmentId: number | null; /** The municipality's deadline for this type, in days. */ slaDays: number }
 export interface CatalogCategory { id: number; code: string; icon: string; nameSq: string; nameEn: string; types: CatalogType[] }
 export interface Catalog {
   categories: CatalogCategory[];

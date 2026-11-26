@@ -38,10 +38,11 @@ import { CategoryIcon, ErrorAlert, Field } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { ActionFailure, call } from '@/lib/client/action';
 import { distanceLabel, insideArea, key, phoneDigits, typeName, type LatLng } from '@/lib/client/format';
-import { isMine, rememberMine, rememberSupported } from '@/lib/client/myReports';
+import { isMine, rememberMine, rememberRef, rememberSupported } from '@/lib/client/myReports';
 import { newClientRef, queueReport } from '@/lib/client/offlineQueue';
 import { formToken, prefetchFormToken } from '@/lib/client/formToken';
 import { askPushPermission, pushSupport, subscribeToReport } from '@/lib/client/push';
+import { InstallAfterReport } from '@/components/site/InstallApp';
 import NotifyMe from '@/components/public/NotifyMe';
 import { InstallGuideButton } from '@/components/site/InstallApp';
 import { uploadPhoto } from '@/lib/client/upload';
@@ -448,6 +449,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       const photoKey = photo ? await photoKeyFor(photo) : undefined;
       const res = await call(createReportAction({ ...data, ...(photoKey ? { photoKey } : {}) }));
       rememberMine(res.caseNumber);
+      rememberRef(res.caseNumber, clientRef);
       const notified = notify && rules.pushKey && canPush === 'yes'
         ? await subscribeToReport({ caseNumber: res.caseNumber, clientRef, key: rules.pushKey, lang: lang === 'en' ? 'en' : 'sq' })
         : false;
@@ -519,6 +521,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             <h2>{t('report.doneTitle')}</h2>
             <p>{t('report.doneIdLabel')}</p>
             <span className="case-number">{result.caseNumber}</span>
+            {type && <p className="small expected-time"><Icon name="clock" size={14} /> {type.slaDays === 1 ? t('report.expectedTimeOne') : t('report.expectedTime', { n: type.slaDays })}</p>}
             {result.notified && <p className="small" style={{ margin: '0 0 12px' }}><Icon name="check" size={14} /> {t('report.notify.done')}</p>}
             {!result.notified && !embedded && result.caseNumber && <NotifyMe caseNumber={result.caseNumber} clientRef={clientRef} />}
             <button
@@ -532,6 +535,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               <Icon name="alert" size={20} />
               <p><strong>{t('report.doneKeepTitle')}</strong> {result.notified ? t('report.doneKeepNotified') : contactMode === 'anonymous' ? t('report.doneKeepAnonymous') : t('report.doneKeepContact')}</p>
             </div>
+            {!embedded && <InstallAfterReport />}
             <div className="row" style={{ justifyContent: 'center' }}>
               <Link className="btn" href={`${trackBase}/${result.caseNumber}`}>{t('report.trackIt')}</Link>
               <button type="button" className="btn btn-outline" onClick={() => window.location.assign(embedded ? '/embed' : '/raporto')}>{t('report.another')}</button>

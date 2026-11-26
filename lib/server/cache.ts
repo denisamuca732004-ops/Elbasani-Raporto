@@ -9,7 +9,7 @@ import { Redis } from '@upstash/redis';
 import { config } from './env';
 
 export const CACHE_KEYS = {
-  catalog: 'catalog:v4', // v4: lagje and villages carry their point (the "Vendndodhja" search)
+  catalog: 'catalog:v5', // v5: each report type carries its deadline (slaDays)
   departments: 'departments:active:v1',
   settings: 'settings:v1',
   guide: 'guide:active:v4', // v4: answers for the help chat and the wider "Ndiq raportimin"

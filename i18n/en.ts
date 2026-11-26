@@ -13,6 +13,7 @@ const en = {
   },
   time: { now: 'just now', minutes: '{n} min ago', hours: { one: '1 hour ago', other: '{n} hours ago' }, days: { one: '1 day ago', other: '{n} days ago' } },
   install: {
+    after: 'Follow your report more easily: add Elbasani Raporton to your home screen.',
     button: 'Install', short: 'Install', footer: 'Install on your phone',
     title: 'Elbasani Raporton on your phone',
     text: 'Add it to your home screen and open it with one tap, no need to look for the site.',
@@ -129,13 +130,13 @@ const en = {
   kind: { problem: 'Problem', service: 'Service' },
   priority: { high: 'High', medium: 'Medium', low: 'Low' },
   status: {
-    received: 'Received', open: 'Open', in_progress: 'In progress', resolved: 'Resolved', closed: 'Closed', rejected: 'Rejected',
+    received: 'Received', open: 'Open', in_progress: 'In progress', resolved: 'Fixed', closed: 'Closed', rejected: 'Rejected',
   },
   statusHelp: {
     received: 'The report was received and is being checked by the responsible sector of the municipality.',
     open: 'The report was verified and the responsible sector will handle it.',
     in_progress: 'A municipal team is working on it.',
-    resolved: 'The municipality marked it as resolved. If the problem is not fixed, report it again.',
+    resolved: 'The municipality marked it as fixed. If the problem is not fixed, tell us or report it again.',
     closed: 'The report is closed.',
     rejected: 'The municipality could not handle this report. See the reason below.',
   },
@@ -259,6 +260,7 @@ const en = {
     consent: 'By sending, you agree that the Municipality of Elbasan processes this data to handle the report, according to the',
     send: 'Send the report', sending: 'Sending…',
     doneTitle: 'Report sent!',
+    expectedTime: 'The municipality\'s deadline for this problem: up to {n} days.', expectedTimeOne: 'The municipality\'s deadline for this problem: within 1 day.',
     doneIdLabel: 'Your report number (ID):', copyNumber: 'Copy the number', copied: 'Copied',
     doneKeepTitle: 'This is the ID of your report. Keep it to track it.',
     doneKeepAnonymous: 'You reported anonymously, so we have nowhere to send it. Copy it or take a screenshot: with it you track the report under “Track a report”.',
@@ -291,7 +293,7 @@ const en = {
     notFound: 'No report found with number {n}. Please check the number.',
     rejectionReason: 'Reason', closingNote: 'Note from the municipality',
     before: 'Before', after: 'After', history: 'History',
-    category: 'Category', opened: 'Opened', updated: 'Updated', resolvedOn: 'Resolved', sector: 'Sector',
+    category: 'Category', opened: 'Opened', updated: 'Updated', resolvedOn: 'Fixed on', sector: 'Sector',
     location: 'Location', others: 'Others',
     supporters: { one: '1 resident reported the same problem', other: '{n} residents reported the same problem' },
     search: {
@@ -310,7 +312,7 @@ const en = {
     },
   },
   map: {
-    title: 'Map of reports', status: 'Status', open: 'Open', closed: 'Resolved', all: 'All',
+    title: 'Map of reports', status: 'Status', open: 'Open', closed: 'Fixed', all: 'All',
     category: 'Category', allCategories: 'All categories', count: { one: '1 report on the map', other: '{n} reports on the map' },
     unplacedTitle: 'Reports with an address, without a pin on the map ({n})',
     unplacedText: 'They were sent with an address in an area without a border on the map. They appear on the map as soon as municipal staff place their pin.',
@@ -327,8 +329,8 @@ const en = {
   },
   stats: {
     title: 'Statistics', intro: 'How many reports the municipality receives and how fast it resolves them. Updated in real time.',
-    total: 'Total reports', open: 'Open', resolved: 'Resolved', received: 'Received', notYet: 'Not resolved yet', numbersNote: 'Numbers: total / resolved',
-    avgDays: 'Average days to resolve', onTime: 'Resolved on time',
+    total: 'Total reports', open: 'Open', resolved: 'Fixed', received: 'Received', notYet: 'Not fixed yet', numbersNote: 'Numbers: total / fixed',
+    avgDays: 'Average days to fix', onTime: 'Fixed on time',
     byMonth: 'Last 12 months', byCategory: 'By category', empty: 'No data yet.',
   },
   feedback: {
@@ -693,6 +695,8 @@ const en = {
       option2: '2. The form inside the page (iframe)', option2Text: 'Residents report and track without leaving elbasani.gov.al.',
       headerNote: 'The municipality site must be in the allowed list (Administration → Appearance). The server applies this list automatically to every page that embeds the form.',
       option3: '3. Sub-domain', option3Text: 'The platform lives at raporto.elbasani.gov.al: IT only adds one DNS record (CNAME) pointing to the hosting.',
+      qrTitle: '4. QR code and sticker', qrText: 'For bins, bus stops, the service desk and posters: residents scan it and open the platform.', qrSticker: 'Sticker', qrCode: 'QR code',
+      qrNote: 'The QR code opens https://elbasani-raporto.vercel.app. If the platform moves to another address (e.g. raporto.elbasani.gov.al), the code must be made again.',
       preview: 'Preview', copy: 'Copy the code',
       aiTitle: 'AI check (photos and reports)',
       aiText: 'The AI checks the photo as soon as the resident chooses it, and the report after it is sent. The key is set only in Vercel.',

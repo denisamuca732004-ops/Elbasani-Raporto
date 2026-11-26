@@ -9,7 +9,7 @@ import { createReportAction } from '@/actions/reports';
 import { formToken } from './formToken';
 import { ActionFailure, call } from './action';
 import { uploadPhoto } from './upload';
-import { rememberMine } from './myReports';
+import { rememberMine, rememberRef } from './myReports';
 
 type QueuedReport = { data: Record<string, unknown> & { clientRef: string }; photo: Blob | null; queuedAt: number };
 
@@ -51,6 +51,7 @@ export async function flushQueue(): Promise<string[]> {
         const res = await call(createReportAction({ ...item.data, formToken: token, ...(photoKey ? { photoKey } : {}) }));
         sent.push(res.caseNumber);
         rememberMine(res.caseNumber);
+        rememberRef(res.caseNumber, item.data.clientRef);
         await del(key, s);
       } catch (err) {
         const status = err instanceof ActionFailure ? err.status : 0;

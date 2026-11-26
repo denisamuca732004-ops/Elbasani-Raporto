@@ -297,6 +297,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand-button); o
 .photo-preview img { border-radius: var(--radius); border: 1px solid var(--line); }
 .done-box { text-align: center; padding: 40px 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-tint); }
 .done-box .case-number { font-size: clamp(1.8rem, 6vw, 2.8rem); color: var(--brand-button); margin: 8px 0 6px; display: block; }
+.expected-time { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 12px; color: var(--muted); }
+.fixed-q { border-color: var(--brand-button); }
+.fixed-q .row { gap: 8px; flex-wrap: wrap; }
 /* Under the number: "keep it" (nothing is e-mailed to residents). */
 .done-note { display: flex; gap: 12px; align-items: flex-start; text-align: left; max-width: 560px; margin: 0 auto 18px; padding: 14px 16px; border-radius: var(--radius); background: #fff; border: 1px solid var(--line); }
 .done-note p { margin: 0; }
@@ -1490,6 +1493,10 @@ a.row-link:hover .row-value { color: var(--d-accent); }
 .site .gov-strip a, .site .gov-strip span { font-weight: 600; }
 
 /* ── "Instalo aplikacionin" (components/site/InstallApp.tsx) ── */
+.qr-downloads { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.qr-downloads img { border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.install-after { display: flex; align-items: center; gap: 10px; text-align: left; margin: 0 auto 16px; max-width: 520px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.install-after p { margin: 0; flex: 1; font-size: 0.9rem; }
 .install-bar { background: #fff; border-bottom: 1px solid var(--pub-line, #E1E6E2); }
 .install-bar-inner { display: flex; align-items: center; gap: 12px; padding-top: 10px; padding-bottom: 10px; }
 .install-bar-icon { flex: none; width: 38px; height: 38px; border-radius: 10px; background: var(--pub-tint, #F2F5F2); color: var(--pub-green, #14532D); display: flex; align-items: center; justify-content: center; }

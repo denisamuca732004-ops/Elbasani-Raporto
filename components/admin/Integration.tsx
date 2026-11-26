@@ -115,6 +115,21 @@ export default function Integration({ origin, ai, usage }: { origin: string; ai:
         <h2 className="card-title">{t('admin.integration.option3')}</h2>
         <p className="muted">{t('admin.integration.option3Text')}</p>
       </section>
+      <section className="card stack">
+        <h2 className="card-title">{t('admin.integration.qrTitle')}</h2>
+        <p className="muted">{t('admin.integration.qrText')}</p>
+        <div className="qr-downloads">
+          {/* eslint-disable-next-line @next/next/no-img-element -- a static file of the platform */}
+          <img src="/qr/elbasani-raporton-qr.svg" alt="" width={120} height={120} />
+          <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+            <a className="btn btn-sm" href="/qr/elbasani-raporton-ngjitese.pdf" download>{t('admin.integration.qrSticker')} (PDF)</a>
+            <a className="btn btn-sm btn-outline" href="/qr/elbasani-raporton-ngjitese.png" download>{t('admin.integration.qrSticker')} (PNG)</a>
+            <a className="btn btn-sm btn-outline" href="/qr/elbasani-raporton-qr.png" download>{t('admin.integration.qrCode')} (PNG)</a>
+            <a className="btn btn-sm btn-outline" href="/qr/elbasani-raporton-qr.svg" download>{t('admin.integration.qrCode')} (SVG)</a>
+          </div>
+        </div>
+        <p className="hint" style={{ margin: 0 }}>{t('admin.integration.qrNote')}</p>
+      </section>
       <AiConnection ai={ai} usage={usage} />
       <section className="card">
         <h2 className="card-title">{t('admin.integration.preview')}</h2>

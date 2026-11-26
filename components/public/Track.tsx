@@ -10,8 +10,8 @@
 import NotifyMe from '@/components/public/NotifyMe';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
-import { findReportsAction } from '@/actions/reports';
+import { useEffect, useState, type FormEvent } from 'react';
+import { deviceFeedbackAction, findReportsAction } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { MiniMap } from '@/components/maps';
 import { useCatalog } from '@/components/providers';
@@ -19,6 +19,7 @@ import { ErrorAlert, Field, StatusBadge, TestBadge } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { ActionFailure, call } from '@/lib/client/action';
 import { formatDate, key, typeName } from '@/lib/client/format';
+import { refFor } from '@/lib/client/myReports';
 import type { PublicCard, PublicCase } from '@/lib/shared/types';
 import { PublicTimeline } from './Cases';
 
@@ -153,6 +154,68 @@ export function TrackForm({ initial = '', basePath = '/ndiq' }: { initial?: stri
 
 export type CaseLookup = { found: true; data: PublicCase } | { found: false; caseNumber: string; error?: boolean };
 
+/** The deadline of the report's type, while the report is still being handled. */
+function ExpectedTime({ typeId, status }: { typeId?: number; status: string }) {
+  const { t } = useI18n();
+  const { typeById } = useCatalog();
+  const type = typeById(typeId);
+  if (!type || ['RESOLVED', 'CLOSED', 'REJECTED'].includes(status)) return null;
+  return <p className="small expected-time"><Icon name="clock" size={14} /> {type.slaDays === 1 ? t('report.expectedTimeOne') : t('report.expectedTime', { n: type.slaDays })}</p>;
+}
+
+/**
+ * "A u rregullua?" for the resident who sent the report from this phone: the form's random
+ * reference, kept on the device, is the proof (no account, no link needed).
+ */
+function FixedQuestion({ caseNumber, status }: { caseNumber: string; status: string }) {
+  const { t } = useI18n();
+  const router = useRouter();
+  const [ref, setRef] = useState<string | null>(null);
+  const [reopening, setReopening] = useState(false);
+  const [comment, setComment] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const [done, setDone] = useState<'confirm' | 'reopen' | null>(null);
+  useEffect(() => setRef(refFor(caseNumber)), [caseNumber]);
+  if (!ref) return null;
+
+  async function answer(action: 'confirm' | 'reopen') {
+    setBusy(true);
+    setError(null);
+    try {
+      await call(deviceFeedbackAction({ caseNumber, clientRef: ref, action, comment: action === 'reopen' && comment.trim() ? comment.trim() : undefined }));
+      setDone(action);
+      router.refresh();
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Stays mounted while the page refreshes, so the thanks remain after the status changes.
+  if (done) return <div className="alert alert-ok" role="status">{t(done === 'confirm' ? 'feedback.thanksClosed' : 'feedback.thanksReopened')}</div>;
+  if (status !== 'RESOLVED') return null;
+  return (
+    <div className="card fixed-q">
+      <h3 style={{ marginTop: 0 }}>{t('feedback.title')}</h3>
+      <p className="muted" style={{ marginTop: 0 }}>{t('feedback.question')}</p>
+      {error ? <ErrorAlert error={error as ActionFailure} showDetails={false} /> : null}
+      {reopening && (
+        <Field label={t('feedback.comment')} htmlFor="fixed-q-comment">
+          <textarea id="fixed-q-comment" rows={3} maxLength={1000} value={comment} onChange={(e) => setComment(e.target.value)} />
+        </Field>
+      )}
+      <div className="row">
+        {!reopening && <button type="button" className="btn" disabled={busy} onClick={() => answer('confirm')}><Icon name="check" size={18} />{t('feedback.confirm')}</button>}
+        {reopening
+          ? <button type="button" className="btn btn-outline" disabled={busy} onClick={() => answer('reopen')}>{t('feedback.reopen')}</button>
+          : <button type="button" className="btn btn-outline" disabled={busy} onClick={() => setReopening(true)}>{t('feedback.reopen')}</button>}
+      </div>
+    </div>
+  );
+}
+
 export function CaseView({ lookup }: { lookup: CaseLookup }) {
   const { t, lang } = useI18n();
   if (!lookup.found) {
@@ -171,6 +234,7 @@ export function CaseView({ lookup }: { lookup: CaseLookup }) {
         <h1 style={{ marginBottom: 4 }}>{typeName(data.type, lang)}</h1>
         <p className="case-number" style={{ fontSize: '1.2rem' }}>{data.caseNumber}</p>
         {!data.mergedInto && <p className="muted">{t(`statusHelp.${key(data.publicStatus)}`)}</p>}
+        {!data.mergedInto && <ExpectedTime typeId={data.type?.id} status={data.publicStatus} />}
         {data.mergedInto && (
           <div className="alert alert-info">
             {t('track.merged', { n: data.mergedInto })} <Link href={`/ndiq/${data.mergedInto}`}>{t('track.mergedLink', { n: data.mergedInto })}</Link>
@@ -178,6 +242,7 @@ export function CaseView({ lookup }: { lookup: CaseLookup }) {
         )}
         {data.rejectionReason && <div className="alert alert-error"><strong>{t('track.rejectionReason')}:</strong> {data.rejectionReason}</div>}
         {data.closingNote && <div className="alert alert-ok"><strong>{t('track.closingNote')}:</strong> {data.closingNote}</div>}
+        {!data.mergedInto && !data.isTest && <FixedQuestion caseNumber={data.caseNumber} status={data.publicStatus} />}
         {(data.beforePhotoUrl || data.afterPhotoUrl) && (
           <div className="photos">
             {/* eslint-disable @next/next/no-img-element -- photos come from our own protected route */}

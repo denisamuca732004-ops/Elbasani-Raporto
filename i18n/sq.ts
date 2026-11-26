@@ -14,6 +14,7 @@ const sq = {
   time: { now: 'tani', minutes: 'para {n} min', hours: { one: 'para 1 ore', other: 'para {n} orësh' }, days: { one: 'para 1 dite', other: 'para {n} ditësh' } },
   install: {
     button: 'Instalo', short: 'Instalo', footer: 'Instalo në telefon',
+    after: 'Ndiqeni raportimin më lehtë: shtojeni Elbasani Raporton në ekranin e telefonit.',
     title: 'Elbasani Raporton në telefonin tuaj',
     text: 'Shtojeni në ekranin kryesor dhe hapeni me një prekje, pa kërkuar faqen.',
     ok: 'E kuptova',
@@ -129,13 +130,13 @@ const sq = {
   kind: { problem: 'Problem', service: 'Shërbim' },
   priority: { high: 'E lartë', medium: 'Mesatare', low: 'E ulët' },
   status: {
-    received: 'Marrë', open: 'Hapur', in_progress: 'Në punë', resolved: 'Zgjidhur', closed: 'Mbyllur', rejected: 'Refuzuar',
+    received: 'Marrë', open: 'Hapur', in_progress: 'Në punë', resolved: 'Rregulluar', closed: 'Mbyllur', rejected: 'Refuzuar',
   },
   statusHelp: {
     received: 'Raportimi u mor dhe po kontrollohet nga sektori përgjegjës i Bashkisë.',
     open: 'Raportimi u verifikua dhe sektori përgjegjës do ta trajtojë.',
-    in_progress: 'Ekipi i Bashkisë po punon për zgjidhjen.',
-    resolved: 'Bashkia e shënoi si të zgjidhur. Nëse problemi nuk është rregulluar, raportojeni përsëri.',
+    in_progress: 'Ekipi i Bashkisë po punon për ta rregulluar.',
+    resolved: 'Bashkia e shënoi si të rregulluar. Nëse problemi nuk është rregulluar, na e tregoni ose raportojeni përsëri.',
     closed: 'Raportimi është mbyllur.',
     rejected: 'Raportimi nuk mund të trajtohej nga Bashkia. Shikoni arsyen më poshtë.',
   },
@@ -259,6 +260,7 @@ const sq = {
     consent: 'Duke dërguar, pranoni që Bashkia Elbasan të përpunojë këto të dhëna për trajtimin e raportimit, sipas',
     send: 'Dërgo raportimin', sending: 'Po dërgohet…',
     doneTitle: 'Raportimi u dërgua!',
+    expectedTime: 'Afati i Bashkisë për këtë problem: deri në {n} ditë.', expectedTimeOne: 'Afati i Bashkisë për këtë problem: brenda 1 dite.',
     doneIdLabel: 'Numri (ID) i raportimit tuaj:', copyNumber: 'Kopjo numrin', copied: 'U kopjua',
     doneKeepTitle: 'Kjo është ID-ja e raportimit tuaj. Ruajeni për ta ndjekur.',
     doneKeepAnonymous: 'Raportuat në mënyrë anonime, ndaj nuk kemi ku t’jua dërgojmë. Kopjojeni ose bëni një screenshot: me të e ndiqni raportimin te “Ndiq raportimin”.',
@@ -291,7 +293,7 @@ const sq = {
     notFound: 'Nuk u gjet asnjë raportim me numrin {n}. Kontrolloni numrin.',
     rejectionReason: 'Arsyeja', closingNote: 'Shënim nga Bashkia',
     before: 'Para', after: 'Pas', history: 'Historiku',
-    category: 'Kategoria', opened: 'Hapur më', updated: 'Përditësuar', resolvedOn: 'Zgjidhur më', sector: 'Sektori',
+    category: 'Kategoria', opened: 'Hapur më', updated: 'Përditësuar', resolvedOn: 'Rregulluar më', sector: 'Sektori',
     location: 'Vendndodhja', others: 'Të tjerë',
     supporters: { one: '1 qytetar raportoi të njëjtin problem', other: '{n} qytetarë raportuan të njëjtin problem' },
     search: {
@@ -310,7 +312,7 @@ const sq = {
     },
   },
   map: {
-    title: 'Harta e raportimeve', status: 'Statusi', open: 'Të hapura', closed: 'Të zgjidhura', all: 'Të gjitha',
+    title: 'Harta e raportimeve', status: 'Statusi', open: 'Të hapura', closed: 'Të rregulluara', all: 'Të gjitha',
     category: 'Kategoria', allCategories: 'Të gjitha kategoritë', count: { one: '1 raportim në hartë', other: '{n} raportime në hartë' },
     unplacedTitle: 'Raportime me adresë, pa pikë në hartë ({n})',
     unplacedText: 'U dërguan me adresë në një zonë pa kufi në hartë. Dalin në hartë sapo stafi i Bashkisë t’i vendosë pikën.',
@@ -326,9 +328,9 @@ const sq = {
     keyNote: 'Pikat me rreth me vija janë të përafërta: raportimi u dërgua me adresë të shkruar, jo me pikë në hartë.',
   },
   stats: {
-    title: 'Statistikat', intro: 'Sa raportime merr Bashkia dhe sa shpejt i zgjidh. Të dhënat përditësohen në kohë reale.',
-    total: 'Raportime gjithsej', open: 'Të hapura', resolved: 'Të zgjidhura', received: 'Të marra', notYet: 'Ende pa zgjidhur', numbersNote: 'Numrat: gjithsej / të zgjidhura',
-    avgDays: 'Ditë mesatarisht deri në zgjidhje', onTime: 'Zgjidhur brenda afatit',
+    title: 'Statistikat', intro: 'Sa raportime merr Bashkia dhe sa shpejt i rregullon. Të dhënat përditësohen në kohë reale.',
+    total: 'Raportime gjithsej', open: 'Të hapura', resolved: 'Të rregulluara', received: 'Të marra', notYet: 'Ende pa rregulluar', numbersNote: 'Numrat: gjithsej / të rregulluara',
+    avgDays: 'Ditë mesatarisht deri në rregullim', onTime: 'Rregulluar brenda afatit',
     byMonth: '12 muajt e fundit', byCategory: 'Sipas kategorisë', empty: 'Ende pa të dhëna.',
   },
   feedback: {
@@ -693,6 +695,8 @@ const sq = {
       option2: '2. Formulari brenda faqes (iframe)', option2Text: 'Qytetari raporton dhe ndjek raportimin pa dalë nga elbasani.gov.al.',
       headerNote: 'Faqja e Bashkisë duhet të jetë në listën e lejuar (Administrimi → Pamja). Serveri e zbaton këtë listë automatikisht për çdo faqe që e përfshin formularin.',
       option3: '3. Nën-domen', option3Text: 'Platforma vendoset në raporto.elbasani.gov.al: IT-ja shton vetëm një rekord DNS (CNAME) që tregon te hostimi.',
+      qrTitle: '4. Kodi QR dhe ngjitësja', qrText: 'Për kontejnerët, stacionet e autobusit, sportelin dhe posterat: qytetari skanon dhe hap platformën.', qrSticker: 'Ngjitësja', qrCode: 'Kodi QR',
+      qrNote: 'Kodi QR hap https://elbasani-raporto.vercel.app. Nëse platforma kalon në një adresë tjetër (p.sh. raporto.elbasani.gov.al), kodi duhet bërë sërish.',
       preview: 'Pamja paraprake', copy: 'Kopjo kodin',
       aiTitle: 'Kontrolli me AI (fotot dhe raportimet)',
       aiText: 'AI kontrollon foton sapo qytetari e zgjedh, dhe raportimin pasi dërgohet. Çelësi vendoset vetëm te Vercel.',

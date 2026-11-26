@@ -35,8 +35,7 @@ import {
   assignSchema, descriptionCheckSchema, extractSchema, feedbackSchema, followSchema, messageSchema, nearbySchema, noteSchema, photoAnalyzeSchema, photoCheckSchema,
   photoVisibilitySchema, placeQuerySchema, placeSearchSchema, pointSchema, trackSearchSchema,
   prioritySchema, rejectSchema, reportUpdateSchema, resolveSchema, staffReportSchema, statusChangeSchema, homeVisibilitySchema, testFlagSchema,
-  transferDecisionSchema, transferRequestSchema,
-} from '@/lib/validation/report';
+  transferDecisionSchema, transferRequestSchema, deviceFeedbackSchema } from '@/lib/validation/report';
 import { clientIp, parseInput, run } from './_shared';
 
 const reportId = z.uuid();
@@ -158,6 +157,16 @@ export async function submitFeedbackAction(input: unknown) {
   return run(async () => {
     await enforceRateLimit('feedback', await clientIp());
     return publicReports.submitCitizenFeedback(parseInput(feedbackSchema, input));
+  });
+}
+
+/** "A u rregullua?" on the report's page, from the phone that sent the report. */
+export async function deviceFeedbackAction(input: unknown) {
+  return run(async () => {
+    await enforceRateLimit('feedback', await clientIp());
+    const result = await publicReports.submitFeedbackFromDevice(parseInput(deviceFeedbackSchema, input));
+    revalidatePath(`/ndiq/${result.caseNumber}`);
+    return result;
   });
 }
 

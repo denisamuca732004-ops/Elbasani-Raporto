@@ -8,7 +8,7 @@ import { getPublicSettings } from '@/lib/server/services/settings';
 import { brandNames } from '@/lib/shared/branding';
 import {
   FREQUENT_COUNT, createCitizenReport, findNearbyOpen, findReports, followReport, frequentCategories, frequentTypes, getFeedbackInfo, getPublicCase, getPublicPhoto, listRecent, mapPoints,
-  searchOpenByPlace, submitCitizenFeedback,
+  searchOpenByPlace, submitCitizenFeedback, submitFeedbackFromDevice,
 } from '@/lib/server/services/publicReport';
 import { changeStatus, getReport, rejectReport, resolveReport } from '@/lib/server/services/report';
 import { publicStats } from '@/lib/server/services/stats';
@@ -288,8 +288,8 @@ describe('tracking, map and duplicates', () => {
 });
 
 describe('the resident confirms after the department resolves the report', () => {
-  async function resolvedReport() {
-    const { result, report } = await submitReport();
+  async function resolvedReport(clientRef?: string) {
+    const { result, report } = await submitReport(clientRef ? { clientRef } : undefined);
     await withOlderEmail(report.id, 'konfirmo@example.com');
     await resolveReport(admin, report.id, { note: 'U mbush gropa me asfalt.', photoKey: await uploadPhoto(await jpeg('#222222')) });
     await drainJobs();
@@ -322,6 +322,17 @@ describe('the resident confirms after the department resolves the report', () =>
     assert.equal(reopened.reopenCount, 1);
     assert.equal(reopened.resolvedAt, null);
     assert.equal(reopened.closingNote, null);
+  });
+
+  test('the phone that sent the report can answer on the report page; another phone cannot', async () => {
+    const { report } = await resolvedReport('this-phone-ref-001');
+    const row = await db.report.findUniqueOrThrow({ where: { id: report.id } });
+    assert.ok(row.clientRef);
+    const wrong = await rejects(() => submitFeedbackFromDevice({ caseNumber: row.caseNumber, clientRef: 'not-this-phone-123', action: 'confirm' }));
+    assert.equal(wrong.status, 404);
+    await submitFeedbackFromDevice({ caseNumber: row.caseNumber, clientRef: row.clientRef!, action: 'confirm' });
+    assert.equal((await db.report.findUniqueOrThrow({ where: { id: report.id } })).status, 'CLOSED');
+    assert.equal((await rejects(() => submitFeedbackFromDevice({ caseNumber: row.caseNumber, clientRef: row.clientRef!, action: 'reopen' }))).status >= 400, true);
   });
 });
 

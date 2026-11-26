@@ -259,6 +259,16 @@ export const feedbackSchema = z.strictObject({
 });
 export type FeedbackInput = z.output<typeof feedbackSchema>;
 
+/** "A u rregullua?" on the report's page: proved by the random reference of the form that sent it. */
+export const deviceFeedbackSchema = z.strictObject({
+  caseNumber: z.string().trim().toUpperCase().max(30),
+  clientRef: z.string().min(8).max(64),
+  action: z.enum(['confirm', 'reopen']),
+  rating: z.coerce.number().int().min(1).max(5).optional(),
+  comment: optionalText(1000),
+});
+export type DeviceFeedbackInput = z.output<typeof deviceFeedbackSchema>;
+
 export const recentSchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   status: z.enum(['open', 'closed', 'all']).default('all'),

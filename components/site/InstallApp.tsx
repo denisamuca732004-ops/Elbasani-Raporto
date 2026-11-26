@@ -12,6 +12,7 @@
  * Two places: a slim, dismissible bar on the home page, and an item in the menu (always there).
  */
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { hasReported } from '@/lib/client/myReports';
 import Icon from '@/components/Icon';
 import { useI18n } from '@/i18n';
 
@@ -104,7 +105,11 @@ function Guide({ mode, onClose }: { mode: 'ios' | 'android' | 'inapp'; onClose: 
 const DISMISS_KEY = 'er-install-dismissed';
 const DISMISS_DAYS = 7;
 
-/** The slim bar on the home page. Hidden for 7 days after "✕" (the menu and the footer always offer it). */
+/**
+ * The slim bar on the home page, only once this device has sent a report (a first visitor sees
+ * the reporting, not an install request). Hidden for 7 days after "✕"; the menu and the footer
+ * always offer it.
+ */
 export function InstallBar() {
   const { t } = useI18n();
   const { mode, install, guide, closeGuide } = useInstall();
@@ -112,9 +117,9 @@ export function InstallBar() {
   useEffect(() => {
     try {
       const at = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
-      setDismissed(Date.now() - at < DISMISS_DAYS * 86_400_000);
+      setDismissed(!hasReported() || Date.now() - at < DISMISS_DAYS * 86_400_000);
     } catch {
-      setDismissed(false);
+      setDismissed(true);
     }
   }, []);
   if (mode === 'none' || dismissed) return guide ? <Guide mode={guide} onClose={closeGuide} /> : null;
@@ -137,6 +142,21 @@ export function InstallBar() {
       </div>
       {guide && <Guide mode={guide} onClose={closeGuide} />}
     </>
+  );
+}
+
+/** On the "report sent" screen: the moment the app is most useful, to follow the report. */
+export function InstallAfterReport() {
+  const { t } = useI18n();
+  const { mode, install, guide, closeGuide } = useInstall();
+  if (mode === 'none') return null;
+  return (
+    <div className="install-after">
+      <span className="install-bar-icon" aria-hidden="true"><Icon name="download" size={20} /></span>
+      <p>{t('install.after')}</p>
+      <button type="button" className="btn btn-sm btn-outline" onClick={() => void install()}>{t('install.button')}</button>
+      {guide && <Guide mode={guide} onClose={closeGuide} />}
+    </div>
   );
 }
 

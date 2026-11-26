@@ -57,9 +57,16 @@ export default function ChatHelp({ guide }: { guide: GuideItem[] }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
   // On the phone's home page the button waits until the visitor scrolls: at the top it would cover "Raporto me foto".
+  // In the forms it stays away on phones: it would cover "Vazhdo" and "Dërgo".
   const pathname = usePathname();
   const [away, setAway] = useState(false);
   useEffect(() => {
+    if (pathname.startsWith('/raporto') || pathname === '/ndihmo/krijo') {
+      const check = () => setAway(window.innerWidth < 900);
+      check();
+      window.addEventListener('resize', check);
+      return () => window.removeEventListener('resize', check);
+    }
     if (pathname !== '/') { setAway(false); return; }
     const check = () => setAway(window.innerWidth < 900 && window.scrollY < 360);
     check();

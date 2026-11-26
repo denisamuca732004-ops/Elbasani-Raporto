@@ -38,7 +38,7 @@ export async function getCatalog(): Promise<Catalog> {
           icon: c.icon,
           nameSq: c.nameSq,
           nameEn: c.nameEn,
-          types: c.requestTypes.map((t) => ({ id: t.id, code: t.code, nameSq: t.nameSq, nameEn: t.nameEn, kind: t.kind, departmentId: t.departmentId })),
+          types: c.requestTypes.map((t) => ({ id: t.id, code: t.code, nameSq: t.nameSq, nameEn: t.nameEn, kind: t.kind, departmentId: t.departmentId, slaDays: t.slaDays })),
         })),
       neighbourhoods: neighbourhoods.map((n) => ({
         id: n.id,

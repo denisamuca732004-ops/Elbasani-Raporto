@@ -70,7 +70,7 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
       <section className="container hx-hero">
         <div className="hx-hero-media">
           <picture>
-            <source srcSet="/elbasan-hero.webp" type="image/webp" />
+            <source srcSet="/elbasan-hero-900.webp 900w, /elbasan-hero.webp 1400w" sizes="(max-width: 899px) 100vw, 1200px" type="image/webp" />
             <img src="/elbasan-hero.jpg" alt={t('home.photoAlt')} width={1200} height={900} fetchPriority="high" />
           </picture>
           <div className="hx-hero-shade" aria-hidden="true" />
@@ -119,7 +119,7 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
                     {photo && <span className="hx-row-pill">{t('nav.report')}<Icon name="arrowRight" size={14} /></span>}
                   </span>
                   {photo
-                    ? <picture className="hx-row-img"><source srcSet={`/categories/${photo}.webp`} type="image/webp" /><img src={`/categories/${photo}.jpg`} alt="" loading="lazy" width={800} height={600} /></picture>
+                    ? <picture className="hx-row-img"><source srcSet={`/categories/${photo}-sm.webp 480w, /categories/${photo}.webp 800w`} sizes="128px" type="image/webp" /><img src={`/categories/${photo}.jpg`} alt="" loading="lazy" width={800} height={600} /></picture>
                     : <Icon name="chevronRight" size={20} className="hx-row-go" />}
                 </Link>
               </li>
@@ -305,7 +305,7 @@ function Popular({ categories, counts, examples }: {
                 <span className="hx-pop-photo">
                   {CATEGORY_PHOTOS.has(c.code) ? (
                     <picture>
-                      <source srcSet={`/categories/${c.code}.webp`} type="image/webp" />
+                      <source srcSet={`/categories/${c.code}-sm.webp 480w, /categories/${c.code}.webp 800w`} sizes="232px" type="image/webp" />
                       <img src={`/categories/${c.code}.jpg`} alt="" loading="lazy" />
                     </picture>
                   ) : <span className="hx-pop-blank"><CategoryIcon icon={c.icon} size={36} /></span>}
