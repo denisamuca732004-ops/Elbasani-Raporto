@@ -54,12 +54,14 @@ Answer ONLY with a JSON object with exactly these keys:
   "confidence": number,      // 0-100: how sure you are about typeCode.
   "descriptionSq": string    // 1-2 short sentences IN ALBANIAN describing only what is visible (the problem, its size, where it is in the picture).
                           // Never names of people, licence plates, faces or guesses about who caused it. Empty string when no problem is visible.
-  "citizenCanFix": boolean   // true ONLY when ordinary residents could fix it themselves safely in under 3 hours with gloves and bags or a brush:
-                          // scattered litter, a few bags of rubbish, leaves blocking a drain, graffiti on a bench. False for electricity or lamps,
-                          // trees, roads or holes, water or sewage leaks, buildings, animals, big dumps, anything dangerous or needing machines.
+  "citizenCanFix": boolean   // true when a GROUP of ordinary neighbours (up to 20 people) could do it safely with simple tools (gloves, bags, brushes,
+                          // rakes, paint) in under 4 hours: litter, even a lot of scattered litter or many bags; leaves blocking a drain; cleaning a small
+                          // park or a bench; graffiti. False ONLY for what is dangerous or beyond them: electricity or lamps, cutting or climbing big
+                          // trees, work on a road with traffic, holes in the road, water or sewage leaks, heights or roofs, deep water, asbestos,
+                          // chemicals, syringes, dead or aggressive animals, building or demolition, a dump so big it needs a truck or machinery.
   "fixBringSq": string,      // only when citizenCanFix: what to bring, IN ALBANIAN, a few words (e.g. "dorashka, qese plehrash"); else "".
-  "fixPeople": number,       // only when citizenCanFix: how many people are enough (1-10); else 0.
-  "fixMinutes": number       // only when citizenCanFix: about how many minutes it takes for them (15-180); else 0.
+  "fixPeople": number,       // only when citizenCanFix: how many people are enough (1-20); else 0.
+  "fixMinutes": number       // only when citizenCanFix: about how many minutes it takes for them (15-240); else 0.
 }
 Prefer a specific type over a ".other" type. Use a ".other" type only when the problem clearly belongs to that category but no specific type fits.`;
 
@@ -85,9 +87,9 @@ function fixOf(answer: AiJson): { bring: string; people: number; minutes: number
   const bring = typeof answer.fixBringSq === 'string' ? answer.fixBringSq.replace(/\s+/g, ' ').trim().slice(0, 120) : '';
   return {
     bring: bring && !looksLikeGibberish(bring) ? bring : 'dorashka, qese plehrash',
-    people: whole(answer.fixPeople, 1, 10, 2),
+    people: whole(answer.fixPeople, 1, 20, 2),
     // Rounded to 15 minutes: "rreth 30 minuta" reads better than "27 minuta".
-    minutes: Math.round(whole(answer.fixMinutes, 15, 180, 30) / 15) * 15,
+    minutes: Math.round(whole(answer.fixMinutes, 15, 240, 30) / 15) * 15,
   };
 }
 
@@ -103,7 +105,7 @@ export async function analyzePhoto(photoKey: string): Promise<PhotoAnalysis> {
 
   // The list of types is part of the question: a change in the catalogue asks again.
   const catalogue = types.map((t) => `${t.code}: ${t.nameEn} (category: ${t.category.nameEn})${isOtherChoice(t.code) ? ' — anything else in this category' : ''}`).join('\n');
-  const cacheKey = sha256(`photo-analyze:v3:${config().ai.model}:${photoKey}:${sha256(catalogue)}`);
+  const cacheKey = sha256(`photo-analyze:v4:${config().ai.model}:${photoKey}:${sha256(catalogue)}`);
   const cached = await db.aiResult.findUnique({ where: { cacheKey } });
   if (cached) return analysisOf(cached.output as AiJson, types);
 

@@ -417,7 +417,7 @@ describe('"Raporto me foto": the type and the description proposed from the phot
       citizenCanFix: true, fixBringSq: 'dorashka, qese të mëdha', fixPeople: 3, fixMinutes: 40 };
     assert.deepEqual((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A41')))).fix, { bring: 'dorashka, qese të mëdha', people: 3, minutes: 45 });
     analyzeAnswer = { ...analyzeAnswer, fixBringSq: '', fixPeople: 99, fixMinutes: 'x' };
-    assert.deepEqual((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A42')))).fix, { bring: 'dorashka, qese plehrash', people: 10, minutes: 30 });
+    assert.deepEqual((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A42')))).fix, { bring: 'dorashka, qese plehrash', people: 20, minutes: 30 });
     analyzeAnswer = { ...analyzeAnswer, citizenCanFix: false };
     assert.equal((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A43')))).fix, null);
   });
