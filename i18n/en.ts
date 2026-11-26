@@ -256,6 +256,7 @@ const en = {
     contactRule: 'Your name and phone number are required. You need no account and no email.',
     email: 'Email', name: 'Full name', phone: 'Phone number', phoneHint: 'Only so the municipality can call you about this report, if needed.',
     reviewTitle: 'Submit report',
+    quickReview: 'AI filled in everything from your photo and your location. Take a quick look and press “Send the report”.',
     reviewIntro: 'Check the details. You can change any part before sending it.',
     consent: 'By sending, you agree that the Municipality of Elbasan processes this data to handle the report, according to the',
     send: 'Send the report', sending: 'Sending…',

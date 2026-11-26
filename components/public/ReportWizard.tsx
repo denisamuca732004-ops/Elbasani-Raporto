@@ -32,6 +32,7 @@ import {
 } from '@/actions/reports';
 import Icon from '@/components/Icon';
 import { LocationPicker, MiniMap } from '@/components/maps';
+import { currentPosition } from '@/lib/client/community';
 import PhotoInput from '@/components/PhotoInput';
 import { useCatalog, useSettings } from '@/components/providers';
 import { CategoryIcon, ErrorAlert, Field } from '@/components/ui';
@@ -231,6 +232,26 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   }, [photo, photoMode]);
   const analysing = photoMode && Boolean(photo) && analysis?.photo === photo && analysis.status === 'analysing';
   const currentAnalysis = photo && analysis?.photo === photo && analysis.status === 'done' ? analysis : null;
+
+  // "Me një prekje": a photo taken just now on the spot. While the AI reads it, the phone gives its
+  // position; when both are there, the resident goes straight to "Dërgo" (everything stays editable).
+  const quick = useRef(false);
+  const [quickReview, setQuickReview] = useState(false);
+  const quickUsed = useRef(false);
+  useEffect(() => {
+    if (!photo || !quick.current || location) return undefined;
+    let cancelled = false;
+    currentPosition(10_000)
+      .then((p) => {
+        if (cancelled) return;
+        onPin(p);
+        setMapFocus({ point: p, zoom: 18 });
+      })
+      .catch(() => { quick.current = false; /* no GPS: the resident puts the pin */ });
+    return () => { cancelled = true; };
+    // Once per photo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo]);
   useEffect(() => {
     if (!photo) {
       setPhotoUrl(null);
@@ -248,6 +269,17 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
   const approximatePlace = pickedLocality && pickedLocality.label === placeText.trim() ? pickedLocality : null;
   const category = type?.category ?? (categoryCode ? categoryByCode(categoryCode) ?? null : null);
   const stepName = STEPS[step]!;
+
+  useEffect(() => {
+    if (!quick.current || quickUsed.current || stepName !== 'check' || !currentAnalysis || currentAnalysis.verdict !== 'ok') return;
+    const proposed = currentAnalysis.requestTypeId;
+    if (!proposed || typeId !== proposed || !currentAnalysis.description || description !== currentAnalysis.description) return;
+    if (description.trim().length < LIMITS.minDescription || !location || !pinZoneCode) return;
+    quickUsed.current = true;
+    quick.current = false;
+    setQuickReview(true);
+    setStep(STEPS.indexOf('review'));
+  }, [stepName, currentAnalysis, typeId, description, location, pinZoneCode, STEPS]);
 
   // Duplicate check: open reports of the same kind close by.
   useEffect(() => {
@@ -774,7 +806,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
             <>
               <PhotoInput
                 value={photo}
-                onChange={(p) => { setPhoto(p); setServerErrors((e) => ({ ...e, photo: undefined })); if (p) { setPhotoRefused(null); setNoPhoto(false); } }}
+                onChange={(p, info) => { quick.current = Boolean(p && info?.fresh && photoMode); quickUsed.current = false; setPhoto(p); setServerErrors((e) => ({ ...e, photo: undefined })); if (p) { setPhotoRefused(null); setNoPhoto(false); } }}
                 required maxBytes={rules.maxUploadBytes}
                 error={photoRefused === 'not_photo' ? t('report.photoCheck.notPhoto') : photoRefused ? t('report.photoCheck.inappropriate') : visibleError('photo')}
               />
@@ -910,7 +942,9 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       {stepName === 'review' && (
         <section>
           <h2>{t('report.reviewTitle')}</h2>
-          <p className="muted">{t('report.reviewIntro')}</p>
+          {quickReview
+            ? <p className="alert alert-ok quick-note" role="status"><Icon name="sparkle" size={18} /> {t('report.quickReview')}</p>
+            : <p className="muted">{t('report.reviewIntro')}</p>}
           {/* As on BOS:311 "Submit Report": one card, a part per step, each with its own "Ndrysho". */}
           <div className="review-card">
             {([

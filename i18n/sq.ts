@@ -256,6 +256,7 @@ const sq = {
     contactRule: 'Emri dhe numri i telefonit janë të detyrueshëm. Nuk ju duhet llogari as email.',
     email: 'Email', name: 'Emri dhe mbiemri', phone: 'Numri i telefonit', phoneHint: 'Vetëm që Bashkia t’ju telefonojë për këtë raportim, nëse duhet.',
     reviewTitle: 'Dërgoni raportimin',
+    quickReview: 'AI plotësoi gjithçka nga fotoja dhe vendndodhja juaj. Shikojeni një herë dhe shtypni «Dërgo raportimin».',
     reviewIntro: 'Kontrolloni të dhënat. Çdo pjesë mund ta ndryshoni para se ta dërgoni.',
     consent: 'Duke dërguar, pranoni që Bashkia Elbasan të përpunojë këto të dhëna për trajtimin e raportimit, sipas',
     send: 'Dërgo raportimin', sending: 'Po dërgohet…',

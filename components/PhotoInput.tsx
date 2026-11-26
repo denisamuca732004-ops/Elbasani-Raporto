@@ -29,7 +29,8 @@ async function shrinkImage(file: File, maxSize = 2048, quality = 0.85): Promise<
 }
 
 export default function PhotoInput({ value, onChange, required, error, maxBytes, idPrefix = 'photo' }: {
-  value: Blob | null; onChange: (photo: Blob | null) => void; required?: boolean; error?: string | null; maxBytes?: number; idPrefix?: string;
+  /** `fresh`: taken just now with the phone's camera, so the phone is where the problem is. */
+  value: Blob | null; onChange: (photo: Blob | null, info?: { fresh: boolean }) => void; required?: boolean; error?: string | null; maxBytes?: number; idPrefix?: string;
 }) {
   const { t, lang } = useI18n();
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -52,6 +53,7 @@ export default function PhotoInput({ value, onChange, required, error, maxBytes,
   }, [value]);
 
   async function pick(e: ChangeEvent<HTMLInputElement>) {
+    const fromCamera = e.target === cameraRef.current;
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -70,7 +72,9 @@ export default function PhotoInput({ value, onChange, required, error, maxBytes,
       return;
     }
     setOldDate(isOldPhoto(takenAt) ? takenAt : null);
-    onChange(shrunk);
+    // Only "Bëj foto" on a phone: a photo from the gallery may have been taken somewhere else.
+    const fresh = fromCamera && typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches);
+    onChange(shrunk, { fresh });
   }
   const message = problem || error;
 
