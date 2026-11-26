@@ -70,8 +70,8 @@ export default function Home({ numbers, fixed, frequent = [] }: Props) {
       <section className="container hx-hero">
         <div className="hx-hero-media">
           <picture>
-            <source srcSet="/elbasan-hero-900.webp 900w, /elbasan-hero.webp 1400w" sizes="(max-width: 899px) 100vw, 1200px" type="image/webp" />
-            <img src="/elbasan-hero.jpg" alt={t('home.photoAlt')} width={1200} height={900} fetchPriority="high" />
+            <source srcSet="/elbasan-hero-900.webp 900w, /elbasan-hero.webp 1537w" sizes="(max-width: 899px) 100vw, 1200px" type="image/webp" />
+            <img src="/elbasan-hero.jpg" alt={t('home.photoAlt')} width={1537} height={1023} fetchPriority="high" />
           </picture>
           <div className="hx-hero-shade" aria-hidden="true" />
           {numbers && (

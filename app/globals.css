@@ -2068,8 +2068,9 @@ body { line-height: 1.4; }
 .pw-field .pw-eye:hover { background: rgba(0, 0, 0, 0.05); }
 .auth-box input[type=email], .auth-box .pw-field input { width: 100%; box-sizing: border-box; }
 /* The sunset photo of the castle walk: already bright, shown as it is; the castle and the clock tower in view. */
-.hx-hero-media img { filter: none; object-position: center 30%; }
-@media (min-width: 901px) { .hx-hero-media img { object-position: center 16%; } }
+/* The boulevard photo: on the phone the old walls and the clock tower (right), on the computer the city under the sky. */
+.hx-hero-media img { filter: none; object-position: 93% center; }
+@media (min-width: 901px) { .hx-hero-media img { object-position: center 62%; } }
 /* "Nuk mund të bëj foto" (components/public/ReportWizard.tsx) */
 .no-photo-link { margin: 12px 0 0; }
 .no-photo-box { display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 16px; background: #F2F5F2; border: 1px solid #E1E6E2; color: #0F2A1D; }
