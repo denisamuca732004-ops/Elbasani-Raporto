@@ -493,8 +493,12 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
         ? await subscribeToReport({ caseNumber: res.caseNumber, clientRef, key: rules.pushKey, lang: lang === 'en' ? 'en' : 'sq' })
         : false;
       if (thenAction && photo) {
-        // The report used the uploaded copy: the action uploads the photo again.
-        handOverPhoto({ blob: photo, key: null, notes: description });
+        // The report used the uploaded copy: the action uploads the photo again. Same numbers as on the card.
+        const fix = currentAnalysis?.fix;
+        handOverPhoto({
+          blob: photo, key: null, notes: description,
+          fix: fix ? { people: fix.people, minutes: fix.minutes, bring: lang === 'en' && fix.bringEn ? fix.bringEn : fix.bring } : undefined,
+        });
         router.push('/ndihmo/krijo');
         return;
       }
@@ -1012,7 +1016,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
                 <p>{t('community.fix.lead')}</p>
                 <ul className="fix-list">
                   <li><Icon name="check" size={16} />{t('community.fix.bring', { v: lang === 'en' && currentAnalysis.fix.bringEn ? currentAnalysis.fix.bringEn : currentAnalysis.fix.bring })}</li>
-                  <li><Icon name="users" size={16} />{t('community.fix.people', { n: currentAnalysis.fix.people })} · {t('community.fix.about', { d: durationText(currentAnalysis.fix.minutes, t) })}</li>
+                  <li><Icon name="users" size={16} />{currentAnalysis.fix.people > 2 ? t('community.fix.peopleRange', { a: 2, b: currentAnalysis.fix.people }) : t('community.fix.people', { n: currentAnalysis.fix.people })} · {t('community.fix.about', { d: durationText(currentAnalysis.fix.minutes, t) })}</li>
                 </ul>
                 <button type="button" className="btn btn-sm btn-outline" onClick={() => void submit(true)} disabled={submitting}>
                   <Icon name="users" size={16} />{t('community.fix.button')}

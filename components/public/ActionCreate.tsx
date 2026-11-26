@@ -66,6 +66,8 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
     setCanPush(Boolean(rules.pushKey) && pushSupport() === 'yes');
     // A photo handed over from the report form ("Këtë mund ta rregulloni edhe ju!"): fill in with the AI at once.
     const handed = takeHandedPhoto();
+    handedFix.current = handed?.fix ?? null;
+    if (handed?.fix) applyFix(handed.fix);
     if (handed) {
       setPhoto(handed.blob);
       setPhotoKey(handed.key);
@@ -83,6 +85,14 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
     return k;
   }
 
+  /** People, time and tools as the report's card proposed them: the action keeps the same numbers. */
+  const handedFix = useRef<{ people: number; minutes: number; bring: string } | null>(null);
+  function applyFix(fix: { people: number; minutes: number; bring: string }) {
+    setPeople(Math.max(1, Math.min(20, fix.people)));
+    setMinutes([30, 60, 90, 120, 180, 240].reduce((best, m) => (Math.abs(m - fix.minutes) < Math.abs(best - fix.minutes) ? m : best), 60));
+    if (fix.bring) setBring(fix.bring);
+  }
+
   async function runDraft(blob = photo, key = photoKey, words = notes) {
     if (!blob) { setErrors({ photoKey: t('community.form.needPhoto') }); return; }
     setAi({ busy: true, done: false, no: null });
@@ -97,6 +107,7 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
       if (d.bring) setBring(d.bring);
       setPeople(d.peopleNeeded);
       setMinutes([30, 60, 90, 120, 180, 240].reduce((best, m) => (Math.abs(m - d.minutes) < Math.abs(best - d.minutes) ? m : best), 60));
+      if (handedFix.current) applyFix(handedFix.current);
       setAi({ busy: false, done: true, no: null });
     } catch {
       setAi({ busy: false, done: false, no: null });

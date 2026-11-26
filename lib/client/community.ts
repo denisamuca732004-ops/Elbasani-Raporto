@@ -45,11 +45,13 @@ export function currentPosition(timeoutMs = 15_000): Promise<{ latitude: number;
 }
 
 /** A photo handed from the report form ("Këtë mund ta rregulloni edhe ju!") to the action form. */
-let pendingPhoto: { blob: Blob; key: string | null; notes: string } | null = null;
-export function handOverPhoto(p: { blob: Blob; key: string | null; notes: string }): void {
+/** `fix`: what the report already proposed (people, minutes, what to bring), so the action says the same. */
+type Handed = { blob: Blob; key: string | null; notes: string; fix?: { people: number; minutes: number; bring: string } };
+let pendingPhoto: Handed | null = null;
+export function handOverPhoto(p: Handed): void {
   pendingPhoto = p;
 }
-export function takeHandedPhoto(): { blob: Blob; key: string | null; notes: string } | null {
+export function takeHandedPhoto(): Handed | null {
   const p = pendingPhoto;
   pendingPhoto = null;
   return p;

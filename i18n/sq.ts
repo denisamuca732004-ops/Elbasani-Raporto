@@ -801,7 +801,7 @@ const sq = {
       button: 'Shëno si të përdorur', done: 'Çmimi u shënua si i përdorur.', used: 'Ky çmim është përdorur më {date}.', held: 'Ky çmim është pezulluar.', notFound: 'Ky kod çmimi nuk u gjet.',
     },
     home: { title: 'Ndihmo qytetin', text: 'Rregulloni diçka të vogël bashkë me fqinjët ose miqtë.', button: 'Shiko aksionet' },
-    fix: { title: 'Këtë mund ta rregulloni edhe vetë 💚', lead: 'Duket diçka e vogël dhe e sigurt. Me pak ndihmë nga fqinjët ose miqtë, mund të rregullohet shpejt.', bring: 'Çfarë ju duhet: {v}', people: 'Sa veta: {n}', about: 'Koha: rreth {d}', button: 'Dërgo raportimin dhe organizo një aksion', note: 'Bashkia e merr raportimin gjithsesi. Në hapin tjetër, AI ju ndihmon të krijoni aksionin dhe të ftoni të tjerët.' },
+    fix: { title: 'Këtë mund ta rregulloni edhe vetë 💚', lead: 'Duket diçka e vogël dhe e sigurt. Me pak ndihmë nga fqinjët ose miqtë, mund të rregullohet shpejt.', bring: 'Çfarë ju duhet: {v}', people: 'Sa veta: {n}', peopleRange: 'Sa veta: {a}–{b}', about: 'Koha: rreth {d}', button: 'Dërgo raportimin dhe organizo një aksion', note: 'Bashkia e merr raportimin gjithsesi. Në hapin tjetër, AI ju ndihmon të krijoni aksionin dhe të ftoni të tjerët.' },
     invite: { title: 'Këtë mund ta rregulloni edhe ju! 💚', afterText: 'Raportimi juaj u dërgua te Bashkia. Duket diçka e lehtë: nëse doni, mund ta rregulloni edhe vetë bashkë me fqinjët ose miqtë.', text: 'Duket diçka e lehtë. Mund ta rregulloni bashkë me fqinjët ose miqtë: AI plotëson të dhënat e aksionit nga fotoja.', yes: 'Krijo një aksion', no: 'Jo, dërgoje te Bashkia' },
   },
   communityAdmin: {
