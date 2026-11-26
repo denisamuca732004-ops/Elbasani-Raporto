@@ -278,8 +278,9 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
               </div>
               <div className={`field${errors.safetyAccepted ? ' has-error' : ''}`}>
                 <label className="check cm-check">
-                  <input type="checkbox" checked={safety} onChange={(e) => setSafety(e.target.checked)} />
-                  <span>{t('community.form.safetyShort')}</span>
+                  <input type="checkbox" checked={safety} required aria-required="true" onChange={(e) => { setSafety(e.target.checked); if (e.target.checked) setErrors((x) => ({ ...x, safetyAccepted: '' })); }} />
+                  {/* Required, like the phone and the date: without it the action cannot be created. */}
+                  <span>{t('community.form.safetyShort')}<span className="req" aria-hidden="true"> *</span></span>
                 </label>
                 {errors.safetyAccepted && <div className="field-error" role="alert"><Icon name="alert" size={14} />{errors.safetyAccepted}</div>}
               </div>
