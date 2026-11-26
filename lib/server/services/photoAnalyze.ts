@@ -31,6 +31,8 @@ export interface PhotoAnalysis {
   confidence: number;
   /** The proposed description (Albanian), or '' when there is none worth showing. */
   description: string;
+  /** The same in English (the form in English shows this one). */
+  descriptionEn?: string;
   /** Small and safe enough for residents to fix themselves ("Ndihmo qytetin" invites them). */
   citizenCanFix: boolean;
   /** With citizenCanFix: what to bring (Albanian, short), how many people, about how long. */
@@ -41,7 +43,7 @@ export interface PhotoAnalysis {
 export const MIN_TYPE_CONFIDENCE = 60;
 const MAX_PROPOSED_DESCRIPTION = 400;
 
-const NONE: PhotoAnalysis = { verdict: 'unchecked', requestTypeId: null, confidence: 0, description: '', citizenCanFix: false, fix: null };
+const NONE: PhotoAnalysis = { verdict: 'unchecked', requestTypeId: null, confidence: 0, description: '', descriptionEn: '', citizenCanFix: false, fix: null };
 
 const SYSTEM = `You help a resident report a problem in a public place to the Municipality of Elbasan (Albania), starting from a photo.
 Answer ONLY with a JSON object with exactly these keys:
@@ -54,6 +56,7 @@ Answer ONLY with a JSON object with exactly these keys:
   "confidence": number,      // 0-100: how sure you are about typeCode.
   "descriptionSq": string    // 1-2 short sentences IN ALBANIAN describing only what is visible (the problem, its size, where it is in the picture).
                           // Never names of people, licence plates, faces or guesses about who caused it. Empty string when no problem is visible.
+  "descriptionEn": string,   // the same 1-2 sentences IN ENGLISH. Empty string when no problem is visible.
   "citizenCanFix": boolean   // true when a GROUP of ordinary neighbours (up to 20 people) could do it safely with simple tools (gloves, bags, brushes,
                           // rakes, paint) in under 4 hours: litter, even a lot of scattered litter or many bags; leaves blocking a drain; cleaning a small
                           // park or a bench; graffiti. False ONLY for what is dangerous or beyond them: electricity or lamps, cutting or climbing big
@@ -78,8 +81,11 @@ export function analysisOf(answer: AiJson, types: Array<{ id: number; code: stri
   let description = visible && typeof answer.descriptionSq === 'string' ? answer.descriptionSq.replace(/\s+/g, ' ').trim() : '';
   if (description.length > MAX_PROPOSED_DESCRIPTION) description = `${description.slice(0, MAX_PROPOSED_DESCRIPTION - 1).replace(/\s+\S*$/, '')}…`;
   if (description.length < LIMITS.minDescription || looksLikeGibberish(description)) description = '';
+  let descriptionEn = visible && typeof answer.descriptionEn === 'string' ? answer.descriptionEn.replace(/\s+/g, ' ').trim() : '';
+  if (descriptionEn.length > MAX_PROPOSED_DESCRIPTION) descriptionEn = `${descriptionEn.slice(0, MAX_PROPOSED_DESCRIPTION - 1).replace(/\s+\S*$/, '')}…`;
+  if (descriptionEn.length < LIMITS.minDescription || looksLikeGibberish(descriptionEn)) descriptionEn = '';
   const citizenCanFix = visible && answer.citizenCanFix === true;
-  return { verdict: visible ? 'ok' : 'unrelated', requestTypeId, confidence: requestTypeId ? confidence : 0, description, citizenCanFix, fix: citizenCanFix ? fixOf(answer) : null };
+  return { verdict: visible ? 'ok' : 'unrelated', requestTypeId, confidence: requestTypeId ? confidence : 0, description, descriptionEn, citizenCanFix, fix: citizenCanFix ? fixOf(answer) : null };
 }
 
 /** What residents need to fix it themselves; sensible values when the model gave none. */
@@ -110,7 +116,7 @@ export async function analyzePhoto(photoKey: string): Promise<PhotoAnalysis> {
 
   // The list of types is part of the question: a change in the catalogue asks again.
   const catalogue = types.map((t) => `${t.code}: ${t.nameEn} (category: ${t.category.nameEn})${isOtherChoice(t.code) ? ' — anything else in this category' : ''}`).join('\n');
-  const cacheKey = sha256(`photo-analyze:v5:${config().ai.model}:${photoKey}:${sha256(catalogue)}`);
+  const cacheKey = sha256(`photo-analyze:v6:${config().ai.model}:${photoKey}:${sha256(catalogue)}`);
   const cached = await db.aiResult.findUnique({ where: { cacheKey } });
   if (cached) return analysisOf(cached.output as AiJson, types);
 

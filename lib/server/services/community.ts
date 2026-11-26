@@ -234,16 +234,17 @@ You get the photo of the place and the text of the action. Answer ONLY with a JS
 }`;
 
 const DRAFT_SYSTEM = `You help a resident of Elbasan (Albania) invite neighbours to fix a small problem in a public place themselves, starting from a photo.
+Write every text in the LANGUAGE given in the request ("Albanian" or "English"), even though the keys end in "Sq".
 Answer ONLY with a JSON object:
 {
   "citizensCanDo": boolean,  // true only when ordinary residents can do it safely with simple tools in under 3 hours (litter, leaves, small cleaning, painting). False for electricity, big trees, traffic, heights, dangerous material, building work, animals.
-  "problemSq": string,       // the kind of problem IN ALBANIAN in 2-4 words, e.g. "Mbeturina të shpërndara"
-  "titleSq": string,         // a short friendly title IN ALBANIAN, e.g. "Pastrojmë këndin e lojërave", max 60 characters.
-  "descriptionSq": string,   // 1-3 friendly sentences IN ALBANIAN inviting people: what we will do and why. No names, no promises of money.
+  "problemSq": string,       // the kind of problem in that language in 2-4 words, e.g. "Mbeturina të shpërndara"
+  "titleSq": string,         // a short friendly title in that language, e.g. "Pastrojmë këndin e lojërave", max 60 characters.
+  "descriptionSq": string,   // 1-3 friendly sentences in that language inviting people: what we will do and why. No names, no promises of money.
   "peopleNeeded": number,    // 1-20
   "minutes": number,         // 15-240
-  "bringSq": string,         // what to bring, IN ALBANIAN, e.g. "Doreza dhe thasë mbeturinash"
-  "reasonSq": string         // when citizensCanDo is false: one short sentence IN ALBANIAN why the Municipality should handle it
+  "bringSq": string,         // what to bring, in that language, e.g. "Doreza dhe thasë mbeturinash"
+  "reasonSq": string         // when citizensCanDo is false: one short sentence in that language why the Municipality should handle it
 }`;
 
 const CLOSE_SYSTEM = `Residents of Elbasan (Albania) organised an action to fix a small problem in a public place. Compare their two photos of the same place: the first BEFORE, the second AFTER.
@@ -264,7 +265,7 @@ export interface ActionDraft {
 }
 
 /** "Shkruaje me AI": a proposal for the form from the photo (and a few words). The organiser changes what they want. */
-export async function draftAction(photoKey: string, notes: string): Promise<ActionDraft> {
+export async function draftAction(photoKey: string, notes: string, lang: 'sq' | 'en' = 'sq'): Promise<ActionDraft> {
   const none: ActionDraft = { available: false, citizensCanDo: true, problem: '', title: '', description: '', peopleNeeded: 3, minutes: 60, bring: '', reason: '' };
   if (!aiEnabled()) return none;
   const small = await smallPhoto(photoKey);
@@ -272,9 +273,9 @@ export async function draftAction(photoKey: string, notes: string): Promise<Acti
   try {
     const a = await chatJson({
       kind: 'action-draft', system: DRAFT_SYSTEM,
-      userText: JSON.stringify({ residentNotes: notes.slice(0, 500) }),
+      userText: JSON.stringify({ language: lang === 'en' ? 'English' : 'Albanian', residentNotes: notes.slice(0, 500) }),
       imageDataUrls: [`data:image/jpeg;base64,${small.toString('base64')}`],
-      cacheKey: sha256(`action-draft:v2:${config().ai.model}:${photoKey}:${notes}`),
+      cacheKey: sha256(`action-draft:v3:${config().ai.model}:${lang}:${photoKey}:${notes}`),
     });
     return {
       available: true,
@@ -288,7 +289,7 @@ export async function draftAction(photoKey: string, notes: string): Promise<Acti
       reason: text(a.reasonSq, 300),
     };
   } catch (err) {
-    if (err instanceof AiRefusedError) return { ...none, available: true, citizensCanDo: false, reason: 'Fotoja nuk mund të përdoret.' };
+    if (err instanceof AiRefusedError) return { ...none, available: true, citizensCanDo: false, reason: lang === 'en' ? 'The photo cannot be used.' : 'Fotoja nuk mund të përdoret.' };
     if (err instanceof AiUnavailableError) {
       console.error('[action-draft] AI unavailable:', hideKeys(err.message));
       return none;

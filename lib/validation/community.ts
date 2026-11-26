@@ -39,7 +39,7 @@ export const actionCreateSchema = z.strictObject({
 });
 export type ActionCreateInput = z.output<typeof actionCreateSchema>;
 
-export const actionDraftSchema = z.strictObject({ photoKey: uploadKey, notes: z.string().trim().max(500).default('') });
+export const actionDraftSchema = z.strictObject({ photoKey: uploadKey, notes: z.string().trim().max(500).default(''), lang });
 
 export const actionJoinSchema = z.strictObject({
   code: actionCode,

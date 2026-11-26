@@ -63,6 +63,8 @@ export type ReportMode = 'form' | 'photo';
 type Analysis = {
   photo: Blob; status: 'analysing' | 'done';
   verdict?: 'ok' | 'unrelated' | 'not_photo' | 'inappropriate' | 'unchecked'; requestTypeId?: number | null; description?: string;
+  /** The same in English (shown instead when the page is in English). */
+  descriptionEn?: string;
   /** Small and safe: residents could fix it themselves ("Ndihmo qytetin"). */
   citizenCanFix?: boolean;
   /** With citizenCanFix: what to bring, how many people, about how long. */
@@ -217,6 +219,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
         return;
       }
       const proposedType = found.requestTypeId && typeById(found.requestTypeId) ? found.requestTypeId : null;
+      // The proposed text in the language of the page (the staff also gets an Albanian summary of every report).
+      if (lang === 'en' && found.descriptionEn) found = { ...found, description: found.descriptionEn };
       setAnalysis({ photo, status: 'done', ...found, requestTypeId: proposedType });
       if (typeId === null || typeId === aiFilled.current.typeId) {
         setTypeId(proposedType);

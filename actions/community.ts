@@ -24,8 +24,8 @@ function refresh(code?: string) {
 export async function draftActionAction(input: unknown) {
   return run(async () => {
     await enforceRateLimit('photoAnalyze', await clientIp());
-    const { photoKey, notes } = parseInput(actionDraftSchema, input);
-    return community.draftAction(photoKey, notes);
+    const { photoKey, notes, lang } = parseInput(actionDraftSchema, input);
+    return community.draftAction(photoKey, notes, lang);
   });
 }
 

@@ -88,7 +88,7 @@ export default function ActionCreate({ settings }: { settings: CommunitySettings
     setAi({ busy: true, done: false, no: null });
     try {
       const k = await ensureKey(blob, key);
-      const d = await call(draftActionAction({ photoKey: k, notes: words }));
+      const d = await call(draftActionAction({ photoKey: k, notes: words, lang: lang === 'en' ? 'en' : 'sq' }));
       if (!d.available) { setAi({ busy: false, done: false, no: null }); setEditing(true); return; }
       if (!d.citizensCanDo) { setAi({ busy: false, done: false, no: d.reason || '' }); return; }
       setProblem(d.problem);
