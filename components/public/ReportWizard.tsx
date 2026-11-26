@@ -66,7 +66,7 @@ type Analysis = {
   /** Small and safe: residents could fix it themselves ("Ndihmo qytetin"). */
   citizenCanFix?: boolean;
   /** With citizenCanFix: what to bring, how many people, about how long. */
-  fix?: { bring: string; people: number; minutes: number } | null;
+  fix?: { bring: string; bringEn?: string; people: number; minutes: number } | null;
 };
 /** The check of the description for the chosen type, made when "Vazhdo" is pressed. */
 type DescriptionCheck = { text: string; typeId: number; status: 'ok' | 'unrelated' | 'unchecked'; confirmed: boolean };
@@ -1007,7 +1007,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
                 <strong>{t('community.fix.title')}</strong>
                 <p>{t('community.fix.lead')}</p>
                 <ul className="fix-list">
-                  <li><Icon name="check" size={16} />{t('community.fix.bring', { v: currentAnalysis.fix.bring })}</li>
+                  <li><Icon name="check" size={16} />{t('community.fix.bring', { v: lang === 'en' && currentAnalysis.fix.bringEn ? currentAnalysis.fix.bringEn : currentAnalysis.fix.bring })}</li>
                   <li><Icon name="users" size={16} />{t('community.fix.people', { n: currentAnalysis.fix.people })} · {t('community.fix.about', { d: durationText(currentAnalysis.fix.minutes, t) })}</li>
                 </ul>
                 <button type="button" className="btn btn-sm btn-outline" onClick={() => void submit(true)} disabled={submitting}>

@@ -414,10 +414,10 @@ describe('"Raporto me foto": the type and the description proposed from the phot
 
   test('something residents can fix: what to bring, how many people, about how long (sensible values when missing)', async () => {
     analyzeAnswer = { safe: true, kind: 'scene', problemVisible: true, typeCode: 'streets.pothole', confidence: 90, descriptionSq: 'Disa qese plehrash pranë stolit në park.',
-      citizenCanFix: true, fixBringSq: 'dorashka, qese të mëdha', fixPeople: 3, fixMinutes: 40 };
-    assert.deepEqual((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A41')))).fix, { bring: 'dorashka, qese të mëdha', people: 3, minutes: 45 });
-    analyzeAnswer = { ...analyzeAnswer, fixBringSq: '', fixPeople: 99, fixMinutes: 'x' };
-    assert.deepEqual((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A42')))).fix, { bring: 'dorashka, qese plehrash', people: 20, minutes: 30 });
+      citizenCanFix: true, fixBringSq: 'dorashka, qese të mëdha', fixBringEn: 'gloves, big bags', fixPeople: 3, fixMinutes: 40 };
+    assert.deepEqual((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A41')))).fix, { bring: 'dorashka, qese të mëdha', bringEn: 'gloves, big bags', people: 3, minutes: 45 });
+    analyzeAnswer = { ...analyzeAnswer, fixBringSq: '', fixBringEn: '', fixPeople: 99, fixMinutes: 'x' };
+    assert.deepEqual((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A42')))).fix, { bring: 'dorashka, qese plehrash', bringEn: 'gloves, rubbish bags', people: 20, minutes: 30 });
     analyzeAnswer = { ...analyzeAnswer, citizenCanFix: false };
     assert.equal((await analyzePhoto(await uploadPhoto(await jpeg('#3A4A43')))).fix, null);
   });

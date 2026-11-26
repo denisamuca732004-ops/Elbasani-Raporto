@@ -34,7 +34,7 @@ export interface PhotoAnalysis {
   /** Small and safe enough for residents to fix themselves ("Ndihmo qytetin" invites them). */
   citizenCanFix: boolean;
   /** With citizenCanFix: what to bring (Albanian, short), how many people, about how long. */
-  fix?: { bring: string; people: number; minutes: number } | null;
+  fix?: { bring: string; bringEn: string; people: number; minutes: number } | null;
 }
 
 /** Below this the type is not proposed: a wrong type sends the report to the wrong department. */
@@ -60,6 +60,7 @@ Answer ONLY with a JSON object with exactly these keys:
                           // trees, work on a road with traffic, holes in the road, water or sewage leaks, heights or roofs, deep water, asbestos,
                           // chemicals, syringes, dead or aggressive animals, building or demolition, a dump so big it needs a truck or machinery.
   "fixBringSq": string,      // only when citizenCanFix: what to bring, IN ALBANIAN, a few words (e.g. "dorashka, qese plehrash"); else "".
+  "fixBringEn": string,      // the same IN ENGLISH (e.g. "gloves, rubbish bags"); else "".
   "fixPeople": number,       // only when citizenCanFix: how many people are enough (1-20); else 0.
   "fixMinutes": number       // only when citizenCanFix: about how many minutes it takes for them (15-240); else 0.
 }
@@ -82,11 +83,15 @@ export function analysisOf(answer: AiJson, types: Array<{ id: number; code: stri
 }
 
 /** What residents need to fix it themselves; sensible values when the model gave none. */
-function fixOf(answer: AiJson): { bring: string; people: number; minutes: number } {
+function fixOf(answer: AiJson): { bring: string; bringEn: string; people: number; minutes: number } {
   const whole = (v: unknown, min: number, max: number, fallback: number) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.max(min, Math.min(max, Math.round(v))) : fallback);
-  const bring = typeof answer.fixBringSq === 'string' ? answer.fixBringSq.replace(/\s+/g, ' ').trim().slice(0, 120) : '';
+  const text = (v: unknown) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, 120) : '');
+  const bring = text(answer.fixBringSq);
+  const bringEn = text(answer.fixBringEn);
   return {
     bring: bring && !looksLikeGibberish(bring) ? bring : 'dorashka, qese plehrash',
+    // The page in English shows this one (the description of the report stays in Albanian, for the staff).
+    bringEn: bringEn && !looksLikeGibberish(bringEn) ? bringEn : 'gloves, rubbish bags',
     people: whole(answer.fixPeople, 1, 20, 2),
     // Rounded to 15 minutes: "rreth 30 minuta" reads better than "27 minuta".
     minutes: Math.round(whole(answer.fixMinutes, 15, 240, 30) / 15) * 15,
@@ -105,7 +110,7 @@ export async function analyzePhoto(photoKey: string): Promise<PhotoAnalysis> {
 
   // The list of types is part of the question: a change in the catalogue asks again.
   const catalogue = types.map((t) => `${t.code}: ${t.nameEn} (category: ${t.category.nameEn})${isOtherChoice(t.code) ? ' — anything else in this category' : ''}`).join('\n');
-  const cacheKey = sha256(`photo-analyze:v4:${config().ai.model}:${photoKey}:${sha256(catalogue)}`);
+  const cacheKey = sha256(`photo-analyze:v5:${config().ai.model}:${photoKey}:${sha256(catalogue)}`);
   const cached = await db.aiResult.findUnique({ where: { cacheKey } });
   if (cached) return analysisOf(cached.output as AiJson, types);
 
