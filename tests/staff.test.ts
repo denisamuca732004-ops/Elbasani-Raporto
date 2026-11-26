@@ -42,7 +42,7 @@ describe('accounts created by the admin', () => {
     });
     assert.match(temporaryPassword, /^Elb-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/);
     assert.equal(user.mustChangePassword, true);
-    assert.equal(user.departmentName, 'Sektori i Shëndetit Publik dhe Shërbimit Veterinar');
+    assert.equal(user.departmentName, 'Agjencia e Pyjeve, Bujqësisë dhe Mjedisit');
     await drainJobs();
     const welcome = await db.emailLog.findFirst({ where: { template: 'account_created', toAddress: 'new.head@example.com' } });
     assert.ok(welcome);
@@ -255,6 +255,6 @@ describe('the workflow of a department', () => {
     const csv = await exportCsv(infra, exportSchema.parse({}));
     const lines = csv.trim().split('\r\n').slice(1);
     assert.ok(lines.length > 0);
-    assert.ok(lines.every((l) => l.includes('Sektori i Infrastrukturës dhe Punëve Publike')));
+    assert.ok(lines.every((l) => l.includes('Sektori i Monitorimit të Shërbimeve Publike')));
   });
 });

@@ -348,7 +348,7 @@ describe('appearance, demo data, daily job, export, email log', () => {
     const { report } = await submitReport({ address: '=HYPERLINK("http://evil.example")' });
     const csv = await exportCsv(admin, exportSchema.parse({}));
     assert.ok(csv.startsWith('﻿Numri,'));
-    assert.ok(csv.includes('Sektori i Infrastrukturës'));
+    assert.ok(csv.includes('Sektori i Monitorimit të Shërbimeve Publike'));
     assert.ok(csv.includes(`"'=HYPERLINK(""http://evil.example"")"`), 'a formula is written as text');
     assert.ok(report.id);
   });

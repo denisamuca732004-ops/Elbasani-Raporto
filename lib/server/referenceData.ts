@@ -16,13 +16,13 @@ import localityPoints from './data/locality-points.json';
 const LOCALITY_POINTS = (localityPoints as { zones: Record<string, Record<string, [number, number]>> }).zones;
 
 export const DEPARTMENTS = [
-  { code: 'public_services', nameSq: 'Sektori i Shërbimeve Publike', nameEn: 'Public Services Sector', description: 'Mbetjet, pastrimi, gjelbërimi dhe parqet.', descriptionEn: 'Waste, street cleaning, green spaces and parks.' },
-  { code: 'infrastructure', nameSq: 'Sektori i Infrastrukturës dhe Punëve Publike', nameEn: 'Infrastructure and Public Works Sector', description: 'Rrugët, trotuaret, sinjalistika dhe ndriçimi publik.', descriptionEn: 'Roads, sidewalks, signs and street lighting.' },
+  { code: 'public_services', nameSq: 'Agjencia e Shërbimeve Publike Urbane', nameEn: 'Urban Public Services Agency', description: 'Mbetjet, pastrimi, gjelbërimi dhe parqet.', descriptionEn: 'Waste, street cleaning, green spaces and parks.' },
+  { code: 'infrastructure', nameSq: 'Sektori i Monitorimit të Shërbimeve Publike', nameEn: 'Public Services Monitoring Sector', description: 'Drejtoria e Monitorimit: rrugët, trotuaret, sinjalistika dhe ndriçimi publik. Ndjek riparimin me operatorët.', descriptionEn: 'Monitoring Directorate: roads, sidewalks, signs and public lighting. Follows the repair with the operators.' },
   { code: 'water', nameSq: 'Ujësjellës Kanalizime Elbasan', nameEn: 'Elbasan Water and Sewerage', description: 'Rrjeti i ujit, kanalizimet dhe pusetat.', descriptionEn: 'The water network, sewers and manholes.' },
-  { code: 'urban_control', nameSq: 'Inspektorati i Mbrojtjes së Territorit', nameEn: 'Territory Protection Inspectorate', description: 'Ndërtimet pa leje, kantieret dhe mbetjet inerte.', descriptionEn: 'Building without a permit, construction sites and construction waste.' },
-  { code: 'public_health', nameSq: 'Sektori i Shëndetit Publik dhe Shërbimit Veterinar', nameEn: 'Public Health and Veterinary Sector', description: 'Kafshët, dezinsektimi dhe shëndeti publik.', descriptionEn: 'Animals, pest control and public health.' },
+  { code: 'urban_control', nameSq: 'Inspektorati i Mbrojtjes së Territorit Vendor', nameEn: 'Local Territory Protection Inspectorate', description: 'Ndërtimet pa leje, kantieret dhe mbetjet inerte.', descriptionEn: 'Building without a permit, construction sites and construction waste.' },
+  { code: 'public_health', nameSq: 'Agjencia e Pyjeve, Bujqësisë dhe Mjedisit', nameEn: 'Forests, Agriculture and Environment Agency', description: 'Kafshët, dezinsektimi, mjedisi dhe pyjet.', descriptionEn: 'Animals, pest control, the environment and forests.' },
   { code: 'municipal_police', nameSq: 'Policia Bashkiake', nameEn: 'Municipal Police', description: 'Zhurmat, zënia e hapësirës publike dhe automjetet e braktisura.', descriptionEn: 'Noise, occupation of public space and abandoned vehicles.' },
-  { code: 'citizen_service', nameSq: 'Zyra e Shërbimit ndaj Qytetarit', nameEn: 'Citizen Service Office', description: 'Kërkesat e tjera që nuk i përkasin një sektori të caktuar.', descriptionEn: 'Other requests that do not belong to a specific sector.' },
+  { code: 'citizen_service', nameSq: 'Drejtoria e Monitorimit', nameEn: 'Monitoring Directorate', description: 'Kërkesat e tjera që nuk i përkasin një sektori të caktuar. Ndjek ankesat e qytetarëve.', descriptionEn: 'Other requests that do not belong to a specific sector. Follows up citizen complaints.' },
 ] as const;
 
 type TypeRow = [code: string, nameSq: string, nameEn: string, kind: RequestKind, department: string, slaDays: number, priority: Priority, keywords: string];
