@@ -1005,6 +1005,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               <span className="cm-invite-icon" aria-hidden="true"><Icon name="heart" size={22} /></span>
               <div>
                 <strong>{t('community.fix.title')}</strong>
+                <p>{t('community.fix.lead')}</p>
                 <ul className="fix-list">
                   <li><Icon name="check" size={16} />{t('community.fix.bring', { v: currentAnalysis.fix.bring })}</li>
                   <li><Icon name="users" size={16} />{t('community.fix.people', { n: currentAnalysis.fix.people })} · {t('community.fix.about', { d: durationText(currentAnalysis.fix.minutes, t) })}</li>
