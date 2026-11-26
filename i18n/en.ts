@@ -801,6 +801,7 @@ const en = {
       button: 'Mark as used', done: 'The reward was marked as used.', used: 'This reward was used on {date}.', held: 'This reward is on hold.', notFound: 'This reward code was not found.',
     },
     home: { title: 'Help the city', text: 'Fix something small together with your neighbours or friends.', button: 'See the actions' },
+    fix: { title: 'You could fix this yourselves 💚', bring: 'You need: {v}', people: '{n} people', about: 'about {d}', button: 'Send it and fix it yourselves: create an action', note: 'The report still goes to the Municipality. Then the action opens, filled in by the AI.' },
     invite: { title: 'You could fix this yourselves! 💚', afterText: 'Your report was sent to the Municipality. It looks easy: if you like, you could also fix it yourselves with neighbours or friends.', text: 'It looks easy. You could fix it with your neighbours or friends: the AI fills in the details of the action from the photo.', yes: 'Create an action', no: 'No, send it to the Municipality' },
   },
   communityAdmin: {

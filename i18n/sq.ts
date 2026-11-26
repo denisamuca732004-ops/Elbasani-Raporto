@@ -801,6 +801,7 @@ const sq = {
       button: 'Shëno si të përdorur', done: 'Çmimi u shënua si i përdorur.', used: 'Ky çmim është përdorur më {date}.', held: 'Ky çmim është pezulluar.', notFound: 'Ky kod çmimi nuk u gjet.',
     },
     home: { title: 'Ndihmo qytetin', text: 'Rregulloni diçka të vogël bashkë me fqinjët ose miqtë.', button: 'Shiko aksionet' },
+    fix: { title: 'Këtë mund ta rregulloni edhe vetë 💚', bring: 'Ju duhen: {v}', people: '{n} veta', about: 'rreth {d}', button: 'Dërgoje dhe rregullojeni vetë: krijo aksion', note: 'Raportimi shkon gjithsesi te Bashkia. Pastaj hapet aksioni, i plotësuar nga AI.' },
     invite: { title: 'Këtë mund ta rregulloni edhe ju! 💚', afterText: 'Raportimi juaj u dërgua te Bashkia. Duket diçka e lehtë: nëse doni, mund ta rregulloni edhe vetë bashkë me fqinjët ose miqtë.', text: 'Duket diçka e lehtë. Mund ta rregulloni bashkë me fqinjët ose miqtë: AI plotëson të dhënat e aksionit nga fotoja.', yes: 'Krijo një aksion', no: 'Jo, dërgoje te Bashkia' },
   },
   communityAdmin: {

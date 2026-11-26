@@ -47,7 +47,7 @@ import { InstallAfterReport } from '@/components/site/InstallApp';
 import NotifyMe from '@/components/public/NotifyMe';
 import { InstallGuideButton } from '@/components/site/InstallApp';
 import { uploadPhoto } from '@/lib/client/upload';
-import { handOverPhoto } from '@/lib/client/community';
+import { durationText, handOverPhoto } from '@/lib/client/community';
 import { useRouter } from 'next/navigation';
 import { LIMITS, isOtherChoice } from '@/lib/shared/domain';
 import { looksLikeGibberish } from '@/lib/shared/text';
@@ -65,6 +65,8 @@ type Analysis = {
   verdict?: 'ok' | 'unrelated' | 'not_photo' | 'inappropriate' | 'unchecked'; requestTypeId?: number | null; description?: string;
   /** Small and safe: residents could fix it themselves ("Ndihmo qytetin"). */
   citizenCanFix?: boolean;
+  /** With citizenCanFix: what to bring, how many people, about how long. */
+  fix?: { bring: string; people: number; minutes: number } | null;
 };
 /** The check of the description for the chosen type, made when "Vazhdo" is pressed. */
 type DescriptionCheck = { text: string; typeId: number; status: 'ok' | 'unrelated' | 'unchecked'; confirmed: boolean };
@@ -447,7 +449,8 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     return keyValue;
   }
 
-  async function submit() {
+  /** `thenAction`: the report is sent, then the action form opens with the same photo ("E rregullojmë vetë"). */
+  async function submit(thenAction = false) {
     if (firstIncompleteStep >= 0) {
       setStep(firstIncompleteStep);
       setShowErrors(true);
@@ -485,6 +488,12 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       const notified = notify && rules.pushKey && canPush === 'yes'
         ? await subscribeToReport({ caseNumber: res.caseNumber, clientRef, key: rules.pushKey, lang: lang === 'en' ? 'en' : 'sq' })
         : false;
+      if (thenAction && photo) {
+        // The report used the uploaded copy: the action uploads the photo again.
+        handOverPhoto({ blob: photo, key: null, notes: description });
+        router.push('/ndihmo/krijo');
+        return;
+      }
       setResult({ caseNumber: res.caseNumber, notified });
     } catch (raw) {
       const err = raw as ActionFailure;
@@ -990,6 +999,23 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
               </section>
             ))}
           </div>
+          {/* Something small and safe (the AI decides): the report still goes, and the residents can also fix it. */}
+          {rules.community && !embedded && photo && currentAnalysis?.citizenCanFix && currentAnalysis.fix && (
+            <div className="cm-invite fix-card">
+              <span className="cm-invite-icon" aria-hidden="true"><Icon name="heart" size={22} /></span>
+              <div>
+                <strong>{t('community.fix.title')}</strong>
+                <ul className="fix-list">
+                  <li><Icon name="check" size={16} />{t('community.fix.bring', { v: currentAnalysis.fix.bring })}</li>
+                  <li><Icon name="users" size={16} />{t('community.fix.people', { n: currentAnalysis.fix.people })} · {t('community.fix.about', { d: durationText(currentAnalysis.fix.minutes, t) })}</li>
+                </ul>
+                <button type="button" className="btn btn-sm btn-outline" onClick={() => void submit(true)} disabled={submitting}>
+                  <Icon name="users" size={16} />{t('community.fix.button')}
+                </button>
+                <p className="hint" style={{ margin: '6px 0 0' }}>{t('community.fix.note')}</p>
+              </div>
+            </div>
+          )}
           <p className="small muted" style={{ marginTop: 12 }}>{t('report.consent')} <Link href="/privatesia" target="_blank">{t('nav.privacy')}</Link>.</p>
           <ErrorAlert error={error} />
         </section>
@@ -1000,7 +1026,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
           <Icon name="arrowLeft" size={18} />{t('common.back')}
         </button>
         {stepName === 'review' ? (
-          <button type="button" className="btn btn-lg" onClick={submit} disabled={submitting}>{submitting ? t('report.sending') : t('report.send')}</button>
+          <button type="button" className="btn btn-lg" onClick={() => void submit()} disabled={submitting}>{submitting ? t('report.sending') : t('report.send')}</button>
         ) : (
           (stepName !== 'type' || type) && (
             <button type="button" className="btn" onClick={() => void next()} disabled={(stepName === 'photo' && (currentCheck?.status === 'checking' || analysing)) || checkingDescription}>

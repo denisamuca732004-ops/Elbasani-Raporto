@@ -235,12 +235,10 @@ describe('the simple MVP (the default): the staff approves and verifies, no chec
   before(async () => { await fullVersion(false); });
   after(async () => { await fullVersion(true); });
 
-  test('even a clear action waits for a person; scanning and votes are off; closing waits for the staff; no money', async () => {
+  test('a clear, safe action is published at once; scanning and votes are off; closing waits for the staff; no money', async () => {
     const { code, organizerToken, status } = await newAction();
-    assert.equal(status, 'REVIEW', 'a person approves every action');
+    assert.equal(status, 'PUBLISHED', 'the AI publishes the clear cases without waiting');
     const row = await db.communityAction.findUniqueOrThrow({ where: { code } });
-    assert.match(row.reviewReason ?? '', /Pret miratimin e stafit/);
-    await decideAction(admin, row.id, 'publish', '');
     const pub = await getPublicAction(code);
     assert.equal(pub.checkIn, false);
     assert.equal(pub.joinOpen, false);

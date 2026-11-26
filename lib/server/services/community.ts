@@ -67,7 +67,7 @@ const SETTINGS_KEY = 'community';
 interface StoredSettings extends Omit<CommunitySettings, 'hasPartnerPin'> { partnerPinHash?: string | null }
 const DEFAULTS: StoredSettings = {
   enabled: true,
-  // The MVP: the staff approves each action and checks its photos; no QR check-in, no rewards, no AI approval.
+  // The MVP: no QR check-in and no rewards. The AI publishes clear, safe actions; the staff checks the rest and verifies the closing.
   rewards: false,
   tiers: [{ minPeople: 1, amount: 200 }, { minPeople: 3, amount: 300 }, { minPeople: 6, amount: 500 }],
   coffeePartner: 'Kafe partnere',
@@ -348,13 +348,9 @@ export async function createAction(input: CreateActionInput, now = new Date()): 
   if (input.push && !isPushEndpoint(input.push.endpoint)) input.push = undefined;
 
   const small = await smallPhoto(input.photoKey);
-  const full = await checkInOn();
-  const ai = await checkNewAction(small, input);
-  // The MVP: a person at the Municipality approves every action (the AI's opinion is shown to them).
-  const check = full ? ai : {
-    ...ai, publish: false,
-    review: ai.review ?? `Pret miratimin e stafit.${ai.reason ? ` AI: ${ai.reason}` : ''}`,
-  };
+  // Clear, safe cases are published at once (the AI decides); anything doubtful waits for the staff.
+  // Both versions alike: the staff sees every action and can still reject a published one.
+  const check = await checkNewAction(small, input);
   const stored = await storeUploadedPhoto(input.photoKey);
   const { token, hash } = createToken(24);
 

@@ -33,13 +33,15 @@ export interface PhotoAnalysis {
   description: string;
   /** Small and safe enough for residents to fix themselves ("Ndihmo qytetin" invites them). */
   citizenCanFix: boolean;
+  /** With citizenCanFix: what to bring (Albanian, short), how many people, about how long. */
+  fix?: { bring: string; people: number; minutes: number } | null;
 }
 
 /** Below this the type is not proposed: a wrong type sends the report to the wrong department. */
 export const MIN_TYPE_CONFIDENCE = 60;
 const MAX_PROPOSED_DESCRIPTION = 400;
 
-const NONE: PhotoAnalysis = { verdict: 'unchecked', requestTypeId: null, confidence: 0, description: '', citizenCanFix: false };
+const NONE: PhotoAnalysis = { verdict: 'unchecked', requestTypeId: null, confidence: 0, description: '', citizenCanFix: false, fix: null };
 
 const SYSTEM = `You help a resident report a problem in a public place to the Municipality of Elbasan (Albania), starting from a photo.
 Answer ONLY with a JSON object with exactly these keys:
@@ -55,6 +57,9 @@ Answer ONLY with a JSON object with exactly these keys:
   "citizenCanFix": boolean   // true ONLY when ordinary residents could fix it themselves safely in under 3 hours with gloves and bags or a brush:
                           // scattered litter, a few bags of rubbish, leaves blocking a drain, graffiti on a bench. False for electricity or lamps,
                           // trees, roads or holes, water or sewage leaks, buildings, animals, big dumps, anything dangerous or needing machines.
+  "fixBringSq": string,      // only when citizenCanFix: what to bring, IN ALBANIAN, a few words (e.g. "dorashka, qese plehrash"); else "".
+  "fixPeople": number,       // only when citizenCanFix: how many people are enough (1-10); else 0.
+  "fixMinutes": number       // only when citizenCanFix: about how many minutes it takes for them (15-180); else 0.
 }
 Prefer a specific type over a ".other" type. Use a ".other" type only when the problem clearly belongs to that category but no specific type fits.`;
 
@@ -70,7 +75,20 @@ export function analysisOf(answer: AiJson, types: Array<{ id: number; code: stri
   let description = visible && typeof answer.descriptionSq === 'string' ? answer.descriptionSq.replace(/\s+/g, ' ').trim() : '';
   if (description.length > MAX_PROPOSED_DESCRIPTION) description = `${description.slice(0, MAX_PROPOSED_DESCRIPTION - 1).replace(/\s+\S*$/, '')}…`;
   if (description.length < LIMITS.minDescription || looksLikeGibberish(description)) description = '';
-  return { verdict: visible ? 'ok' : 'unrelated', requestTypeId, confidence: requestTypeId ? confidence : 0, description, citizenCanFix: visible && answer.citizenCanFix === true };
+  const citizenCanFix = visible && answer.citizenCanFix === true;
+  return { verdict: visible ? 'ok' : 'unrelated', requestTypeId, confidence: requestTypeId ? confidence : 0, description, citizenCanFix, fix: citizenCanFix ? fixOf(answer) : null };
+}
+
+/** What residents need to fix it themselves; sensible values when the model gave none. */
+function fixOf(answer: AiJson): { bring: string; people: number; minutes: number } {
+  const whole = (v: unknown, min: number, max: number, fallback: number) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.max(min, Math.min(max, Math.round(v))) : fallback);
+  const bring = typeof answer.fixBringSq === 'string' ? answer.fixBringSq.replace(/\s+/g, ' ').trim().slice(0, 120) : '';
+  return {
+    bring: bring && !looksLikeGibberish(bring) ? bring : 'dorashka, qese plehrash',
+    people: whole(answer.fixPeople, 1, 10, 2),
+    // Rounded to 15 minutes: "rreth 30 minuta" reads better than "27 minuta".
+    minutes: Math.round(whole(answer.fixMinutes, 15, 180, 30) / 15) * 15,
+  };
 }
 
 /** Analyses the temporary upload `photoKey` (actions/upload.ts). Throws only when the photo itself is missing. */
@@ -85,7 +103,7 @@ export async function analyzePhoto(photoKey: string): Promise<PhotoAnalysis> {
 
   // The list of types is part of the question: a change in the catalogue asks again.
   const catalogue = types.map((t) => `${t.code}: ${t.nameEn} (category: ${t.category.nameEn})${isOtherChoice(t.code) ? ' — anything else in this category' : ''}`).join('\n');
-  const cacheKey = sha256(`photo-analyze:v2:${config().ai.model}:${photoKey}:${sha256(catalogue)}`);
+  const cacheKey = sha256(`photo-analyze:v3:${config().ai.model}:${photoKey}:${sha256(catalogue)}`);
   const cached = await db.aiResult.findUnique({ where: { cacheKey } });
   if (cached) return analysisOf(cached.output as AiJson, types);
 
