@@ -403,7 +403,7 @@ const en = {
       dashboard: 'Dashboard', reports: 'Reports', allReports: 'All reports', unrouted: 'No sector',
       reviews: 'Review requests', newReport: 'New report', administration: 'Administration',
       sectors: 'Sectors', users: 'Users', catalogue: 'Report types', areas: 'Areas', appearance: 'Appearance',
-      emails: 'Emails', integration: 'Integration', demo: 'Demo data', account: 'My account',
+      emails: 'Emails', integration: 'QR code and integration', demo: 'Demo data', account: 'My account',
       community: 'Actions', sectorReports: 'Sector reports', sectorReviews: 'Review requests', guide: 'Search guide',
     },
   },

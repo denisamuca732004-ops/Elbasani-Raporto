@@ -403,7 +403,7 @@ const sq = {
       dashboard: 'Paneli', reports: 'Raportimet', allReports: 'Të gjitha raportimet', unrouted: 'Pa sektor',
       reviews: 'Kërkesat për rishikim', newReport: 'Raportim i ri', administration: 'Administrimi',
       sectors: 'Sektorët', users: 'Përdoruesit', catalogue: 'Llojet e raportimeve', areas: 'Zonat', appearance: 'Pamja',
-      emails: 'Emailet', integration: 'Integrimi', demo: 'Të dhëna demo', account: 'Llogaria ime',
+      emails: 'Emailet', integration: 'Kodi QR dhe integrimi', demo: 'Të dhëna demo', account: 'Llogaria ime',
       community: 'Aksionet', sectorReports: 'Raportimet e sektorit', sectorReviews: 'Kërkesat për rishikim', guide: 'Udhëzuesi',
     },
   },

@@ -61,7 +61,7 @@ function NavItem({ href, icon, label, exact, badge, badgeTone, badgeLabel, high,
 function navGroups(principal: Principal, counts: SidebarCounts | null, t: (k: string) => string) {
   if (principal.role === 'ADMIN') {
     // Kept short: the reports (one board, split by status), the numbers, and the settings used
-    // often. Accounts, report types, the chat guide, appearance, integration and demo data are not
+    // often. Accounts, report types, the chat guide, appearance and demo data are not
     // in the menu; their pages still work at their address and the dashboard links to them.
     return [
       {
@@ -77,6 +77,7 @@ function navGroups(principal: Principal, counts: SidebarCounts | null, t: (k: st
           { href: '/admin/departments', icon: 'layers', label: t('panel.nav.sectors') },
           { href: '/admin/areas', icon: 'map', label: t('panel.nav.areas') },
           { href: '/admin/emails', icon: 'mail', label: t('panel.nav.emails') },
+          { href: '/admin/integration', icon: 'qr', label: t('panel.nav.integration') },
         ],
       },
     ];
