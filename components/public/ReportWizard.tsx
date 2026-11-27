@@ -453,8 +453,21 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
     return keyValue;
   }
 
-  /** `thenAction`: the report is sent, then the action form opens with the same photo ("E rregullojmë vetë"). */
-  async function submit(thenAction = false) {
+  /**
+   * "E rregullojmë vetë": no report is sent; the action form opens with the same photo and the card's
+   * numbers. The Municipality sees it as an action (Paneli → Aksionet), not as a report.
+   */
+  function organiseInstead() {
+    if (!photo) return;
+    const fix = currentAnalysis?.fix;
+    handOverPhoto({
+      blob: photo, key: null, notes: description, // the action uploads its own copy
+      fix: fix ? { people: fix.people, minutes: fix.minutes, bring: lang === 'en' && fix.bringEn ? fix.bringEn : fix.bring } : undefined,
+    });
+    router.push('/ndihmo/krijo');
+  }
+
+  async function submit() {
     if (firstIncompleteStep >= 0) {
       setStep(firstIncompleteStep);
       setShowErrors(true);
@@ -492,16 +505,6 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
       const notified = notify && rules.pushKey && canPush === 'yes'
         ? await subscribeToReport({ caseNumber: res.caseNumber, clientRef, key: rules.pushKey, lang: lang === 'en' ? 'en' : 'sq' })
         : false;
-      if (thenAction && photo) {
-        // The report used the uploaded copy: the action uploads the photo again. Same numbers as on the card.
-        const fix = currentAnalysis?.fix;
-        handOverPhoto({
-          blob: photo, key: null, notes: description,
-          fix: fix ? { people: fix.people, minutes: fix.minutes, bring: lang === 'en' && fix.bringEn ? fix.bringEn : fix.bring } : undefined,
-        });
-        router.push('/ndihmo/krijo');
-        return;
-      }
       setResult({ caseNumber: res.caseNumber, notified });
     } catch (raw) {
       const err = raw as ActionFailure;
@@ -1018,7 +1021,7 @@ export default function ReportWizard({ embedded = false, initialCategory, initia
                   <li><Icon name="check" size={16} />{t('community.fix.bring', { v: lang === 'en' && currentAnalysis.fix.bringEn ? currentAnalysis.fix.bringEn : currentAnalysis.fix.bring })}</li>
                   <li><Icon name="users" size={16} />{currentAnalysis.fix.people > 2 ? t('community.fix.peopleRange', { a: 2, b: currentAnalysis.fix.people }) : t('community.fix.people', { n: currentAnalysis.fix.people })} · {t('community.fix.about', { d: durationText(currentAnalysis.fix.minutes, t) })}</li>
                 </ul>
-                <button type="button" className="btn btn-sm btn-outline" onClick={() => void submit(true)} disabled={submitting}>
+                <button type="button" className="btn btn-sm btn-outline" onClick={organiseInstead} disabled={submitting}>
                   <Icon name="users" size={16} />{t('community.fix.button')}
                 </button>
                 <p className="hint" style={{ margin: '6px 0 0' }}>{t('community.fix.note')}</p>
